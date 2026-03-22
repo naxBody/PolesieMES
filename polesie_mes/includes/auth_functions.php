@@ -11,12 +11,31 @@ session_start();
 function authenticate($username, $password) {
     $db = getDB();
     
-    $stmt = $db->prepare("
-        SELECT u.*, e.first_name, e.last_name, e.middle_name, e.employee_code
-        FROM users u
-        LEFT JOIN employees e ON u.employee_id = e.id
-        WHERE u.username = :username AND u.is_active = 1
-    ");
+    // Проверяем существование таблицы employees
+    $tableExists = false;
+    try {
+        $stmt = $db->query("SHOW TABLES LIKE 'employees'");
+        $tableExists = $stmt->rowCount() > 0;
+    } catch (PDOException $e) {
+        $tableExists = false;
+    }
+    
+    if ($tableExists) {
+        // Полный запрос с данными сотрудника
+        $stmt = $db->prepare("
+            SELECT u.*, e.first_name, e.last_name, e.middle_name, e.employee_code
+            FROM users u
+            LEFT JOIN employees e ON u.employee_id = e.id
+            WHERE u.username = :username AND u.is_active = 1
+        ");
+    } else {
+        // Упрощенный запрос без таблицы employees
+        $stmt = $db->prepare("
+            SELECT u.*, '' as first_name, '' as last_name, '' as middle_name, '' as employee_code
+            FROM users u
+            WHERE u.username = :username AND u.is_active = 1
+        ");
+    }
     
     $stmt->execute(['username' => $username]);
     $user = $stmt->fetch();
@@ -187,12 +206,29 @@ function requireAuth() {
 function getUserFullName($userId) {
     $db = getDB();
     
-    $stmt = $db->prepare("
-        SELECT e.first_name, e.last_name, e.middle_name
-        FROM users u
-        JOIN employees e ON u.employee_id = e.id
-        WHERE u.id = :user_id
-    ");
+    // Проверяем существование таблицы employees
+    $tableExists = false;
+    try {
+        $stmt = $db->query("SHOW TABLES LIKE 'employees'");
+        $tableExists = $stmt->rowCount() > 0;
+    } catch (PDOException $e) {
+        $tableExists = false;
+    }
+    
+    if ($tableExists) {
+        $stmt = $db->prepare("
+            SELECT e.first_name, e.last_name, e.middle_name
+            FROM users u
+            JOIN employees e ON u.employee_id = e.id
+            WHERE u.id = :user_id
+        ");
+    } else {
+        $stmt = $db->prepare("
+            SELECT username as first_name, '' as last_name, '' as middle_name
+            FROM users
+            WHERE id = :user_id
+        ");
+    }
     
     $stmt->execute(['user_id' => $userId]);
     $user = $stmt->fetch();
