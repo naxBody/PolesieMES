@@ -1,1 +1,42 @@
-Nothing needs to be added to the .gitignore file based on the provided changes. The modified file 'polesie_mes/modules/dashboard/index.php' is a source code file that should not be ignored.
+# Compiled and build artifacts
+*.pyc
+__pycache__/
+
+# Dependencies
+.venv/
+venv/
+node_modules/
+pip-tools/
+
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+
+# Environment
+.env
+.env.local
+.env.*
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Coverage
+.coverage
+coverage/
+htmlcov/
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Original rules preserved
+polesie_mes/modules/dashboard/index.php
