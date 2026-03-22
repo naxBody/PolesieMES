@@ -1,7 +1,7 @@
 <?php
 /**
  * Панель управления (Dashboard) системы PolesieMES
- * Современный дизайн
+ * Современный дизайн в стиле авторизации - Индустриальный минимализм 2026
  */
 
 require_once __DIR__ . '/../../config/config.php';
@@ -14,6 +14,9 @@ requireAuth();
 
 $db = getDB();
 $user = getCurrentUser();
+
+// Получение имени пользователя для приветствия
+$userFirstName = !empty($user['full_name']) ? explode(' ', $user['full_name'])[0] : 'Пользователь';
 
 // Получение статистики
 $stats = [];
@@ -115,21 +118,34 @@ $currentPage = 'dashboard';
     
     <style>
         :root {
-            --primary: #6366f1;
-            --primary-dark: #4f46e5;
-            --secondary: #ec4899;
-            --accent: #06b6d4;
-            --success: #10b981;
-            --warning: #f59e0b;
-            --danger: #ef4444;
-            --dark: #0f172a;
-            --light: #f8fafc;
-            --gradient-primary: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-            --gradient-success: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            --gradient-warning: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-            --gradient-info: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
-            --gradient-danger: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-            --gradient-nav: linear-gradient(135deg, #6366f1 0%, #ec4899 100%);
+            /* Industrial 2026 Color Palette */
+            --primary: #0a84ff;
+            --primary-dark: #0066cc;
+            --secondary: #5e5ce6;
+            --accent: #30d158;
+            --warning: #ffd60a;
+            --danger: #ff453a;
+            
+            /* Neutral tones */
+            --bg-dark: #0d1117;
+            --bg-card: #161b22;
+            --bg-input: #0d1117;
+            --border: #30363d;
+            --text-primary: #f0f6fc;
+            --text-secondary: #8b949e;
+            --text-muted: #6e7681;
+            
+            /* Gradients */
+            --gradient-primary: linear-gradient(135deg, #0a84ff 0%, #5e5ce6 100%);
+            --gradient-bg: linear-gradient(180deg, #0d1117 0%, #161b22 100%);
+            --gradient-glow: radial-gradient(ellipse at center, rgba(10, 132, 255, 0.15) 0%, transparent 70%);
+            --gradient-nav: linear-gradient(135deg, #0a84ff 0%, #5e5ce6 100%);
+            
+            /* Shadows */
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+            --shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.5);
+            --glow-primary: 0 0 20px rgba(10, 132, 255, 0.3);
         }
         
         * {
@@ -139,22 +155,90 @@ $currentPage = 'dashboard';
         }
         
         body {
-            font-family: 'Outfit', sans-serif;
-            background: #f1f5f9;
-            color: var(--dark);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--gradient-bg);
+            min-height: 100vh;
+            color: var(--text-primary);
+            overflow-x: hidden;
+            position: relative;
+        }
+        
+        /* Animated grid background */
+        .grid-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(48, 54, 61, 0.3) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(48, 54, 61, 0.3) 1px, transparent 1px);
+            background-size: 60px 60px;
+            animation: gridMove 20s linear infinite;
+            z-index: 0;
+            pointer-events: none;
+        }
+        
+        @keyframes gridMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(60px, 60px); }
+        }
+        
+        /* Glow effect */
+        .glow-overlay {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 800px;
+            height: 800px;
+            background: var(--gradient-glow);
+            border-radius: 50%;
+            z-index: 0;
+            animation: pulse 4s ease-in-out infinite;
+            pointer-events: none;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
+            50% { opacity: 0.8; transform: translate(-50%, -50%) scale(1.1); }
         }
         
         /* Navbar */
         .navbar {
-            background: var(--gradient-nav) !important;
-            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
+            background: rgba(22, 27, 34, 0.95) !important;
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
             padding: 0.75rem 1.5rem;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
         }
         
         .navbar-brand {
-            font-weight: 800;
+            font-weight: 700;
             font-size: 1.4rem;
             letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .brand-logo {
+            width: 42px;
+            height: 42px;
+            background: var(--gradient-primary);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--glow-primary);
+        }
+        
+        .brand-logo svg {
+            width: 24px;
+            height: 24px;
+            fill: white;
         }
         
         .nav-link {
@@ -163,32 +247,43 @@ $currentPage = 'dashboard';
             border-radius: 8px;
             transition: all 0.3s ease;
             margin: 0 0.25rem;
+            color: var(--text-secondary) !important;
         }
         
         .nav-link:hover {
-            background: rgba(255, 255, 255, 0.15);
+            background: rgba(10, 132, 255, 0.15);
+            color: var(--text-primary) !important;
         }
         
         .nav-link.active {
-            background: rgba(255, 255, 255, 0.25);
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            background: var(--gradient-primary);
+            color: white !important;
+            box-shadow: var(--glow-primary);
         }
         
         .dropdown-menu {
-            border: none;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
             border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            box-shadow: var(--shadow-lg);
             padding: 0.5rem 0;
         }
         
         .dropdown-item {
             padding: 0.6rem 1.25rem;
             transition: all 0.2s ease;
+            color: var(--text-secondary);
         }
         
         .dropdown-item:hover {
-            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
-            color: var(--primary);
+            background: rgba(10, 132, 255, 0.15);
+            color: var(--text-primary);
+        }
+        
+        .dropdown-item i {
+            width: 20px;
+            text-align: center;
+            margin-right: 0.5rem;
         }
         
         /* Main Content */
@@ -196,27 +291,63 @@ $currentPage = 'dashboard';
             padding: 2rem;
             max-width: 1400px;
             margin: 0 auto;
+            position: relative;
+            z-index: 10;
         }
         
         .page-header {
             margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
         }
         
         .page-title {
             font-size: 1.75rem;
             font-weight: 700;
-            color: var(--dark);
+            background: linear-gradient(135deg, #f0f6fc 0%, #8b949e 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
             margin-bottom: 0.25rem;
         }
         
         .page-subtitle {
-            color: #64748b;
+            color: var(--text-secondary);
             font-size: 0.9rem;
+        }
+        
+        .quick-actions {
+            display: flex;
+            gap: 0.75rem;
+        }
+        
+        .btn-quick {
+            padding: 0.6rem 1.25rem;
+            background: rgba(48, 54, 61, 0.5);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-weight: 500;
+            font-size: 0.875rem;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .btn-quick:hover {
+            background: rgba(10, 132, 255, 0.2);
+            border-color: var(--primary);
+            transform: translateY(-2px);
         }
         
         /* Stat Cards */
         .stat-card {
-            border: none;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
             border-radius: 16px;
             overflow: hidden;
             position: relative;
@@ -226,23 +357,8 @@ $currentPage = 'dashboard';
         
         .stat-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
-        }
-        
-        .stat-card.bg-primary {
-            background: var(--gradient-primary) !important;
-        }
-        
-        .stat-card.bg-success {
-            background: var(--gradient-success) !important;
-        }
-        
-        .stat-card.bg-warning {
-            background: var(--gradient-warning) !important;
-        }
-        
-        .stat-card.bg-info {
-            background: var(--gradient-info) !important;
+            box-shadow: var(--shadow-lg);
+            border-color: var(--primary);
         }
         
         .stat-card .card-body {
@@ -257,18 +373,18 @@ $currentPage = 'dashboard';
             top: 50%;
             transform: translateY(-50%);
             font-size: 3.5rem;
-            opacity: 0.15;
+            opacity: 0.1;
         }
         
         .stat-value {
             font-size: 2.25rem;
             font-weight: 800;
-            color: white;
+            color: var(--text-primary);
             margin-bottom: 0.25rem;
         }
         
         .stat-label {
-            color: rgba(255, 255, 255, 0.85);
+            color: var(--text-secondary);
             font-size: 0.85rem;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -280,36 +396,54 @@ $currentPage = 'dashboard';
             display: flex;
             gap: 1rem;
             font-size: 0.8rem;
-            color: rgba(255, 255, 255, 0.9);
+            color: var(--text-muted);
         }
+        
+        .stat-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .stat-badge.new { background: rgba(10, 132, 255, 0.2); color: #5ac8fa; }
+        .stat-badge.production { background: rgba(255, 214, 10, 0.2); color: #ffd60a; }
+        .stat-badge.completed { background: rgba(48, 209, 88, 0.2); color: #30d158; }
+        .stat-badge.danger { background: rgba(255, 69, 58, 0.2); color: #ff453a; }
         
         /* Cards */
         .card {
-            border: none;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
             border-radius: 16px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            box-shadow: var(--shadow-md);
             transition: all 0.3s ease;
             overflow: hidden;
         }
         
         .card:hover {
-            box-shadow: 0 10px 35px rgba(0, 0, 0, 0.12);
+            box-shadow: var(--shadow-lg);
+            border-color: rgba(10, 132, 255, 0.3);
         }
         
         .card-header {
-            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-            border-bottom: 1px solid #e2e8f0;
+            background: rgba(48, 54, 61, 0.3);
+            border-bottom: 1px solid var(--border);
             padding: 1.25rem 1.5rem;
             font-weight: 700;
             font-size: 1rem;
             display: flex;
             align-items: center;
             justify-content: space-between;
+            color: var(--text-primary);
         }
         
-        .card-header i {
+        .card-header i, .card-header svg {
             margin-right: 0.5rem;
-            color: var(--primary);
+            fill: var(--primary);
         }
         
         .card-body {
@@ -327,29 +461,30 @@ $currentPage = 'dashboard';
         }
         
         .table thead th {
-            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            background: rgba(48, 54, 61, 0.5);
             border: none;
             font-weight: 700;
             text-transform: uppercase;
             font-size: 0.7rem;
             letter-spacing: 0.5px;
             padding: 1rem 1.25rem;
-            color: #475569;
+            color: var(--text-secondary);
         }
         
         .table tbody tr {
             transition: all 0.2s ease;
-            border-bottom: 1px solid #f1f5f9;
+            border-bottom: 1px solid var(--border);
         }
         
         .table tbody tr:hover {
-            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            background: rgba(48, 54, 61, 0.3);
         }
         
         .table tbody td {
             padding: 1rem 1.25rem;
             vertical-align: middle;
             font-size: 0.9rem;
+            color: var(--text-primary);
         }
         
         /* Badges */
@@ -360,21 +495,11 @@ $currentPage = 'dashboard';
             font-size: 0.75rem;
         }
         
-        .badge.bg-primary {
-            background: var(--gradient-primary) !important;
-        }
-        
-        .badge.bg-success {
-            background: var(--gradient-success) !important;
-        }
-        
-        .badge.bg-warning {
-            background: var(--gradient-warning) !important;
-        }
-        
-        .badge.bg-danger {
-            background: var(--gradient-danger) !important;
-        }
+        .badge.bg-primary { background: rgba(10, 132, 255, 0.2); color: #5ac8fa; }
+        .badge.bg-success { background: rgba(48, 209, 88, 0.2); color: #30d158; }
+        .badge.bg-warning { background: rgba(255, 214, 10, 0.2); color: #ffd60a; }
+        .badge.bg-danger { background: rgba(255, 69, 58, 0.2); color: #ff453a; }
+        .badge.bg-secondary { background: rgba(48, 54, 61, 0.5); color: var(--text-secondary); }
         
         /* Buttons */
         .btn {
@@ -386,6 +511,7 @@ $currentPage = 'dashboard';
         }
         
         .btn-outline-primary {
+            background: transparent;
             color: var(--primary);
             border: 2px solid var(--primary);
         }
@@ -395,19 +521,21 @@ $currentPage = 'dashboard';
             border-color: transparent;
             color: white;
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(99, 102, 241, 0.4);
+            box-shadow: var(--glow-primary);
         }
         
         /* List Groups */
         .list-group-item {
+            background: transparent;
             border: none;
-            border-bottom: 1px solid #f1f5f9;
+            border-bottom: 1px solid var(--border);
             padding: 1rem 1.25rem;
             transition: all 0.2s ease;
+            color: var(--text-secondary);
         }
         
         .list-group-item:hover {
-            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            background: rgba(48, 54, 61, 0.3);
         }
         
         .list-group-item:last-child {
@@ -421,6 +549,37 @@ $currentPage = 'dashboard';
             padding: 1rem 1.25rem;
         }
         
+        /* User dropdown */
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            background: var(--gradient-primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 0.5rem;
+            box-shadow: var(--glow-primary);
+        }
+        
+        .user-avatar svg {
+            width: 18px;
+            height: 18px;
+            fill: white;
+        }
+        
+        /* Progress bars */
+        .progress {
+            background: rgba(48, 54, 61, 0.5);
+            border-radius: 10px;
+            height: 8px;
+        }
+        
+        .progress-bar {
+            background: var(--gradient-primary);
+            border-radius: 10px;
+        }
+        
         /* Responsive */
         @media (max-width: 768px) {
             .main-content {
@@ -432,20 +591,32 @@ $currentPage = 'dashboard';
             }
             
             .navbar-collapse {
-                background: var(--gradient-nav);
+                background: var(--bg-card);
                 padding: 1rem;
                 border-radius: 12px;
                 margin-top: 1rem;
+                border: 1px solid var(--border);
+            }
+            
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
             }
         }
     </style>
 </head>
 <body>
+    <!-- Background elements -->
+    <div class="grid-bg"></div>
+    <div class="glow-overlay"></div>
+    
     <!-- Навигация -->
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container-fluid">
             <a class="navbar-brand d-flex align-items-center" href="<?= APP_URL ?>">
-                <i class="fas fa-bolt me-2"></i>
+                <div class="brand-logo">
+                    <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                </div>
                 <span>PolesieMES</span>
             </a>
             
@@ -497,15 +668,15 @@ $currentPage = 'dashboard';
                 <ul class="navbar-nav">
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown">
-                            <div style="width: 32px; height: 32px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 0.5rem;">
-                                <i class="fas fa-user"></i>
+                            <div class="user-avatar">
+                                <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
                             </div>
                             <span><?= e($_SESSION['full_name']) ?></span>
-                            <span class="badge bg-light text-dark ms-2"><?= e(getRoleName($_SESSION['role'])) ?></span>
+                            <span class="badge bg-secondary ms-2"><?= e(getRoleName($_SESSION['role'])) ?></span>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li><a class="dropdown-item" href="<?= APP_URL ?>/modules/auth/profile.php"><i class="fas fa-user me-2"></i>Профиль</a></li>
-                            <li><hr class="dropdown-divider"></li>
+                            <li><hr class="dropdown-divider" style="border-color: var(--border);"></li>
                             <li><a class="dropdown-item" href="<?= APP_URL ?>/modules/auth/logout.php"><i class="fas fa-sign-out-alt me-2"></i>Выход</a></li>
                         </ul>
                     </li>
@@ -517,64 +688,64 @@ $currentPage = 'dashboard';
     <!-- Основной контент -->
     <div class="main-content">
         <div class="page-header">
-            <h1 class="page-title">Добро пожаловать, <?= e($user['first_name']) ?>!</h1>
+            <h1 class="page-title">Добро пожаловать, <?= e($userFirstName) ?>!</h1>
             <p class="page-subtitle">Обзор производства на <?= date('d.m.Y') ?></p>
         </div>
         
         <!-- Статистические карточки -->
         <div class="row g-4 mb-4">
             <div class="col-xl-3 col-md-6">
-                <div class="card stat-card bg-primary">
+                <div class="card stat-card">
                     <div class="card-body">
                         <div class="stat-icon"><i class="fas fa-shopping-cart"></i></div>
                         <div class="stat-value"><?= $stats['orders']['total'] ?? 0 ?></div>
                         <div class="stat-label">Всего заказов</div>
                         <div class="stat-details">
-                            <span><i class="fas fa-plus-circle me-1"></i>Новые: <?= $stats['orders']['new_orders'] ?? 0 ?></span>
-                            <span><i class="fas fa-cog me-1"></i>В пр-ве: <?= $stats['orders']['production_orders'] ?? 0 ?></span>
+                            <span class="stat-badge new"><i class="fas fa-plus-circle me-1"></i>Новые: <?= $stats['orders']['new_orders'] ?? 0 ?></span>
+                            <span class="stat-badge production"><i class="fas fa-cog me-1"></i>В пр-ве: <?= $stats['orders']['production_orders'] ?? 0 ?></span>
                         </div>
                     </div>
                 </div>
             </div>
             
             <div class="col-xl-3 col-md-6">
-                <div class="card stat-card bg-success">
+                <div class="card stat-card">
                     <div class="card-body">
                         <div class="stat-icon"><i class="fas fa-ruble-sign"></i></div>
                         <div class="stat-value"><?= formatCurrency($stats['revenue']) ?></div>
                         <div class="stat-label">Выручка за месяц</div>
                         <div class="stat-details">
-                            <span><i class="fas fa-check-circle me-1"></i>Завершено</span>
+                            <span class="stat-badge completed"><i class="fas fa-check-circle me-1"></i>Завершено</span>
                         </div>
                     </div>
                 </div>
             </div>
             
             <div class="col-xl-3 col-md-6">
-                <div class="card stat-card bg-warning">
+                <div class="card stat-card">
                     <div class="card-body">
                         <div class="stat-icon"><i class="fas fa-tasks"></i></div>
                         <div class="stat-value"><?= $stats['tasks']['total_tasks'] ?? 0 ?></div>
                         <div class="stat-label">Заданий</div>
                         <div class="stat-details">
-                            <span><i class="fas fa-play me-1"></i>В работе: <?= $stats['tasks']['in_progress'] ?? 0 ?></span>
-                            <span><i class="fas fa-clock me-1"></i>План: <?= $stats['tasks']['planned'] ?? 0 ?></span>
+                            <span class="stat-badge production"><i class="fas fa-play me-1"></i>В работе: <?= $stats['tasks']['in_progress'] ?? 0 ?></span>
+                            <span class="stat-badge new"><i class="fas fa-clock me-1"></i>План: <?= $stats['tasks']['planned'] ?? 0 ?></span>
                         </div>
                     </div>
                 </div>
             </div>
             
             <div class="col-xl-3 col-md-6">
-                <div class="card stat-card bg-info">
+                <div class="card stat-card">
                     <div class="card-body">
                         <div class="stat-icon"><i class="fas fa-industry"></i></div>
                         <div class="stat-value"><?= $stats['equipment']['operational'] ?? 0 ?>/<?= $stats['equipment']['total_equipment'] ?? 0 ?></div>
                         <div class="stat-label">Оборудование</div>
                         <div class="stat-details">
-                            <?php if ($stats['equipment']['broken'] > 0): ?>
-                            <span class="badge bg-white text-danger"><i class="fas fa-exclamation-triangle me-1"></i><?= $stats['equipment']['broken'] ?></span>
+                            <?php if (($stats['equipment']['broken'] ?? 0) > 0): ?>
+                            <span class="stat-badge danger"><i class="fas fa-exclamation-triangle me-1"></i><?= $stats['equipment']['broken'] ?></span>
                             <?php else: ?>
-                            <span><i class="fas fa-check-circle me-1"></i>Все работает</span>
+                            <span class="stat-badge completed"><i class="fas fa-check-circle me-1"></i>Все работает</span>
                             <?php endif; ?>
                         </div>
                     </div>
