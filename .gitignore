@@ -1,0 +1,31 @@
+```
+# Dependencies
+vendor/
+
+# Environment
+.env
+.env.local
+.env.*
+
+# Logs
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.tmp
+
+# PHP specific
+*.php~
+.php_cs.cache
+
+# Build artifacts
+dist/
+build/
+```
