@@ -103,7 +103,7 @@ $lowStockMaterials = $stmt->fetchAll();
 $stmt = $db->query("
     SELECT 
         COUNT(*) as total_completed,
-        AVG(DATEDIFF(completed_at, created_at)) as avg_completion_days
+        AVG(DATEDIFF(updated_at, created_at)) as avg_completion_days
     FROM orders
     WHERE status = 'completed'
     AND MONTH(created_at) = MONTH(CURRENT_DATE())
