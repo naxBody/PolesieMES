@@ -3,10 +3,10 @@
  * Панель управления (Dashboard) системы PolesieMES
  */
 
-require_once __DIR__ . '/../config/config.php';
-require_once __DIR__ . '/../config/database.php';
-require_once __DIR__ . '/../includes/auth_functions.php';
-require_once __DIR__ . '/../includes/helpers.php';
+require_once __DIR__ . '/../../config/config.php';
+require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../includes/auth_functions.php';
+require_once __DIR__ . '/../../includes/helpers.php';
 
 // Проверка авторизации
 requireAuth();
