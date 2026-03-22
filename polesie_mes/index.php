@@ -25,6 +25,10 @@ $pageTitle = 'PolesieMES - Система управления производ�
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Современная MES-система для автоматизации производственных процессов ОАО Полесьеэлектромаш">
+    <!-- Meta tags to prevent caching -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title><?= e($pageTitle) ?></title>
     
     <!-- Google Fonts -->
