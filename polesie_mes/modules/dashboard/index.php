@@ -113,11 +113,11 @@ $stmt = $db->query("
 ");
 $lowStockMaterials = $stmt->fetchAll();
 
-// Активные пользователи онлайн
+// Активные пользователи онлайн (по активности в журнале событий)
 $stmt = $db->query("
     SELECT COUNT(DISTINCT user_id) as online_users 
-    FROM sessions 
-    WHERE last_activity > DATE_SUB(NOW(), INTERVAL 15 MINUTE)
+    FROM activity_log 
+    WHERE created_at > DATE_SUB(NOW(), INTERVAL 15 MINUTE)
 ");
 $onlineUsers = $stmt->fetch()['online_users'] ?? 0;
 
