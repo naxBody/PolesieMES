@@ -15,7 +15,7 @@ define('DB_CHARSET', 'utf8mb4');
 define('APP_NAME', 'PolesieMES');
 define('APP_TITLE', 'Система управления производством | ОАО "Полесьеэлектромаш"');
 define('APP_VERSION', '1.0.0');
-define('APP_URL', 'http://localhost/polesie_mes');
+define('APP_URL', 'http://localhost/PolesieMES/polesie_mes');
 
 // Настройки сессии
 define('SESSION_LIFETIME', 3600); // 1 час
