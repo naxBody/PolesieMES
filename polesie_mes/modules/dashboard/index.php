@@ -123,12 +123,12 @@ $onlineUsers = $stmt->fetch()['online_users'] ?? 0;
 
 // Просроченные заказы
 $stmt = $db->query("
-    SELECT o.*, c.name as customer_name, DATEDIFF(NOW(), o.deadline) as days_overdue
+    SELECT o.*, c.name as customer_name, DATEDIFF(NOW(), o.delivery_date) as days_overdue
     FROM orders o
     LEFT JOIN customers c ON o.customer_id = c.id
     WHERE o.status NOT IN ('completed', 'cancelled')
-    AND o.deadline < NOW()
-    ORDER BY o.deadline ASC
+    AND o.delivery_date < NOW()
+    ORDER BY o.delivery_date ASC
     LIMIT 5
 ");
 $overdueOrders = $stmt->fetchAll();
