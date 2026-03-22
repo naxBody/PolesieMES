@@ -2,6 +2,7 @@
 /**
  * Страница входа в систему PolesieMES
  * ОАО "Полесьеэлектромаш"
+ * Современный компактный дизайн
  */
 
 // Подключение конфигурации
@@ -52,11 +53,693 @@ $pageTitle = 'Вход в систему | ' . APP_NAME;
     <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- Animate.css -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
     <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #ec4899;
+            --accent: #06b6d4;
+            --success: #10b981;
+            --dark: #0f172a;
+            --light: #f8fafc;
+            --gradient-main: linear-gradient(135deg, #6366f1 0%, #ec4899 50%, #06b6d4 100%);
+            --gradient-card: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.85) 100%);
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--dark);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        /* Animated gradient background */
+        .bg-animated {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(-45deg, #0f172a, #1e1b4b, #312e81, #1e3a5f);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+            z-index: 0;
+        }
+        
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        /* Floating orbs */
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.5;
+            animation: float 20s infinite;
+        }
+        
+        .orb-1 {
+            width: 400px;
+            height: 400px;
+            background: var(--primary);
+            top: -100px;
+            left: -100px;
+            animation-delay: 0s;
+        }
+        
+        .orb-2 {
+            width: 300px;
+            height: 300px;
+            background: var(--secondary);
+            bottom: -50px;
+            right: -50px;
+            animation-delay: -5s;
+        }
+        
+        .orb-3 {
+            width: 250px;
+            height: 250px;
+            background: var(--accent);
+            top: 50%;
+            left: 50%;
+            animation-delay: -10s;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(30px, -30px) scale(1.1); }
+            50% { transform: translate(-20px, 20px) scale(0.9); }
+            75% { transform: translate(20px, 30px) scale(1.05); }
+        }
+        
+        /* Grid pattern overlay */
+        .grid-pattern {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            z-index: 1;
+        }
+        
+        .login-container {
+            position: relative;
+            z-index: 10;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            max-width: 1000px;
+            width: 90%;
+            background: var(--gradient-card);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            border: 1px solid var(--glass-border);
+            box-shadow: 
+                0 25px 50px -12px rgba(0, 0, 0, 0.5),
+                0 0 0 1px rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+        }
+        
+        .brand-section {
+            background: var(--gradient-main);
+            padding: 3rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .brand-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            opacity: 0.5;
+        }
+        
+        .brand-logo {
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            animation: logoPulse 3s ease-in-out infinite;
+        }
+        
+        @keyframes logoPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        .brand-logo i {
+            font-size: 2.5rem;
+            color: white;
+        }
+        
+        .brand-title {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.5px;
+        }
+        
+        .brand-subtitle {
+            font-size: 0.95rem;
+            opacity: 0.9;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+        
+        .feature-list {
+            list-style: none;
+        }
+        
+        .feature-item {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 0;
+            font-size: 0.9rem;
+            opacity: 0.95;
+        }
+        
+        .feature-icon {
+            width: 32px;
+            height: 32px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 0.75rem;
+            font-size: 0.85rem;
+        }
+        
+        .form-section {
+            padding: 2.5rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .form-header {
+            margin-bottom: 2rem;
+        }
+        
+        .form-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--dark);
+            margin-bottom: 0.5rem;
+        }
+        
+        .form-subtitle {
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+        
+        .input-wrapper {
+            position: relative;
+            margin-bottom: 1.25rem;
+        }
+        
+        .input-wrapper i.field-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            font-size: 1.1rem;
+            transition: color 0.3s ease;
+            z-index: 2;
+        }
+        
+        .input-wrapper input {
+            width: 100%;
+            padding: 1rem 1rem 1rem 3rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-family: 'Outfit', sans-serif;
+            transition: all 0.3s ease;
+            background: #f8fafc;
+        }
+        
+        .input-wrapper input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: white;
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+        }
+        
+        .input-wrapper input:focus + i.field-icon {
+            color: var(--primary);
+        }
+        
+        .input-wrapper label {
+            position: absolute;
+            left: 3rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            font-size: 0.9rem;
+            pointer-events: none;
+            transition: all 0.3s ease;
+            background: transparent;
+            padding: 0 0.25rem;
+        }
+        
+        .input-wrapper input:focus ~ label,
+        .input-wrapper input:not(:placeholder-shown) ~ label {
+            top: 0;
+            left: 0.75rem;
+            font-size: 0.75rem;
+            color: var(--primary);
+            background: white;
+            font-weight: 600;
+        }
+        
+        .password-toggle {
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #94a3b8;
+            transition: color 0.3s ease;
+            z-index: 2;
+        }
+        
+        .password-toggle:hover {
+            color: var(--primary);
+        }
+        
+        .btn-submit {
+            background: var(--gradient-main);
+            border: none;
+            padding: 1rem;
+            font-weight: 600;
+            font-size: 1rem;
+            color: white;
+            border-radius: 12px;
+            width: 100%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-submit::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s ease;
+        }
+        
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4);
+        }
+        
+        .btn-submit:hover::before {
+            left: 100%;
+        }
+        
+        .btn-submit:active {
+            transform: translateY(0);
+        }
+        
+        .demo-section {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+            border-radius: 12px;
+            border: 1px solid #cbd5e1;
+        }
+        
+        .demo-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+        }
+        
+        .demo-title i {
+            margin-right: 0.5rem;
+        }
+        
+        .credentials-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.5rem;
+        }
+        
+        .cred-item {
+            background: white;
+            padding: 0.6rem;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .cred-item:hover {
+            border-color: var(--primary);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+            transform: translateY(-1px);
+        }
+        
+        .cred-user {
+            font-weight: 600;
+            color: var(--dark);
+            font-size: 0.8rem;
+        }
+        
+        .cred-pass {
+            color: #64748b;
+            font-size: 0.7rem;
+            margin-top: 0.15rem;
+        }
+        
+        .alert-custom {
+            border-radius: 12px;
+            border: none;
+            padding: 0.875rem 1rem;
+            margin-bottom: 1.25rem;
+            animation: slideIn 0.4s ease;
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .alert-error {
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+        
+        .alert-info {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            color: #0284c7;
+            border: 1px solid #bae6fd;
+        }
+        
+        .form-footer {
+            text-align: center;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #e2e8f0;
+        }
+        
+        .form-footer small {
+            color: #64748b;
+            font-size: 0.75rem;
+            display: block;
+            line-height: 1.6;
+        }
+        
+        .security-badges {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .security-badges i {
+            color: var(--success);
+            font-size: 1rem;
+        }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        
+        .loader {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        @media (max-width: 768px) {
+            .login-container {
+                grid-template-columns: 1fr;
+                max-width: 450px;
+            }
+            
+            .brand-section {
+                display: none;
+            }
+            
+            .form-section {
+                padding: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-animated"></div>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="grid-pattern"></div>
+    
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loader"></div>
+    </div>
+    
+    <div class="login-container">
+        <div class="brand-section">
+            <div class="brand-logo">
+                <i class="fas fa-bolt"></i>
+            </div>
+            <h1 class="brand-title">PolesieMES</h1>
+            <p class="brand-subtitle">
+                Интеллектуальная система управления<br>производством нового поколения
+            </p>
+            
+            <ul class="feature-list">
+                <li class="feature-item">
+                    <div class="feature-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <span>Аналитика в реальном времени</span>
+                </li>
+                <li class="feature-item">
+                    <div class="feature-icon">
+                        <i class="fas fa-sync-alt"></i>
+                    </div>
+                    <span>Автоматизация процессов</span>
+                </li>
+                <li class="feature-item">
+                    <div class="feature-icon">
+                        <i class="fas fa-shield-check"></i>
+                    </div>
+                    <span>Контроль качества</span>
+                </li>
+                <li class="feature-item">
+                    <div class="feature-icon">
+                        <i class="fas fa-users-gear"></i>
+                    </div>
+                    <span>Управление командой</span>
+                </li>
+            </ul>
+        </div>
+        
+        <div class="form-section">
+            <div class="form-header">
+                <h2 class="form-title">С возвращением!</h2>
+                <p class="form-subtitle">Войдите для продолжения работы</p>
+            </div>
+            
+            <?php if ($error): ?>
+            <div class="alert-custom alert-error">
+                <i class="fas fa-circle-exclamation me-2"></i>
+                <?= e($error) ?>
+            </div>
+            <?php endif; ?>
+            
+            <?php if (isset($_GET['error']) && $_GET['error'] === 'auth_required'): ?>
+            <div class="alert-custom alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                Требуется авторизация
+            </div>
+            <?php endif; ?>
+            
+            <form method="POST" action="" id="loginForm" onsubmit="showLoading()">
+                <div class="input-wrapper">
+                    <input type="text" 
+                           id="username" 
+                           name="username" 
+                           placeholder=" "
+                           value="<?= e($username) ?>"
+                           required 
+                           autofocus>
+                    <label for="username">Логин</label>
+                    <i class="fas fa-user field-icon"></i>
+                </div>
+                
+                <div class="input-wrapper">
+                    <input type="password" 
+                           id="password" 
+                           name="password" 
+                           placeholder=" "
+                           required>
+                    <label for="password">Пароль</label>
+                    <i class="fas fa-lock field-icon"></i>
+                    <span class="password-toggle" onclick="togglePassword()">
+                        <i class="fas fa-eye" id="toggleIcon"></i>
+                    </span>
+                </div>
+                
+                <button type="submit" class="btn-submit">
+                    <i class="fas fa-arrow-right-to-bracket me-2"></i>Войти
+                </button>
+            </form>
+            
+            <div class="demo-section">
+                <div class="demo-title">
+                    <i class="fas fa-key"></i>
+                    Быстрый доступ
+                </div>
+                <div class="credentials-grid">
+                    <div class="cred-item" onclick="fillCredentials('admin', 'admin123')">
+                        <div class="cred-user">admin</div>
+                        <div class="cred-pass">Администратор</div>
+                    </div>
+                    <div class="cred-item" onclick="fillCredentials('prod_head', 'production2024')">
+                        <div class="cred-user">prod_head</div>
+                        <div class="cred-pass">Нач. производства</div>
+                    </div>
+                    <div class="cred-item" onclick="fillCredentials('sales1', 'sales123')">
+                        <div class="cred-user">sales1</div>
+                        <div class="cred-pass">Менеджер</div>
+                    </div>
+                    <div class="cred-item" onclick="fillCredentials('tech1', 'tech2024')">
+                        <div class="cred-user">tech1</div>
+                        <div class="cred-pass">Технолог</div>
+                    </div>
+                    <div class="cred-item" onclick="fillCredentials('operator1', 'oper123')">
+                        <div class="cred-user">operator1</div>
+                        <div class="cred-pass">Оператор</div>
+                    </div>
+                    <div class="cred-item" onclick="fillCredentials('otk1', 'quality123')">
+                        <div class="cred-user">otk1</div>
+                        <div class="cred-pass">Инспектор ОТК</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-footer">
+                <small>
+                    &copy; <?= date('Y') ?> ОАО "Полесьеэлектромаш"<br>
+                    PolesieMES v<?= APP_VERSION ?>
+                </small>
+                <div class="security-badges">
+                    <i class="fas fa-lock" title="Защищено"></i>
+                    <i class="fas fa-shield-halved" title="Безопасно"></i>
+                    <i class="fas fa-circle-check" title="Проверено"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const toggleIcon = document.getElementById('toggleIcon');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleIcon.classList.remove('fa-eye');
+                toggleIcon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                toggleIcon.classList.remove('fa-eye-slash');
+                toggleIcon.classList.add('fa-eye');
+            }
+        }
+        
+        function showLoading() {
+            document.getElementById('loadingOverlay').style.display = 'flex';
+        }
+        
+        function fillCredentials(user, pass) {
+            document.getElementById('username').value = user;
+            document.getElementById('password').value = pass;
+        }
+        
+        // Auto-hide alerts
+        document.addEventListener('DOMContentLoaded', function() {
+            const alerts = document.querySelectorAll('.alert-custom');
+            alerts.forEach(alert => {
+                setTimeout(() => {
+                    alert.style.opacity = '0';
+                    alert.style.transform = 'translateY(-10px)';
+                    setTimeout(() => alert.remove(), 300);
+                }, 5000);
+            });
+        });
+    </script>
+</body>
+</html>
         :root {
             --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
