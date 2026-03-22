@@ -1,7 +1,7 @@
 <?php
 /**
  * Панель управления (Dashboard) системы PolesieMES
- * Современный дизайн в стиле авторизации - Индустриальный минимализм 2026
+ * Современный дизайн 2026 - Glassmorphism с оранжево-коралловым градиентом
  */
 
 require_once __DIR__ . '/../../config/config.php';
@@ -17,6 +17,7 @@ $user = getCurrentUser();
 
 // Получение имени пользователя для приветствия
 $userFirstName = !empty($user['full_name']) ? explode(' ', $user['full_name'])[0] : 'Пользователь';
+$userRole = $user['role'] ?? 'user';
 
 // Получение статистики
 $stats = [];
@@ -97,6 +98,18 @@ $stmt = $db->query("
     LIMIT 5
 ");
 $lowStockMaterials = $stmt->fetchAll();
+
+// Эффективность производства (за текущий месяц)
+$stmt = $db->query("
+    SELECT 
+        COUNT(*) as total_completed,
+        AVG(DATEDIFF(completed_at, created_at)) as avg_completion_days
+    FROM orders
+    WHERE status = 'completed'
+    AND MONTH(created_at) = MONTH(CURRENT_DATE())
+    AND YEAR(created_at) = YEAR(CURRENT_DATE())
+");
+$efficiency = $stmt->fetch();
 
 $pageTitle = 'Панель управления | ' . APP_NAME;
 $currentPage = 'dashboard';
