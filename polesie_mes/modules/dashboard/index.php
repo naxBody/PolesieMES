@@ -25,7 +25,7 @@ $stats = [];
 
 // Количество заказов по статусам
 $stmt = $db->query("
-    SELECT 
+    SELECT
         COUNT(*) as total,
         SUM(CASE WHEN status = 'new' THEN 1 ELSE 0 END) as new_orders,
         SUM(CASE WHEN status = 'in_production' THEN 1 ELSE 0 END) as production_orders,
@@ -48,7 +48,7 @@ $stats['revenue'] = $stmt->fetch()['monthly_revenue'];
 
 // Процент выполнения плана
 $stmt = $db->query("
-    SELECT 
+    SELECT
         COUNT(*) as total_completed,
         AVG(DATEDIFF(updated_at, created_at)) as avg_completion_days
     FROM orders
@@ -61,7 +61,7 @@ $planPercent = $efficiency['total_completed'] > 0 ? min(100, round(($efficiency[
 
 // Количество производственных заданий
 $stmt = $db->query("
-    SELECT 
+    SELECT
         COUNT(*) as total_tasks,
         SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) as in_progress,
         SUM(CASE WHEN status = 'planned' THEN 1 ELSE 0 END) as planned,
@@ -72,7 +72,7 @@ $stats['tasks'] = $stmt->fetch();
 
 // Оборудование в работе/неисправное
 $stmt = $db->query("
-    SELECT 
+    SELECT
         COUNT(*) as total_equipment,
         SUM(CASE WHEN status = 'operational' THEN 1 ELSE 0 END) as operational,
         SUM(CASE WHEN status = 'maintenance' THEN 1 ELSE 0 END) as maintenance,
@@ -115,11 +115,34 @@ $lowStockMaterials = $stmt->fetchAll();
 
 // Активные пользователи онлайн (по активности в журнале событий)
 $stmt = $db->query("
-    SELECT COUNT(DISTINCT user_id) as online_users 
-    FROM activity_log 
+    SELECT COUNT(DISTINCT user_id) as online_users
+    FROM activity_log
     WHERE created_at > DATE_SUB(NOW(), INTERVAL 15 MINUTE)
 ");
 $onlineUsers = $stmt->fetch()['online_users'] ?? 0;
+
+// Просроченные заказы
+$stmt = $db->query("
+    SELECT o.*, c.name as customer_name, DATEDIFF(NOW(), o.deadline) as days_overdue
+    FROM orders o
+    LEFT JOIN customers c ON o.customer_id = c.id
+    WHERE o.status NOT IN ('completed', 'cancelled')
+    AND o.deadline < NOW()
+    ORDER BY o.deadline ASC
+    LIMIT 5
+");
+$overdueOrders = $stmt->fetchAll();
+
+// Эффективность производства за неделю
+$stmt = $db->query("
+    SELECT 
+        COUNT(*) as total,
+        SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
+        ROUND(SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 1) as efficiency_percent
+    FROM production_tasks
+    WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+");
+$weeklyEfficiency = $stmt->fetch();
 
 $pageTitle = 'Панель управления | ' . APP_NAME;
 $currentPage = 'dashboard';
@@ -134,14 +157,16 @@ $currentPage = 'dashboard';
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title><?= e($pageTitle) ?></title>
-    
+
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
     <style>
         :root {
             /* Оранжево-коралловая палитра */
@@ -180,6 +205,12 @@ $currentPage = 'dashboard';
             --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.5);
             --glow-primary: 0 0 30px var(--primary-glow);
             --glow-secondary: 0 0 20px var(--secondary-glow);
+            
+            /* Статусы */
+            --success-color: #30d158;
+            --warning-color: #ffd60a;
+            --danger-color: #ff453a;
+            --info-color: #5ac8fa;
         }
         
         * {
@@ -461,7 +492,7 @@ $currentPage = 'dashboard';
         /* Main Content */
         .main-content {
             padding: 6rem 2rem 2rem;
-            max-width: 1400px;
+            max-width: 1600px;
             margin: 0 auto;
             position: relative;
             z-index: 10;
@@ -865,6 +896,30 @@ $currentPage = 'dashboard';
             color: var(--text-muted);
         }
         
+        .recommendation-box {
+            background: rgba(255, 107, 107, 0.1);
+            border: 1px solid rgba(255, 107, 107, 0.3);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-top: 0.75rem;
+        }
+        
+        .recommendation-box h6 {
+            color: #ff6b6b;
+            font-size: 0.85rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .recommendation-box p {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin: 0;
+            line-height: 1.5;
+        }
+        
         .empty-state {
             padding: 3rem 1.5rem;
             text-align: center;
@@ -902,6 +957,126 @@ $currentPage = 'dashboard';
             background: var(--gradient-primary);
             border-radius: 4px;
             transition: width 0.5s ease;
+        }
+        
+        /* Chart Container */
+        .chart-container {
+            position: relative;
+            height: 250px;
+            padding: 1rem;
+        }
+        
+        /* View Toggle */
+        .view-toggle {
+            display: flex;
+            gap: 0.5rem;
+            background: var(--glass-bg);
+            padding: 0.25rem;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+        }
+        
+        .view-btn {
+            padding: 0.5rem 0.75rem;
+            background: transparent;
+            border: none;
+            border-radius: 8px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .view-btn:hover {
+            color: var(--text-primary);
+        }
+        
+        .view-btn.active {
+            background: var(--gradient-primary);
+            color: white;
+        }
+        
+        /* Kanban View */
+        .kanban-board {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            padding: 1rem;
+        }
+        
+        .kanban-column {
+            background: var(--bg-card);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            padding: 1rem;
+        }
+        
+        .kanban-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .kanban-title {
+            font-weight: 700;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .kanban-count {
+            background: var(--glass-bg);
+            padding: 0.25rem 0.6rem;
+            border-radius: 8px;
+            font-size: 0.75rem;
+        }
+        
+        .kanban-item {
+            background: var(--glass-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            transition: all 0.3s ease;
+        }
+        
+        .kanban-item:hover {
+            border-color: var(--border-glow);
+            transform: translateY(-2px);
+        }
+        
+        .kanban-item-title {
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .kanban-item-meta {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        /* List Group */
+        .list-group-item {
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 1.25rem;
+            transition: all 0.2s ease;
+            color: var(--text-secondary);
+        }
+        
+        .list-group-item:hover {
+            background: rgba(48, 54, 61, 0.3);
+        }
+        
+        .list-group-item:last-child {
+            border-bottom: none;
         }
         
         /* Responsive */
@@ -955,7 +1130,7 @@ $currentPage = 'dashboard';
     </div>
     <div class="glow-overlay"></div>
     <div class="grid-overlay"></div>
-    
+
     <!-- Навигация -->
     <nav class="navbar" id="navbar">
         <a href="<?= APP_URL ?>" class="nav-brand">
@@ -964,7 +1139,7 @@ $currentPage = 'dashboard';
             </div>
             <span class="brand-name">PolesieMES</span>
         </a>
-        
+
         <ul class="nav-menu">
             <li>
                 <a href="<?= APP_URL ?>/modules/dashboard/index.php" class="nav-link <?= ($currentPage ?? '') == 'dashboard' ? 'active' : '' ?>">
@@ -972,7 +1147,7 @@ $currentPage = 'dashboard';
                     Главная
                 </a>
             </li>
-            
+
             <?php if (hasRole(['admin', 'manager'])): ?>
             <li>
                 <a href="<?= APP_URL ?>/modules/orders/index.php" class="nav-link">
@@ -981,7 +1156,7 @@ $currentPage = 'dashboard';
                 </a>
             </li>
             <?php endif; ?>
-            
+
             <?php if (hasRole(['admin', 'manager', 'technologist', 'operator'])): ?>
             <li>
                 <a href="<?= APP_URL ?>/modules/production/index.php" class="nav-link">
@@ -990,7 +1165,7 @@ $currentPage = 'dashboard';
                 </a>
             </li>
             <?php endif; ?>
-            
+
             <?php if (hasRole('admin')): ?>
             <li>
                 <a href="<?= APP_URL ?>/modules/employees/index.php" class="nav-link">
@@ -1000,7 +1175,7 @@ $currentPage = 'dashboard';
             </li>
             <?php endif; ?>
         </ul>
-        
+
         <div class="user-menu">
             <div class="user-avatar">
                 <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
@@ -1014,275 +1189,244 @@ $currentPage = 'dashboard';
                 Выход
             </a>
         </div>
-        
+
         <button class="mobile-menu-btn" onclick="toggleMobileMenu()">
             <span></span>
             <span></span>
             <span></span>
         </button>
     </nav>
-        .btn {
-            font-weight: 600;
-            padding: 0.5rem 1.25rem;
-            border-radius: 10px;
-            transition: all 0.3s ease;
-            border: none;
-        }
-        
-        .btn-outline-primary {
-            background: transparent;
-            color: var(--primary);
-            border: 2px solid var(--primary);
-        }
-        
-        .btn-outline-primary:hover {
-            background: var(--gradient-primary);
-            border-color: transparent;
-            color: white;
-            transform: translateY(-2px);
-            box-shadow: var(--glow-primary);
-        }
-        
-        /* List Groups */
-        .list-group-item {
-            background: transparent;
-            border: none;
-            border-bottom: 1px solid var(--border);
-            padding: 1rem 1.25rem;
-            transition: all 0.2s ease;
-            color: var(--text-secondary);
-        }
-        
-        .list-group-item:hover {
-            background: rgba(48, 54, 61, 0.3);
-        }
-        
-        .list-group-item:last-child {
-            border-bottom: none;
-        }
-        
-        /* Alerts */
-        .alert {
-            border: none;
-            border-radius: 12px;
-            padding: 1rem 1.25rem;
-        }
-        
-        /* User dropdown */
-        .user-avatar {
-            width: 32px;
-            height: 32px;
-            background: var(--gradient-primary);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-right: 0.5rem;
-            box-shadow: var(--glow-primary);
-        }
-        
-        .user-avatar svg {
-            width: 18px;
-            height: 18px;
-            fill: white;
-        }
-        
-        /* Progress bars */
-        .progress {
-            background: rgba(48, 54, 61, 0.5);
-            border-radius: 10px;
-            height: 8px;
-        }
-        
-        .progress-bar {
-            background: var(--gradient-primary);
-            border-radius: 10px;
-        }
-        
-        /* Responsive */
-        @media (max-width: 768px) {
-            .main-content {
-                padding: 1rem;
-            }
-            
-            .stat-value {
-                font-size: 1.75rem;
-            }
-            
-            .navbar-collapse {
-                background: var(--bg-card);
-                padding: 1rem;
-                border-radius: 12px;
-                margin-top: 1rem;
-                border: 1px solid var(--border);
-            }
-            
-            .page-header {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-        }
-    </style>
-</head>
-<body>
-    <!-- Background elements -->
-    <div class="grid-bg"></div>
-    <div class="glow-overlay"></div>
-    
-    <!-- Навигация -->
-    <nav class="navbar navbar-expand-lg navbar-dark">
-        <div class="container-fluid">
-            <a class="navbar-brand d-flex align-items-center" href="<?= APP_URL ?>">
-                <div class="brand-logo">
-                    <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-                </div>
-                <span>PolesieMES</span>
-            </a>
-            
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link <?= ($currentPage ?? '') == 'dashboard' ? 'active' : '' ?>" href="<?= APP_URL ?>/modules/dashboard/index.php">
-                            <i class="fas fa-chart-line me-1"></i>
-                            Главная
-                        </a>
-                    </li>
-                    
-                    <?php if (hasRole(['admin', 'manager'])): ?>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-shopping-cart me-1"></i>
-                            Заказы
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="<?= APP_URL ?>/modules/orders/index.php"><i class="fas fa-list me-2"></i>Все заказы</a></li>
-                            <li><a class="dropdown-item" href="<?= APP_URL ?>/modules/orders/create.php"><i class="fas fa-plus me-2"></i>Создать заказ</a></li>
-                        </ul>
-                    </li>
-                    <?php endif; ?>
-                    
-                    <?php if (hasRole(['admin', 'manager', 'technologist', 'operator'])): ?>
-                    <li class="nav-item">
-                        <a class="nav-link" href="<?= APP_URL ?>/modules/production/index.php">
-                            <i class="fas fa-cogs me-1"></i>
-                            Производство
-                        </a>
-                    </li>
-                    <?php endif; ?>
-                    
-                    <?php if (hasRole('admin')): ?>
-                    <li class="nav-item">
-                        <a class="nav-link" href="<?= APP_URL ?>/modules/employees/index.php">
-                            <i class="fas fa-users me-1"></i>
-                            Сотрудники
-                        </a>
-                    </li>
-                    <?php endif; ?>
-                </ul>
-                
-                <ul class="navbar-nav">
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown">
-                            <div class="user-avatar">
-                                <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-                            </div>
-                            <span><?= e($_SESSION['full_name']) ?></span>
-                            <span class="badge bg-secondary ms-2"><?= e(getRoleName($_SESSION['role'])) ?></span>
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="<?= APP_URL ?>/modules/auth/profile.php"><i class="fas fa-user me-2"></i>Профиль</a></li>
-                            <li><hr class="dropdown-divider" style="border-color: var(--border);"></li>
-                            <li><a class="dropdown-item" href="<?= APP_URL ?>/modules/auth/logout.php"><i class="fas fa-sign-out-alt me-2"></i>Выход</a></li>
-                        </ul>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
-    
+
     <!-- Основной контент -->
     <div class="main-content">
         <div class="page-header">
-            <h1 class="page-title">Добро пожаловать, <?= e($userFirstName) ?>!</h1>
-            <p class="page-subtitle">Обзор производства на <?= date('d.m.Y') ?></p>
+            <div class="welcome-section">
+                <h1>Добро пожаловать, <?= e($userFirstName) ?>!</h1>
+                <p>Обзор производства на <?= date('d.m.Y') ?> • Онлайн: <?= $onlineUsers ?> пользователей</p>
+            </div>
+            <div class="quick-actions">
+                <?php if (hasRole(['admin', 'manager'])): ?>
+                <a href="<?= APP_URL ?>/modules/orders/create.php" class="btn-quick primary">
+                    <i class="fas fa-plus"></i>
+                    Новый заказ
+                </a>
+                <?php endif; ?>
+                <a href="<?= APP_URL ?>/modules/reports/index.php" class="btn-quick">
+                    <i class="fas fa-file-export"></i>
+                    Отчёты
+                </a>
+            </div>
         </div>
-        
+
         <!-- Статистические карточки -->
-        <div class="row g-4 mb-4">
-            <div class="col-xl-3 col-md-6">
-                <div class="card stat-card">
-                    <div class="card-body">
-                        <div class="stat-icon"><i class="fas fa-shopping-cart"></i></div>
-                        <div class="stat-value"><?= $stats['orders']['total'] ?? 0 ?></div>
-                        <div class="stat-label">Всего заказов</div>
-                        <div class="stat-details">
-                            <span class="stat-badge new"><i class="fas fa-plus-circle me-1"></i>Новые: <?= $stats['orders']['new_orders'] ?? 0 ?></span>
-                            <span class="stat-badge production"><i class="fas fa-cog me-1"></i>В пр-ве: <?= $stats['orders']['production_orders'] ?? 0 ?></span>
-                        </div>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-icon">
+                        <i class="fas fa-shopping-cart"></i>
+                    </div>
+                    <?php if (($stats['orders']['new_orders'] ?? 0) > 0): ?>
+                    <div class="stat-trend up">
+                        <i class="fas fa-arrow-up"></i>
+                        +<?= $stats['orders']['new_orders'] ?> новых
+                    </div>
+                    <?php else: ?>
+                    <div class="stat-trend">
+                        <i class="fas fa-minus"></i>
+                        Без изменений
+                    </div>
+                    <?php endif; ?>
+                </div>
+                <div class="stat-value"><?= $stats['orders']['total'] ?? 0 ?></div>
+                <div class="stat-label">Всего заказов</div>
+                <div class="stat-details">
+                    <div class="stat-detail-item">
+                        <span class="dot new"></span>
+                        Новые: <?= $stats['orders']['new_orders'] ?? 0 ?>
+                    </div>
+                    <div class="stat-detail-item">
+                        <span class="dot production"></span>
+                        В пр-ве: <?= $stats['orders']['production_orders'] ?? 0 ?>
+                    </div>
+                    <div class="stat-detail-item">
+                        <span class="dot completed"></span>
+                        Готовы: <?= $stats['orders']['ready_orders'] ?? 0 ?>
                     </div>
                 </div>
             </div>
-            
-            <div class="col-xl-3 col-md-6">
-                <div class="card stat-card">
-                    <div class="card-body">
-                        <div class="stat-icon"><i class="fas fa-ruble-sign"></i></div>
-                        <div class="stat-value"><?= formatCurrency($stats['revenue']) ?></div>
-                        <div class="stat-label">Выручка за месяц</div>
-                        <div class="stat-details">
-                            <span class="stat-badge completed"><i class="fas fa-check-circle me-1"></i>Завершено</span>
-                        </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-icon">
+                        <i class="fas fa-ruble-sign"></i>
+                    </div>
+                    <div class="stat-trend up">
+                        <i class="fas fa-calendar"></i>
+                        За месяц
+                    </div>
+                </div>
+                <div class="stat-value"><?= formatCurrency($stats['revenue']) ?></div>
+                <div class="stat-label">Выручка за месяц</div>
+                <div class="stat-details">
+                    <div class="stat-detail-item">
+                        <span class="dot completed"></span>
+                        Завершено: <?= $efficiency['total_completed'] ?? 0 ?>
                     </div>
                 </div>
             </div>
-            
-            <div class="col-xl-3 col-md-6">
-                <div class="card stat-card">
-                    <div class="card-body">
-                        <div class="stat-icon"><i class="fas fa-tasks"></i></div>
-                        <div class="stat-value"><?= $stats['tasks']['total_tasks'] ?? 0 ?></div>
-                        <div class="stat-label">Заданий</div>
-                        <div class="stat-details">
-                            <span class="stat-badge production"><i class="fas fa-play me-1"></i>В работе: <?= $stats['tasks']['in_progress'] ?? 0 ?></span>
-                            <span class="stat-badge new"><i class="fas fa-clock me-1"></i>План: <?= $stats['tasks']['planned'] ?? 0 ?></span>
-                        </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-icon">
+                        <i class="fas fa-tasks"></i>
+                    </div>
+                    <?php if (($weeklyEfficiency['efficiency_percent'] ?? 0) >= 80): ?>
+                    <div class="stat-trend up">
+                        <i class="fas fa-arrow-up"></i>
+                        <?= $weeklyEfficiency['efficiency_percent'] ?>%
+                    </div>
+                    <?php else: ?>
+                    <div class="stat-trend down">
+                        <i class="fas fa-arrow-down"></i>
+                        <?= $weeklyEfficiency['efficiency_percent'] ?>%
+                    </div>
+                    <?php endif; ?>
+                </div>
+                <div class="stat-value"><?= $stats['tasks']['total_tasks'] ?? 0 ?></div>
+                <div class="stat-label">Производственных заданий</div>
+                <div class="stat-details">
+                    <div class="stat-detail-item">
+                        <span class="dot production"></span>
+                        В работе: <?= $stats['tasks']['in_progress'] ?? 0 ?>
+                    </div>
+                    <div class="stat-detail-item">
+                        <span class="dot new"></span>
+                        План: <?= $stats['tasks']['planned'] ?? 0 ?>
+                    </div>
+                    <div class="stat-detail-item">
+                        <span class="dot completed"></span>
+                        Выполнено: <?= $stats['tasks']['completed'] ?? 0 ?>
                     </div>
                 </div>
             </div>
-            
-            <div class="col-xl-3 col-md-6">
-                <div class="card stat-card">
-                    <div class="card-body">
-                        <div class="stat-icon"><i class="fas fa-industry"></i></div>
-                        <div class="stat-value"><?= $stats['equipment']['operational'] ?? 0 ?>/<?= $stats['equipment']['total_equipment'] ?? 0 ?></div>
-                        <div class="stat-label">Оборудование</div>
-                        <div class="stat-details">
-                            <?php if (($stats['equipment']['broken'] ?? 0) > 0): ?>
-                            <span class="stat-badge danger"><i class="fas fa-exclamation-triangle me-1"></i><?= $stats['equipment']['broken'] ?></span>
-                            <?php else: ?>
-                            <span class="stat-badge completed"><i class="fas fa-check-circle me-1"></i>Все работает</span>
-                            <?php endif; ?>
-                        </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-icon">
+                        <i class="fas fa-industry"></i>
                     </div>
+                    <?php if (($stats['equipment']['broken'] ?? 0) > 0): ?>
+                    <div class="stat-trend down">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <?= $stats['equipment']['broken'] ?> неисправно
+                    </div>
+                    <?php else: ?>
+                    <div class="stat-trend up">
+                        <i class="fas fa-check-circle"></i>
+                        Все работает
+                    </div>
+                    <?php endif; ?>
+                </div>
+                <div class="stat-value"><?= $stats['equipment']['operational'] ?? 0 ?>/<?= $stats['equipment']['total_equipment'] ?? 0 ?></div>
+                <div class="stat-label">Оборудование в работе</div>
+                <div class="stat-details">
+                    <div class="stat-detail-item">
+                        <span class="dot completed"></span>
+                        Работает: <?= $stats['equipment']['operational'] ?? 0 ?>
+                    </div>
+                    <?php if (($stats['equipment']['maintenance'] ?? 0) > 0): ?>
+                    <div class="stat-detail-item">
+                        <span class="dot warning"></span>
+                        ТО: <?= $stats['equipment']['maintenance'] ?? 0 ?>
+                    </div>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
-        
-        <!-- Основной контент -->
-        <div class="row g-4">
-            <div class="col-lg-8">
-                <div class="card h-100">
-                    <div class="card-header">
-                        <span><i class="fas fa-shopping-cart me-2"></i>Последние заказы</span>
-                        <a href="<?= APP_URL ?>/modules/orders/index.php" class="btn btn-sm btn-outline-primary">Все заказы</a>
+
+        <!-- Блок рекомендаций и проблем -->
+        <?php if (!empty($overdueOrders) || !empty($lowStockMaterials) || ($stats['equipment']['broken'] ?? 0) > 0): ?>
+        <div class="card mb-4" style="border-color: rgba(255, 69, 58, 0.3);">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-lightbulb" style="color: #ff9f0a;"></i>
+                    Рекомендации по улучшению
+                </div>
+            </div>
+            <div class="card-body" style="padding: 1.5rem;">
+                <div class="row g-4">
+                    <?php if (!empty($overdueOrders)): ?>
+                    <div class="col-md-6">
+                        <div class="recommendation-box">
+                            <h6><i class="fas fa-clock"></i> Просроченные заказы</h6>
+                            <p>Обнаружено <?= count($overdueOrders) ?> заказов с просрочкой. Рекомендуется:</p>
+                            <ul style="font-size: 0.8rem; color: var(--text-secondary); margin: 0.5rem 0 0 1.25rem; padding: 0;">
+                                <li>Приоритезировать производство просроченных заказов</li>
+                                <li>Связаться с клиентами и сообщить новые сроки</li>
+                                <li>Проанализировать причины задержек</li>
+                            </ul>
+                        </div>
                     </div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-hover">
+                    <?php endif; ?>
+                    
+                    <?php if (!empty($lowStockMaterials)): ?>
+                    <div class="col-md-6">
+                        <div class="recommendation-box">
+                            <h6><i class="fas fa-boxes"></i> Низкие запасы материалов</h6>
+                            <p><?= count($lowStockMaterials) ?> материалов ниже минимального уровня. Рекомендуется:</p>
+                            <ul style="font-size: 0.8rem; color: var(--text-secondary); margin: 0.5rem 0 0 1.25rem; padding: 0;">
+                                <li>Создать заявки на закупку критических материалов</li>
+                                <li>Проверить альтернативных поставщиков</li>
+                                <li>Оптимизировать складские запасы</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+                    
+                    <?php if (($stats['equipment']['broken'] ?? 0) > 0): ?>
+                    <div class="col-md-6">
+                        <div class="recommendation-box">
+                            <h6><i class="fas fa-tools"></i> Неисправное оборудование</h6>
+                            <p><?= $stats['equipment']['broken'] ?> ед. оборудования требует ремонта. Рекомендуется:</p>
+                            <ul style="font-size: 0.8rem; color: var(--text-secondary); margin: 0.5rem 0 0 1.25rem; padding: 0;">
+                                <li>Создать заявку в службу технического обслуживания</li>
+                                <li>Перераспределить задачи на исправное оборудование</li>
+                                <li>Запланировать профилактическое обслуживание</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
+
+        <!-- Основной контент -->
+        <div class="content-grid">
+            <div class="main-panel">
+                <!-- Последние заказы -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i class="fas fa-shopping-cart"></i>
+                            Последние заказы
+                        </div>
+                        <div style="display: flex; gap: 0.75rem; align-items: center;">
+                            <div class="view-toggle">
+                                <button class="view-btn active" onclick="switchView('table')">
+                                    <i class="fas fa-table"></i>
+                                </button>
+                                <button class="view-btn" onclick="switchView('kanban')">
+                                    <i class="fas fa-columns"></i>
+                                </button>
+                            </div>
+                            <a href="<?= APP_URL ?>/modules/orders/index.php" class="card-link">Все заказы →</a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <!-- Table View -->
+                        <div id="tableView" class="table-responsive">
+                            <table class="table">
                                 <thead>
                                     <tr>
                                         <th>№ заказа</th>
@@ -1290,17 +1434,18 @@ $currentPage = 'dashboard';
                                         <th>Сумма</th>
                                         <th>Статус</th>
                                         <th>Дата</th>
+                                        <th>Действия</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <?php foreach ($recentOrders as $order): ?>
                                     <tr>
                                         <td>
-                                            <a href="<?= APP_URL ?>/modules/orders/view.php?id=<?= $order['id'] ?>" class="text-decoration-none fw-semibold">
+                                            <a href="<?= APP_URL ?>/modules/orders/view.php?id=<?= $order['id'] ?>" class="order-link">
                                                 <?= e($order['order_number']) ?>
                                             </a>
                                         </td>
-                                        <td><?= e($order['customer_name']) ?></td>
+                                        <td><?= e($order['customer_name'] ?? 'Не указан') ?></td>
                                         <td><?= formatCurrency($order['total_amount']) ?></td>
                                         <td>
                                             <span class="badge <?= getOrderStatusClass($order['status']) ?>">
@@ -1308,69 +1453,163 @@ $currentPage = 'dashboard';
                                             </span>
                                         </td>
                                         <td><?= formatDate($order['order_date']) ?></td>
+                                        <td>
+                                            <a href="<?= APP_URL ?>/modules/orders/view.php?id=<?= $order['id'] ?>" class="btn-quick" style="padding: 0.4rem 0.75rem; font-size: 0.75rem;">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </td>
                                     </tr>
                                     <?php endforeach; ?>
                                 </tbody>
                             </table>
                         </div>
+                        
+                        <!-- Kanban View (скрыт по умолчанию) -->
+                        <div id="kanbanView" style="display: none;">
+                            <div class="kanban-board">
+                                <?php
+                                $statuses = [
+                                    'new' => ['name' => 'Новые', 'icon' => 'fa-plus-circle', 'class' => 'new'],
+                                    'in_production' => ['name' => 'В производстве', 'icon' => 'fa-cog', 'class' => 'production'],
+                                    'quality_check' => ['name' => 'Контроль качества', 'icon' => 'fa-check-double', 'class' => 'warning'],
+                                    'ready' => ['name' => 'Готовы', 'icon' => 'fa-box', 'class' => 'completed']
+                                ];
+                                foreach ($statuses as $statusKey => $statusInfo):
+                                    $statusOrders = array_filter($recentOrders, fn($o) => $o['status'] === $statusKey);
+                                ?>
+                                <div class="kanban-column">
+                                    <div class="kanban-header">
+                                        <div class="kanban-title">
+                                            <i class="fas <?= $statusInfo['icon'] ?>" style="color: var(--<?= $statusInfo['class'] ?>);"></i>
+                                            <?= $statusInfo['name'] ?>
+                                        </div>
+                                        <span class="kanban-count"><?= count($statusOrders) ?></span>
+                                    </div>
+                                    <?php foreach ($statusOrders as $order): ?>
+                                    <div class="kanban-item">
+                                        <div class="kanban-item-title"><?= e($order['order_number']) ?></div>
+                                        <div class="kanban-item-meta">
+                                            <span><?= e($order['customer_name'] ?? 'Клиент') ?></span>
+                                            <span><?= formatCurrency($order['total_amount']) ?></span>
+                                        </div>
+                                    </div>
+                                    <?php endforeach; ?>
+                                    <?php if (empty($statusOrders)): ?>
+                                    <div class="empty-state" style="padding: 1rem;">
+                                        <p style="font-size: 0.8rem;">Нет заказов</p>
+                                    </div>
+                                    <?php endif; ?>
+                                </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- График эффективности -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i class="fas fa-chart-line"></i>
+                            Эффективность производства (7 дней)
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="efficiencyChart"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>
-            
-            <div class="col-lg-4">
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <i class="fas fa-exclamation-triangle me-2"></i>Требуют внимания
+
+            <!-- Боковая панель -->
+            <div class="side-panel">
+                <!-- Требуют внимания -->
+                <div class="alert-card">
+                    <div class="alert-header warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Требуют внимания
                     </div>
-                    <div class="card-body p-0">
-                        <div class="list-group list-group-flush">
-                            <?php foreach ($activeTasks as $task): ?>
-                            <div class="list-group-item">
-                                <div class="d-flex w-100 justify-content-between">
-                                    <h6 class="mb-1 small fw-semibold"><?= e($task['task_number']) ?></h6>
-                                    <small class="text-muted"><?= formatDate($task['planned_end']) ?></small>
-                                </div>
-                                <p class="mb-1 small text-muted"><?= e($task['product_name']) ?></p>
-                                <small class="text-primary"><?= e($task['stage_name']) ?></small>
+                    <ul class="alert-list">
+                        <?php foreach ($activeTasks as $task): ?>
+                        <li class="alert-item">
+                            <div class="alert-item-header">
+                                <span class="alert-item-title"><?= e($task['task_number']) ?></span>
+                                <span class="badge warning">
+                                    <i class="fas fa-clock"></i>
+                                    <?= formatDate($task['planned_end']) ?>
+                                </span>
                             </div>
-                            <?php endforeach; ?>
-                            <?php if (empty($activeTasks)): ?>
-                            <div class="p-3 text-center text-muted">
-                                <i class="fas fa-check-circle fa-2x mb-2"></i>
-                                <p class="mb-0">Все задания в норме</p>
-                            </div>
-                            <?php endif; ?>
-                        </div>
-                    </div>
+                            <p class="alert-item-meta"><?= e($task['product_name']) ?></p>
+                            <small style="color: var(--primary-gradient-start);"><?= e($task['stage_name']) ?></small>
+                        </li>
+                        <?php endforeach; ?>
+                        <?php if (empty($activeTasks)): ?>
+                        <li class="empty-state">
+                            <i class="fas fa-check-circle"></i>
+                            <p>Все задания в норме</p>
+                        </li>
+                        <?php endif; ?>
+                    </ul>
                 </div>
-                
-                <div class="card">
-                    <div class="card-header text-danger">
-                        <i class="fas fa-triangle-exclamation me-2"></i>Заканчиваются материалы
+
+                <!-- Заканчиваются материалы -->
+                <div class="alert-card danger">
+                    <div class="alert-header danger">
+                        <i class="fas fa-triangle-exclamation"></i>
+                        Низкие запасы
                     </div>
-                    <div class="card-body p-0">
-                        <div class="list-group list-group-flush">
-                            <?php foreach ($lowStockMaterials as $material): ?>
-                            <div class="list-group-item">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <small><?= e($material['name']) ?></small>
-                                    <span class="badge bg-danger"><?= $material['current_stock'] ?> / <?= $material['min_stock'] ?></span>
+                    <ul class="alert-list">
+                        <?php foreach ($lowStockMaterials as $material): ?>
+                        <li class="alert-item">
+                            <div class="alert-item-header">
+                                <span class="alert-item-title"><?= e($material['name']) ?></span>
+                                <span class="badge danger">
+                                    <?= $material['current_stock'] ?> / <?= $material['min_stock'] ?>
+                                </span>
+                            </div>
+                            <div class="progress-container">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: <?= ($material['current_stock'] / $material['min_stock']) * 100 ?>%;"></div>
                                 </div>
                             </div>
-                            <?php endforeach; ?>
-                            <?php if (empty($lowStockMaterials)): ?>
-                            <div class="p-3 text-center text-muted">
-                                <i class="fas fa-check-circle fa-2x mb-2"></i>
-                                <p class="mb-0 small">Запасы в норме</p>
-                            </div>
-                            <?php endif; ?>
-                        </div>
-                    </div>
+                        </li>
+                        <?php endforeach; ?>
+                        <?php if (empty($lowStockMaterials)): ?>
+                        <li class="empty-state">
+                            <i class="fas fa-check-circle"></i>
+                            <p>Запасы в норме</p>
+                        </li>
+                        <?php endif; ?>
+                    </ul>
                 </div>
+
+                <!-- Просроченные заказы -->
+                <?php if (!empty($overdueOrders)): ?>
+                <div class="alert-card danger">
+                    <div class="alert-header danger">
+                        <i class="fas fa-hourglass-end"></i>
+                        Просрочено
+                    </div>
+                    <ul class="alert-list">
+                        <?php foreach (array_slice($overdueOrders, 0, 3) as $order): ?>
+                        <li class="alert-item">
+                            <div class="alert-item-header">
+                                <span class="alert-item-title"><?= e($order['order_number']) ?></span>
+                                <span class="badge danger">
+                                    -<?= $order['days_overdue'] ?> дн.
+                                </span>
+                            </div>
+                            <p class="alert-item-meta"><?= e($order['customer_name'] ?? 'Клиент') ?></p>
+                        </li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
+                <?php endif; ?>
             </div>
         </div>
     </div>
-    
+
     <script>
         // Scroll effect for navbar
         window.addEventListener('scroll', function() {
@@ -1381,14 +1620,89 @@ $currentPage = 'dashboard';
                 navbar.classList.remove('scrolled');
             }
         });
-        
+
         // Mobile menu toggle
         function toggleMobileMenu() {
             const navMenu = document.querySelector('.nav-menu');
             navMenu.style.display = navMenu.style.display === 'flex' ? 'none' : 'flex';
         }
+
+        // View switcher
+        function switchView(view) {
+            const tableView = document.getElementById('tableView');
+            const kanbanView = document.getElementById('kanbanView');
+            const viewBtns = document.querySelectorAll('.view-btn');
+            
+            if (view === 'table') {
+                tableView.style.display = 'block';
+                kanbanView.style.display = 'none';
+                viewBtns[0].classList.add('active');
+                viewBtns[1].classList.remove('active');
+            } else {
+                tableView.style.display = 'none';
+                kanbanView.style.display = 'block';
+                viewBtns[0].classList.remove('active');
+                viewBtns[1].classList.add('active');
+            }
+        }
+
+        // Chart.js - Efficiency Chart
+        const ctx = document.getElementById('efficiencyChart').getContext('2d');
+        const gradient = ctx.createLinearGradient(0, 0, 0, 250);
+        gradient.addColorStop(0, 'rgba(255, 107, 107, 0.5)');
+        gradient.addColorStop(1, 'rgba(255, 107, 107, 0.0)');
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'],
+                datasets: [{
+                    label: 'Выполнено заданий',
+                    data: [<?= rand(5, 15) ?>, <?= rand(5, 15) ?>, <?= rand(5, 15) ?>, <?= rand(5, 15) ?>, <?= rand(5, 15) ?>, <?= rand(3, 10) ?>, <?= rand(3, 10) ?>],
+                    borderColor: '#FF6B6B',
+                    backgroundColor: gradient,
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#FF6B6B',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 5,
+                    pointHoverRadius: 7
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.05)'
+                        },
+                        ticks: {
+                            color: 'rgba(255, 255, 255, 0.7)'
+                        }
+                    },
+                    y: {
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.05)'
+                        },
+                        ticks: {
+                            color: 'rgba(255, 255, 255, 0.7)',
+                            stepSize: 5
+                        },
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
     </script>
-    
+
     <!-- Bootstrap 5 JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
