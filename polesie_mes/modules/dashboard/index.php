@@ -98,7 +98,7 @@ $pageTitle = 'Панель управления | ' . APP_NAME;
 $currentPage = 'dashboard';
 ?>
 
-<?php include __DIR__ . '/../includes/header.php'; ?>
+<?php include __DIR__ . '/../../includes/header.php'; ?>
 
 <div class="row mb-4">
     <div class="col-12">
@@ -274,4 +274,4 @@ $currentPage = 'dashboard';
     </div>
 </div>
 
-<?php include __DIR__ . '/../includes/footer.php'; ?>
+<?php include __DIR__ . '/../../includes/footer.php'; ?>
