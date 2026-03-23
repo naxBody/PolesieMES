@@ -1,26 +1,40 @@
 ```
-# Compiled and build artifacts
-*.pyc
-__pycache__/
+# PHP-related compiled/cache files
+*.php~
+*.php.bak
+*.phar
+*.phtml~
 
-# Dependencies
+# Dependencies and packages
 vendor/
-composer.lock
 
 # Logs and temp files
 *.log
 *.tmp
+*.temp
 
 # Environment
 .env
 .env.local
-*.env.*
+.env.*
 
 # Editors
 .vscode/
 .idea/
+*.swp
+*.swo
 
-# OS generated files
+# OS-specific
 .DS_Store
 Thumbs.db
+
+# Coverage and testing
+.coverage
+coverage/
+htmlcov/
+
+# Build and distribution
+dist/
+build/
+target/
 ```
