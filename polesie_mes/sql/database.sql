@@ -218,7 +218,156 @@ CREATE TABLE activity_log (
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
+-- Справочник единиц измерения
+CREATE TABLE units (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(50) NOT NULL,
+    short_name VARCHAR(20),
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Категории материалов
+CREATE TABLE material_categories (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    code VARCHAR(50) UNIQUE,
+    description TEXT,
+    parent_id INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (parent_id) REFERENCES material_categories(id)
+);
+
+-- Расположения/места хранения
+CREATE TABLE locations (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    code VARCHAR(50) UNIQUE,
+    type ENUM('warehouse', 'shop_floor', 'office', 'external') DEFAULT 'warehouse',
+    address TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Категории оборудования
+CREATE TABLE equipment_categories (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    code VARCHAR(50) UNIQUE,
+    description TEXT,
+    parent_id INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (parent_id) REFERENCES equipment_categories(id)
+);
+
+-- Категории продукции
+CREATE TABLE product_categories (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    code VARCHAR(50) UNIQUE,
+    description TEXT,
+    parent_id INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (parent_id) REFERENCES product_categories(id)
+);
+
+-- Движение материалов (транзакции)
+CREATE TABLE material_transactions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    material_id INT NOT NULL,
+    operation_type ENUM('receipt', 'consumption', 'return', 'adjustment', 'transfer') NOT NULL,
+    quantity DECIMAL(12,3) NOT NULL,
+    warehouse_from VARCHAR(100),
+    warehouse_to VARCHAR(100),
+    reference_type VARCHAR(50),
+    reference_id INT,
+    user_id INT,
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (material_id) REFERENCES materials(id),
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+-- Отгрузки
+CREATE TABLE shipments (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    order_id INT NOT NULL,
+    order_item_id INT,
+    shipment_number VARCHAR(50) UNIQUE,
+    shipment_date DATETIME,
+    quantity INT NOT NULL,
+    carrier VARCHAR(100),
+    tracking_number VARCHAR(100),
+    status ENUM('pending', 'in_transit', 'delivered', 'returned') DEFAULT 'pending',
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (order_id) REFERENCES orders(id),
+    FOREIGN KEY (order_item_id) REFERENCES order_items(id)
+);
+
+-- Журнал технического обслуживания
+CREATE TABLE maintenance_logs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    equipment_id INT NOT NULL,
+    technician_id INT,
+    maintenance_type ENUM('preventive', 'corrective', 'emergency', 'inspection') NOT NULL,
+    description TEXT,
+    scheduled_date DATE,
+    completed_date DATE,
+    status ENUM('planned', 'in_progress', 'completed', 'cancelled') DEFAULT 'planned',
+    cost DECIMAL(12,2),
+    parts_used TEXT,
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (equipment_id) REFERENCES equipment(id),
+    FOREIGN KEY (technician_id) REFERENCES employees(id)
+);
+
 -- ==================== ЗАПОЛНЕНИЕ ДАННЫМИ ====================
+
+-- Единицы измерения
+INSERT INTO units (name, short_name, description) VALUES
+('Штука', 'шт', 'Единица измерения количества изделий'),
+('Килограмм', 'кг', 'Единица измерения массы'),
+('Метр', 'м', 'Единица измерения длины'),
+('Литр', 'л', 'Единица измерения объема'),
+('Набор', 'наб', 'Комплект изделий'),
+('Пара', 'пара', 'Два изделия в комплекте');
+
+-- Категории материалов
+INSERT INTO material_categories (name, code, description) VALUES
+('Металлопрокат', 'METAL', 'Черные и цветные металлы'),
+('Электротехнические материалы', 'ELECTRO', 'Провода, кабели, изоляция'),
+('Лакокрасочные материалы', 'PAINT', 'Краски, эмали, растворители'),
+('Крепеж', 'FASTENER', 'Болты, гайки, винты'),
+('Упаковочные материалы', 'PACKAGE', 'Тара и упаковка'),
+('Сырье', 'RAW', 'Основное сырье для производства');
+
+-- Расположения
+INSERT INTO locations (name, code, type) VALUES
+('Склад А1 - Металлопрокат', 'WH-A1', 'warehouse'),
+('Склад Б2 - Электроматериалы', 'WH-B2', 'warehouse'),
+('Склад В1 - Лакокрасочные', 'WH-V1', 'warehouse'),
+('Склад Г1 - Крепеж', 'WH-G1', 'warehouse'),
+('Цех №1', 'SHOP-1', 'shop_floor'),
+('Цех №2', 'SHOP-2', 'shop_floor');
+
+-- Категории оборудования
+INSERT INTO equipment_categories (name, code, description) VALUES
+('Станки', 'MACHINE', 'Металлообрабатывающие станки'),
+('Подъемное оборудование', 'CRANE', 'Краны, тали, подъемники'),
+('Сварочное оборудование', 'WELD', 'Сварочные аппараты'),
+('Измерительные приборы', 'MEASURE', 'Контрольно-измерительные приборы'),
+('Транспорт', 'TRANSPORT', 'Погрузчики, тележки');
+
+-- Категории продукции
+INSERT INTO product_categories (name, code, description) VALUES
+('Электродвигатели', 'MOTOR', 'Асинхронные и синхронные двигатели'),
+('Генераторы', 'GENERATOR', 'Электрогенераторы различной мощности'),
+('Трансформаторы', 'TRANSFORMER', 'Силовые трансформаторы'),
+('Насосное оборудование', 'PUMP', 'Насосы и насосные агрегаты'),
+('Устройства управления', 'CONTROL', 'Щиты управления и автоматики'),
+('Кабельная продукция', 'CABLE', 'Силовые и контрольные кабели');
 
 -- Должности
 INSERT INTO positions (name, code, description) VALUES
@@ -475,3 +624,33 @@ INSERT INTO activity_log (user_id, action, module, record_id, description, ip_ad
 (2, 'approve', 'production', 13, 'Утверждено производственное задание', '192.168.1.101'),
 (3, 'complete', 'orders', 1, 'Заказ ORD-2024-001 завершен', '192.168.1.102'),
 (1, 'view', 'reports', NULL, 'Сформирован отчет по производству', '192.168.1.100');
+
+-- Транзакции материалов
+INSERT INTO material_transactions (material_id, operation_type, quantity, warehouse_from, warehouse_to, reference_type, reference_id, user_id, notes) VALUES
+(1, 'receipt', 1000.00, NULL, 'Склад А1', 'purchase_order', 1, 11, 'Поступление от БМЗ'),
+(2, 'receipt', 800.00, NULL, 'Склад А1', 'purchase_order', 1, 11, 'Поступление от БМЗ'),
+(3, 'receipt', 200.00, NULL, 'Склад Б2', 'purchase_order', 2, 12, 'Поступление медной проволоки'),
+(4, 'receipt', 150.00, NULL, 'Склад Б2', 'purchase_order', 2, 12, 'Поступление медной проволоки'),
+(8, 'receipt', 100.00, NULL, 'Склад В1', 'purchase_order', 3, 11, 'Подшипники'),
+(1, 'consumption', 250.00, 'Склад А1', 'Цех №1', 'production_task', 1, 7, 'На заказ ORD-2024-001'),
+(3, 'consumption', 45.00, 'Склад Б2', 'Цех №2', 'production_task', 4, 15, 'На намотку обмоток'),
+(8, 'consumption', 10.00, 'Склад В1', 'Цех №1', 'production_task', 5, 7, 'На сборку двигателей'),
+(11, 'consumption', 25.00, 'Склад Г1', 'Цех №2', 'production_task', 7, NULL, 'На покраску'),
+(12, 'consumption', 30.00, 'Склад Г1', 'Цех №2', 'production_task', 7, NULL, 'На покраску синей эмалью'),
+(1, 'consumption', 500.00, 'Склад А1', 'Цех №1', 'production_task', 11, 7, 'На крупную партию'),
+(3, 'consumption', 180.00, 'Склад Б2', 'Цех №2', 'production_task', 14, 15, 'На намотку 20 двигателей');
+
+-- Отгрузки
+INSERT INTO shipments (order_id, order_item_id, shipment_number, shipment_date, quantity, status, notes) VALUES
+(1, 1, 'SHP-2024-001', '2024-02-15 10:00:00', 5, 'delivered', 'Отгрузка электродвигателей МТ-100'),
+(1, 2, 'SHP-2024-001', '2024-02-15 10:00:00', 2, 'delivered', 'Отгрузка электродвигателей МТ-50'),
+(2, 3, 'SHP-2024-002', '2024-03-01 14:00:00', 6, 'delivered', 'Срочная отгрузка для сельхозтехники'),
+(3, 5, 'SHP-2024-003', '2024-03-15 09:00:00', 10, 'delivered', 'Крупная поставка трансформаторов');
+
+-- Журнал технического обслуживания
+INSERT INTO maintenance_logs (equipment_id, technician_id, maintenance_type, description, scheduled_date, completed_date, status, cost, notes) VALUES
+(1, 13, 'preventive', 'Плановое техническое обслуживание', '2024-01-15', '2024-01-15', 'completed', 150.00, 'Замена масла, проверка подшипников'),
+(2, 13, 'corrective', 'Ремонт после поломки', '2024-02-10', '2024-02-12', 'completed', 450.00, 'Замена двигателя привода'),
+(3, NULL, 'preventive', 'Плановая проверка', '2024-03-01', NULL, 'planned', NULL, 'Запланировано ТО крана'),
+(4, 13, 'inspection', 'Ежегодная проверка безопасности', '2024-01-20', '2024-01-20', 'completed', 100.00, 'Все параметры в норме'),
+(5, NULL, 'preventive', 'Плановое ТО', '2024-03-15', NULL, 'in_progress', NULL, 'Текущее обслуживание сварочного аппарата');
