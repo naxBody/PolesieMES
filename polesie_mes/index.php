@@ -3,6 +3,8 @@
  * Главная страница (Landing Page) системы PolesieMES
  * Современный дизайн 2026 - Glassmorphism с оранжево-коралловым градиентом
  * ОАО "Полесьеэлектромаш"
+ * 
+ * Отображает информацию по каждому модулю, ошибки и рекомендации
  */
 
 // Подключение конфигурации
@@ -15,6 +17,287 @@ require_once __DIR__ . '/includes/helpers.php';
 if (isLoggedIn()) {
     header('Location: ' . APP_URL . '/modules/dashboard/index.php');
     exit;
+}
+
+$db = getDB();
+
+// Получение статистики по всем модулям для отображения на главной
+$modulesData = [];
+
+// === МОДУЛЬ ЗАКАЗЫ ===
+$orderStats = ['total' => 0, 'new' => 0, 'in_production' => 0, 'completed' => 0, 'overdue' => 0];
+try {
+    $stmt = $db->query("SELECT COUNT(*) as total FROM orders");
+    $orderStats['total'] = $stmt->fetch()['total'] ?? 0;
+    
+    $stmt = $db->query("SELECT status, COUNT(*) as count FROM orders GROUP BY status");
+    while ($row = $stmt->fetch()) {
+        if (isset($orderStats[$row['status']])) {
+            $orderStats[$row['status']] = $row['count'];
+        }
+    }
+    
+    $stmt = $db->query("SELECT COUNT(*) as overdue FROM orders WHERE status NOT IN ('completed', 'cancelled') AND delivery_date < NOW()");
+    $orderStats['overdue'] = $stmt->fetch()['overdue'] ?? 0;
+} catch (Exception $e) {
+    $orderStats['error'] = 'Ошибка подключения к таблице заказов';
+}
+
+$orderIssues = [];
+if ($orderStats['overdue'] > 0) {
+    $orderIssues[] = [
+        'type' => 'critical',
+        'title' => 'Просроченные заказы',
+        'count' => $orderStats['overdue'],
+        'message' => 'Заказы с истекшим сроком доставки',
+        'recommendation' => 'Срочно проверить статус производства и связаться с клиентами'
+    ];
+}
+if (($orderStats['new'] ?? 0) > 5) {
+    $orderIssues[] = [
+        'type' => 'warning',
+        'title' => 'Новые заказы',
+        'count' => $orderStats['new'],
+        'message' => 'Большое количество необработанных заказов',
+        'recommendation' => 'Распределить заказы между менеджерами для обработки'
+    ];
+}
+
+$modulesData['orders'] = [
+    'name' => 'Заказы',
+    'icon' => 'fa-shopping-cart',
+    'url' => 'modules/orders/index.php',
+    'description' => 'Управление заказами клиентов, отслеживание статусов и сроков',
+    'stats' => $orderStats,
+    'issues' => $orderIssues
+];
+
+// === МОДУЛЬ ПРОИЗВОДСТВО ===
+$productionStats = ['total' => 0, 'in_progress' => 0, 'planned' => 0, 'completed' => 0, 'overdue' => 0];
+try {
+    $stmt = $db->query("SELECT COUNT(*) as total FROM production_tasks");
+    $productionStats['total'] = $stmt->fetch()['total'] ?? 0;
+    
+    $stmt = $db->query("SELECT status, COUNT(*) as count FROM production_tasks GROUP BY status");
+    while ($row = $stmt->fetch()) {
+        if (isset($productionStats[$row['status']])) {
+            $productionStats[$row['status']] = $row['count'];
+        }
+    }
+    
+    $stmt = $db->query("SELECT COUNT(*) as overdue FROM production_tasks WHERE status NOT IN ('completed', 'rejected') AND planned_end < NOW()");
+    $productionStats['overdue'] = $stmt->fetch()['overdue'] ?? 0;
+} catch (Exception $e) {
+    $productionStats['error'] = 'Ошибка подключения к таблице заданий';
+}
+
+$productionIssues = [];
+if ($productionStats['overdue'] > 0) {
+    $productionIssues[] = [
+        'type' => 'critical',
+        'title' => 'Просроченные задания',
+        'count' => $productionStats['overdue'],
+        'message' => 'Производственные задания с истекшим сроком',
+        'recommendation' => 'Пересмотреть приоритеты и распределение ресурсов'
+    ];
+}
+if (($productionStats['in_progress'] ?? 0) > 20) {
+    $productionIssues[] = [
+        'type' => 'warning',
+        'title' => 'Высокая загрузка',
+        'count' => $productionStats['in_progress'],
+        'message' => 'Большое количество активных заданий',
+        'recommendation' => 'Проверить загрузку сотрудников и оборудования'
+    ];
+}
+
+$modulesData['production'] = [
+    'name' => 'Производство',
+    'icon' => 'fa-industry',
+    'url' => 'modules/production/index.php',
+    'description' => 'Контроль производственных заданий, этапов и эффективности',
+    'stats' => $productionStats,
+    'issues' => $productionIssues
+];
+
+// === МОДУЛЬ СКЛАД ===
+$warehouseStats = ['total' => 0, 'normal' => 0, 'low' => 0, 'out_of_stock' => 0, 'overstock' => 0];
+try {
+    $stmt = $db->query("SELECT COUNT(*) as total FROM materials");
+    $warehouseStats['total'] = $stmt->fetch()['total'] ?? 0;
+    
+    $stmt = $db->query("
+        SELECT 
+            SUM(CASE WHEN current_stock <= 0 THEN 1 ELSE 0 END) as out_of_stock,
+            SUM(CASE WHEN current_stock < min_stock AND current_stock > 0 THEN 1 ELSE 0 END) as low_stock,
+            SUM(CASE WHEN current_stock > max_stock THEN 1 ELSE 0 END) as overstock,
+            SUM(CASE WHEN current_stock >= min_stock AND current_stock <= max_stock THEN 1 ELSE 0 END) as normal
+        FROM materials
+    ");
+    $row = $stmt->fetch();
+    $warehouseStats['out_of_stock'] = $row['out_of_stock'] ?? 0;
+    $warehouseStats['low'] = $row['low_stock'] ?? 0;
+    $warehouseStats['overstock'] = $row['overstock'] ?? 0;
+    $warehouseStats['normal'] = $row['normal'] ?? 0;
+} catch (Exception $e) {
+    $warehouseStats['error'] = 'Ошибка подключения к таблице материалов';
+}
+
+$warehouseIssues = [];
+if ($warehouseStats['out_of_stock'] > 0) {
+    $warehouseIssues[] = [
+        'type' => 'critical',
+        'title' => 'Отсутствуют материалы',
+        'count' => $warehouseStats['out_of_stock'],
+        'message' => 'Материалы с нулевым остатком на складе',
+        'recommendation' => 'Срочно оформить заказ у поставщиков'
+    ];
+}
+if ($warehouseStats['low'] > 0) {
+    $warehouseIssues[] = [
+        'type' => 'warning',
+        'title' => 'Низкий запас',
+        'count' => $warehouseStats['low'],
+        'message' => 'Материалы ниже минимального запаса',
+        'recommendation' => 'Запланировать пополнение склада'
+    ];
+}
+if ($warehouseStats['overstock'] > 0) {
+    $warehouseIssues[] = [
+        'type' => 'info',
+        'title' => 'Избыток материалов',
+        'count' => $warehouseStats['overstock'],
+        'message' => 'Материалы выше максимального запаса',
+        'recommendation' => 'Оптимизировать складские запасы'
+    ];
+}
+
+$modulesData['warehouse'] = [
+    'name' => 'Склад',
+    'icon' => 'fa-warehouse',
+    'url' => 'modules/warehouse/index.php',
+    'description' => 'Учет материалов, комплектующих и готовой продукции',
+    'stats' => $warehouseStats,
+    'issues' => $warehouseIssues
+];
+
+// === МОДУЛЬ ОБОРУДОВАНИЕ ===
+$equipmentStats = ['total' => 0, 'operational' => 0, 'maintenance' => 0, 'broken' => 0, 'offline' => 0];
+try {
+    $stmt = $db->query("SELECT COUNT(*) as total FROM equipment");
+    $equipmentStats['total'] = $stmt->fetch()['total'] ?? 0;
+    
+    $stmt = $db->query("SELECT status, COUNT(*) as count FROM equipment GROUP BY status");
+    while ($row = $stmt->fetch()) {
+        if (isset($equipmentStats[$row['status']])) {
+            $equipmentStats[$row['status']] = $row['count'];
+        }
+    }
+} catch (Exception $e) {
+    $equipmentStats['error'] = 'Ошибка подключения к таблице оборудования';
+}
+
+$equipmentIssues = [];
+if ($equipmentStats['broken'] > 0) {
+    $equipmentIssues[] = [
+        'type' => 'critical',
+        'title' => 'Неисправное оборудование',
+        'count' => $equipmentStats['broken'],
+        'message' => 'Оборудование требует ремонта',
+        'recommendation' => 'Срочно вызвать ремонтную службу или создать заявку на ремонт'
+    ];
+}
+if ($equipmentStats['maintenance'] > 0) {
+    $equipmentIssues[] = [
+        'type' => 'warning',
+        'title' => 'На обслуживании',
+        'count' => $equipmentStats['maintenance'],
+        'message' => 'Оборудование проходит плановое ТО',
+        'recommendation' => 'Контролировать сроки завершения обслуживания'
+    ];
+}
+
+$modulesData['equipment'] = [
+    'name' => 'Оборудование',
+    'icon' => 'fa-tools',
+    'url' => 'modules/equipment/index.php',
+    'description' => 'Контроль станков, инструментов и технического обслуживания',
+    'stats' => $equipmentStats,
+    'issues' => $equipmentIssues
+];
+
+// === МОДУЛЬ ГОСТ ДОКУМЕНТЫ ===
+$docsStats = ['total_orders' => 0, 'ready_for_docs' => 0, 'docs_generated' => 0];
+try {
+    $stmt = $db->query("SELECT COUNT(*) as total FROM orders WHERE status IN ('ready', 'shipped', 'completed')");
+    $docsStats['ready_for_docs'] = $stmt->fetch()['ready_for_docs'] ?? 0;
+    $docsStats['total_orders'] = $docsStats['ready_for_docs'];
+} catch (Exception $e) {
+    $docsStats['error'] = 'Ошибка получения данных о документах';
+}
+
+$docsIssues = [];
+if ($docsStats['ready_for_docs'] > 0) {
+    $docsIssues[] = [
+        'type' => 'info',
+        'title' => 'Требуется документация',
+        'count' => $docsStats['ready_for_docs'],
+        'message' => 'Заказы готовые к формированию документов',
+        'recommendation' => 'Сформировать сопроводительную документацию по ГОСТ'
+    ];
+}
+
+$modulesData['gost_docs'] = [
+    'name' => 'ГОСТ Документы',
+    'icon' => 'fa-file-contract',
+    'url' => 'modules/gost_docs/index.php',
+    'description' => 'Формирование документации по стандартам Беларуси',
+    'stats' => $docsStats,
+    'issues' => $docsIssues
+];
+
+// === МОДУЛЬ ОТГРУЗКА ===
+$shipmentStats = ['ready' => 0, 'shipped' => 0, 'completed' => 0, 'overdue' => 0];
+try {
+    $stmt = $db->query("SELECT status, COUNT(*) as count FROM orders WHERE status IN ('ready', 'shipped', 'completed') GROUP BY status");
+    while ($row = $stmt->fetch()) {
+        $shipmentStats[$row['status']] = $row['count'];
+    }
+    
+    $stmt = $db->query("SELECT COUNT(*) as overdue FROM orders WHERE status = 'ready' AND delivery_date < NOW()");
+    $shipmentStats['overdue'] = $stmt->fetch()['overdue'] ?? 0;
+} catch (Exception $e) {
+    $shipmentStats['error'] = 'Ошибка получения данных об отгрузках';
+}
+
+$shipmentIssues = [];
+if ($shipmentStats['overdue'] > 0) {
+    $shipmentIssues[] = [
+        'type' => 'critical',
+        'title' => 'Просрочена отгрузка',
+        'count' => $shipmentStats['overdue'],
+        'message' => 'Готовая продукция не отгружена вовремя',
+        'recommendation' => 'Срочно организовать доставку клиенту'
+    ];
+}
+
+$modulesData['shipment'] = [
+    'name' => 'Отгрузка',
+    'icon' => 'fa-truck',
+    'url' => 'modules/shipment/index.php',
+    'description' => 'Отгрузка готовой продукции и доставка клиентам',
+    'stats' => $shipmentStats,
+    'issues' => $shipmentIssues
+];
+
+// Подсчет общих проблем
+$totalCritical = 0;
+$totalWarnings = 0;
+foreach ($modulesData as $module) {
+    foreach ($module['issues'] as $issue) {
+        if ($issue['type'] === 'critical') $totalCritical++;
+        if ($issue['type'] === 'warning') $totalWarnings++;
+    }
 }
 
 $pageTitle = 'PolesieMES - Система управления производством | ОАО Полесьеэлектромаш';
@@ -33,6 +316,8 @@ $pageTitle = 'PolesieMES - Система управления производ�
     
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
     <style>
         :root {
@@ -591,6 +876,235 @@ $pageTitle = 'PolesieMES - Система управления производ�
             font-size: 0.95rem;
         }
         
+        /* Modules Status Section */
+        .modules-section {
+            position: relative;
+            z-index: 10;
+            padding: 6rem 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .modules-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+        
+        .module-card {
+            background: var(--bg-card);
+            backdrop-filter: var(--backdrop-blur);
+            -webkit-backdrop-filter: var(--backdrop-blur);
+            border-radius: 24px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            transition: all 0.4s ease;
+        }
+        
+        .module-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--border-glow);
+            box-shadow: 0 20px 60px rgba(255, 107, 107, 0.15);
+        }
+        
+        .module-header {
+            padding: 1.5rem 2rem;
+            background: rgba(255, 255, 255, 0.02);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .module-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--gradient-primary);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--glow-primary);
+        }
+        
+        .module-icon i {
+            font-size: 1.25rem;
+            color: white;
+        }
+        
+        .module-info h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+        
+        .module-info p {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+        
+        .module-body {
+            padding: 1.5rem 2rem;
+        }
+        
+        .module-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .module-stat {
+            text-align: center;
+            padding: 1rem;
+            background: var(--glass-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+        
+        .module-stat-value {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.25rem;
+        }
+        
+        .module-stat-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        
+        .module-issues {
+            margin-top: 1rem;
+        }
+        
+        .issue-item {
+            display: flex;
+            gap: 1rem;
+            padding: 1rem;
+            background: var(--glass-bg);
+            border-radius: 12px;
+            margin-bottom: 0.75rem;
+            border-left: 3px solid;
+        }
+        
+        .issue-item.critical {
+            border-left-color: var(--danger-color);
+            background: rgba(255, 69, 58, 0.05);
+        }
+        
+        .issue-item.warning {
+            border-left-color: var(--warning-color);
+            background: rgba(255, 214, 10, 0.05);
+        }
+        
+        .issue-item.info {
+            border-left-color: var(--info-color);
+            background: rgba(90, 200, 250, 0.05);
+        }
+        
+        .issue-icon {
+            flex-shrink: 0;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .issue-item.critical .issue-icon {
+            background: rgba(255, 69, 58, 0.2);
+            color: var(--danger-color);
+        }
+        
+        .issue-item.warning .issue-icon {
+            background: rgba(255, 214, 10, 0.2);
+            color: var(--warning-color);
+        }
+        
+        .issue-item.info .issue-icon {
+            background: rgba(90, 200, 250, 0.2);
+            color: var(--info-color);
+        }
+        
+        .issue-content {
+            flex: 1;
+        }
+        
+        .issue-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .issue-count {
+            background: var(--gradient-primary);
+            color: white;
+            padding: 0.125rem 0.5rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+        
+        .issue-message {
+            font-size: 0.8125rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+        
+        .issue-recommendation {
+            font-size: 0.8125rem;
+            color: var(--primary-gradient-start);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding-top: 0.5rem;
+            border-top: 1px solid var(--border);
+        }
+        
+        .no-issues {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+        }
+        
+        .no-issues i {
+            font-size: 2rem;
+            color: var(--success-color);
+            margin-bottom: 0.5rem;
+        }
+        
+        .module-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.25rem;
+            background: var(--gradient-primary);
+            color: white;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            margin-top: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .module-link:hover {
+            transform: translateX(5px);
+            box-shadow: 0 8px 30px rgba(255, 107, 107, 0.4);
+        }
+        
         /* How It Works Section */
         .how-it-works {
             position: relative;
@@ -1010,6 +1524,93 @@ $pageTitle = 'PolesieMES - Система управления производ�
             <div class="stat-label">Простоев</div>
         </div>
     </div>
+
+    <!-- Modules Status Section -->
+    <section class="modules-section" id="modules">
+        <div class="section-header">
+            <span class="section-tag">Модули системы</span>
+            <h2 class="section-title">Статус модулей и рекомендации</h2>
+            <p class="section-subtitle">
+                Актуальная информация по всем модулям системы, выявленные проблемы 
+                и рекомендации по их устранению
+            </p>
+        </div>
+        
+        <div class="modules-grid">
+            <?php foreach ($modulesData as $moduleId => $module): ?>
+            <div class="module-card">
+                <div class="module-header">
+                    <div class="module-icon">
+                        <i class="fas <?= $module['icon'] ?>"></i>
+                    </div>
+                    <div class="module-info">
+                        <h3><?= e($module['name']) ?></h3>
+                        <p><?= e($module['description']) ?></p>
+                    </div>
+                </div>
+                <div class="module-body">
+                    <div class="module-stats">
+                        <?php 
+                        $statLabels = [
+                            'orders' => ['total' => 'Всего', 'new' => 'Новых', 'overdue' => 'Просрочено'],
+                            'production' => ['total' => 'Всего', 'in_progress' => 'В работе', 'overdue' => 'Просрочено'],
+                            'warehouse' => ['total' => 'Всего', 'low' => 'Мало', 'out_of_stock' => 'Нет'],
+                            'equipment' => ['total' => 'Всего', 'operational' => 'Работает', 'broken' => 'Сломано'],
+                            'gost_docs' => ['total_orders' => 'Готово', 'ready_for_docs' => 'Требуют', 'docs_generated' => 'Создано'],
+                            'shipment' => ['ready' => 'Готовы', 'shipped' => 'Отгружено', 'overdue' => 'Просрочено']
+                        ];
+                        $labels = $statLabels[$moduleId] ?? [];
+                        $displayCount = 0;
+                        foreach ($module['stats'] as $key => $value): 
+                            if ($displayCount >= 3) break;
+                            $label = $labels[$key] ?? $key;
+                        ?>
+                        <div class="module-stat">
+                            <div class="module-stat-value"><?= (int)$value ?></div>
+                            <div class="module-stat-label"><?= e($label) ?></div>
+                        </div>
+                        <?php 
+                            $displayCount++;
+                        endforeach; ?>
+                    </div>
+                    
+                    <?php if (!empty($module['issues'])): ?>
+                    <div class="module-issues">
+                        <?php foreach ($module['issues'] as $issue): ?>
+                        <div class="issue-item <?= $issue['type'] ?>">
+                            <div class="issue-icon">
+                                <i class="fas fa-<?= $issue['type'] == 'critical' ? 'exclamation-circle' : ($issue['type'] == 'warning' ? 'exclamation-triangle' : 'info-circle') ?>"></i>
+                            </div>
+                            <div class="issue-content">
+                                <div class="issue-title">
+                                    <?= e($issue['title']) ?>
+                                    <span class="issue-count"><?= (int)$issue['count'] ?></span>
+                                </div>
+                                <p class="issue-message"><?= e($issue['message']) ?></p>
+                                <div class="issue-recommendation">
+                                    <i class="fas fa-lightbulb"></i>
+                                    <?= e($issue['recommendation']) ?>
+                                </div>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <?php else: ?>
+                    <div class="no-issues">
+                        <i class="fas fa-check-circle"></i>
+                        <p>Проблем не обнаружено</p>
+                    </div>
+                    <?php endif; ?>
+                    
+                    <a href="<?= APP_URL ?>/<?= $module['url'] ?>" class="module-link">
+                        Перейти в модуль
+                        <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+            <?php endforeach; ?>
+        </div>
+    </section>
 
     <!-- Features Section -->
     <section class="features" id="features">
