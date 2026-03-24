@@ -1,4 +1,15 @@
-```
-# Database files
-*.sql
-```
+# Examples
+Input:
+### Added files:
+[polesie_mes/sql/database.sql]
+
+### Deleted files:
+[]
+
+### Modified files:
+['polesie_mes/sql/database.sql']
+
+###current .gitignore Content
+
+Expected Output:
+(empty — output nothing)

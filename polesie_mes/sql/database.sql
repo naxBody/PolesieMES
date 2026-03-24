@@ -632,13 +632,13 @@ INSERT INTO material_transactions (material_id, operation_type, quantity, wareho
 (3, 'receipt', 200.00, NULL, 'Склад Б2', 'purchase_order', 2, 12, 'Поступление медной проволоки'),
 (4, 'receipt', 150.00, NULL, 'Склад Б2', 'purchase_order', 2, 12, 'Поступление медной проволоки'),
 (8, 'receipt', 100.00, NULL, 'Склад В1', 'purchase_order', 3, 11, 'Подшипники'),
-(1, 'consumption', 250.00, 'Склад А1', 'Цех №1', 'production_task', 1, 7, 'На заказ ORD-2024-001'),
-(3, 'consumption', 45.00, 'Склад Б2', 'Цех №2', 'production_task', 4, 15, 'На намотку обмоток'),
-(8, 'consumption', 10.00, 'Склад В1', 'Цех №1', 'production_task', 5, 7, 'На сборку двигателей'),
+(1, 'consumption', 250.00, 'Склад А1', 'Цех №1', 'production_task', 1, NULL, 'На заказ ORD-2024-001'),
+(3, 'consumption', 45.00, 'Склад Б2', 'Цех №2', 'production_task', 4, NULL, 'На намотку обмоток'),
+(8, 'consumption', 10.00, 'Склад В1', 'Цех №1', 'production_task', 5, NULL, 'На сборку двигателей'),
 (11, 'consumption', 25.00, 'Склад Г1', 'Цех №2', 'production_task', 7, NULL, 'На покраску'),
 (12, 'consumption', 30.00, 'Склад Г1', 'Цех №2', 'production_task', 7, NULL, 'На покраску синей эмалью'),
-(1, 'consumption', 500.00, 'Склад А1', 'Цех №1', 'production_task', 11, 7, 'На крупную партию'),
-(3, 'consumption', 180.00, 'Склад Б2', 'Цех №2', 'production_task', 14, 15, 'На намотку 20 двигателей');
+(1, 'consumption', 500.00, 'Склад А1', 'Цех №1', 'production_task', 11, NULL, 'На крупную партию'),
+(3, 'consumption', 180.00, 'Склад Б2', 'Цех №2', 'production_task', 14, NULL, 'На намотку 20 двигателей');
 
 -- Отгрузки
 INSERT INTO shipments (order_id, order_item_id, shipment_number, shipment_date, quantity, status, notes) VALUES
