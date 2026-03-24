@@ -643,9 +643,9 @@ INSERT INTO material_transactions (material_id, operation_type, quantity, wareho
 -- Отгрузки
 INSERT INTO shipments (order_id, order_item_id, shipment_number, shipment_date, quantity, status, notes) VALUES
 (1, 1, 'SHP-2024-001', '2024-02-15 10:00:00', 5, 'delivered', 'Отгрузка электродвигателей МТ-100'),
-(1, 2, 'SHP-2024-001', '2024-02-15 10:00:00', 2, 'delivered', 'Отгрузка электродвигателей МТ-50'),
-(2, 3, 'SHP-2024-002', '2024-03-01 14:00:00', 6, 'delivered', 'Срочная отгрузка для сельхозтехники'),
-(3, 5, 'SHP-2024-003', '2024-03-15 09:00:00', 10, 'delivered', 'Крупная поставка трансформаторов');
+(1, 2, 'SHP-2024-002', '2024-02-15 10:00:00', 2, 'delivered', 'Отгрузка электродвигателей МТ-50'),
+(2, 3, 'SHP-2024-003', '2024-03-01 14:00:00', 6, 'delivered', 'Срочная отгрузка для сельхозтехники'),
+(3, 5, 'SHP-2024-004', '2024-03-15 09:00:00', 10, 'delivered', 'Крупная поставка трансформаторов');
 
 -- Журнал технического обслуживания
 INSERT INTO maintenance_logs (equipment_id, technician_id, maintenance_type, description, scheduled_date, completed_date, status, cost, notes) VALUES

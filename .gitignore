@@ -1,15 +1,70 @@
-# Examples
-Input:
-### Added files:
-[polesie_mes/sql/database.sql]
+# Compiled and build artifacts
+*.pyc
+__pycache__/
+*.o
+*.obj
+*.class
+*.exe
+*.dll
+*.so
+*.a
+*.out
 
-### Deleted files:
-[]
+# Dependencies
+.venv/
+venv/
+node_modules/
+dist/
+build/
+target/
+.gradle/
+.mypy_cache/
+.pytest_cache/
 
-### Modified files:
-['polesie_mes/sql/database.sql']
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+*.swo
 
-###current .gitignore Content
+# Environment
+.env
+.env.local
+*.env.*
 
-Expected Output:
-(empty — output nothing)
+# Editors
+.vscode/
+.idea/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Coverage
+coverage/
+htmlcov/
+.coverage
+
+# Compressed files
+*.zip
+*.gz
+*.tar
+*.tgz
+*.bz2
+*.xz
+*.7z
+*.rar
+*.zst
+*.lz4
+*.lzh
+*.cab
+*.arj
+*.rpm
+*.deb
+*.Z
+*.lz
+*.lzo
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.tar.zst
