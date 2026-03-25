@@ -25,12 +25,12 @@ $stmt = $db->query("
            CASE 
                WHEN m.current_stock <= 0 THEN 'critical'
                WHEN m.current_stock < m.min_stock THEN 'low'
-               WHEN m.current_stock > m.max_stock THEN 'overstock'
+               WHEN m.current_stock > (m.min_stock * 2) THEN 'overstock'
                ELSE 'normal'
            END as stock_status
     FROM materials m
-    LEFT JOIN material_categories c ON m.category_id = c.id
-    LEFT JOIN units u ON m.unit_id = u.id
+    LEFT JOIN material_categories c ON m.category = c.name
+    LEFT JOIN units u ON m.unit = u.name
     ORDER BY stock_status, m.name ASC
 ");
 $materials = $stmt->fetchAll();
@@ -41,8 +41,8 @@ $stmt = $db->query("
         COUNT(*) as total,
         SUM(CASE WHEN current_stock <= 0 THEN 1 ELSE 0 END) as out_of_stock,
         SUM(CASE WHEN current_stock < min_stock AND current_stock > 0 THEN 1 ELSE 0 END) as low_stock,
-        SUM(CASE WHEN current_stock > max_stock THEN 1 ELSE 0 END) as overstock,
-        SUM(CASE WHEN current_stock >= min_stock AND current_stock <= max_stock THEN 1 ELSE 0 END) as normal
+        SUM(CASE WHEN current_stock > (min_stock * 2) THEN 1 ELSE 0 END) as overstock,
+        SUM(CASE WHEN current_stock >= min_stock AND current_stock <= (min_stock * 2) THEN 1 ELSE 0 END) as normal
     FROM materials
 ");
 $materialStats = $stmt->fetch();
@@ -51,7 +51,7 @@ $materialStats = $stmt->fetch();
 $stmt = $db->query("
     SELECT m.*, c.name as category_name, (m.min_stock - m.current_stock) as shortage
     FROM materials m
-    LEFT JOIN material_categories c ON m.category_id = c.id
+    LEFT JOIN material_categories c ON m.category = c.name
     WHERE m.current_stock < m.min_stock
     ORDER BY shortage DESC
     LIMIT 10
@@ -75,7 +75,7 @@ $stmt = $db->query("
     SELECT p.*, c.name as category_name, 
            SUM(oi.quantity - COALESCE(shipped.quantity, 0)) as available_stock
     FROM products p
-    LEFT JOIN product_categories c ON p.category_id = c.id
+    LEFT JOIN product_categories c ON p.category = c.name
     LEFT JOIN order_items oi ON p.id = oi.product_id
     LEFT JOIN orders o ON oi.order_id = o.id
     LEFT JOIN (
@@ -328,9 +328,10 @@ $pageTitle = 'Управление складом | ' . APP_NAME;
                         </thead>
                         <tbody>
                             <?php foreach ($materials as $material): ?>
-                            <?php 
-                            $fillPercent = $material['max_stock'] > 0 
-                                ? min(100, ($material['current_stock'] / $material['max_stock']) * 100) 
+                            <?php
+                            $maxStock = $material['min_stock'] * 2;
+                            $fillPercent = $maxStock > 0
+                                ? min(100, ($material['current_stock'] / $maxStock) * 100)
                                 : 0;
                             ?>
                             <tr>
@@ -338,7 +339,7 @@ $pageTitle = 'Управление складом | ' . APP_NAME;
                                 <td><?= e($material['category_name'] ?? '-') ?></td>
                                 <td><?= number_format($material['current_stock'], 2) ?></td>
                                 <td><?= e($material['unit_name'] ?? 'шт.') ?></td>
-                                <td><?= number_format($material['min_stock'], 0) ?> / <?= number_format($material['max_stock'], 0) ?></td>
+                                <td><?= number_format($material['min_stock'], 0) ?> / <?= number_format($maxStock, 0) ?></td>
                                 <td style="width: 150px;">
                                     <div class="progress-bar-custom">
                                         <div class="progress-fill <?= $material['stock_status'] ?>" style="width: <?= $fillPercent ?>%"></div>
