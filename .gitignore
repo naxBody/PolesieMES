@@ -1,1 +1,46 @@
-Nothing should be ignored based on the provided file changes. The only modified file is a PHP source file (`polesie_mes/modules/dashboard/index.php`), which is a legitimate source code file that should not be ignored. No build artifacts, dependencies, temporary files, or other ignorable items were detected in the changes.
+```
+# Compiled and build artifacts
+*.pyc
+__pycache__/
+
+# Dependencies
+.venv/
+venv/
+node_modules/
+
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+
+# Environment
+.env
+.env.local
+*.env.*
+
+# Editors
+.vscode/
+.idea/
+
+# Build directories
+dist/
+build/
+target/
+
+# Python specific
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+.coverage
+htmlcov/
+.coverage.*
+.cache
+.pytest_cache/
+.mypy_cache/
+
+# System files
+.DS_Store
+Thumbs.db
+```

@@ -30,8 +30,8 @@ $stmt = $db->query("
                ELSE 'normal'
            END as status_class
     FROM equipment e
-    LEFT JOIN equipment_categories c ON e.category_id = c.id
-    LEFT JOIN locations l ON e.location_id = l.id
+    LEFT JOIN equipment_categories c ON e.type = c.name
+    LEFT JOIN locations l ON e.location = l.name
     ORDER BY 
         CASE e.status 
             WHEN 'broken' THEN 1 
@@ -61,7 +61,7 @@ $stmt = $db->query("
            m.description as maintenance_description,
            m.scheduled_date, m.completed_date
     FROM equipment e
-    LEFT JOIN equipment_categories c ON e.category_id = c.id
+    LEFT JOIN equipment_categories c ON e.type = c.name
     LEFT JOIN maintenance_logs m ON e.id = m.equipment_id AND m.status = 'in_progress'
     WHERE e.status IN ('broken', 'maintenance')
     ORDER BY e.status DESC, e.name ASC
@@ -85,7 +85,7 @@ $stmt = $db->query("
     SELECT e.name as equipment_name, e.next_maintenance_date, c.name as category_name,
            DATEDIFF(e.next_maintenance_date, NOW()) as days_until
     FROM equipment e
-    LEFT JOIN equipment_categories c ON e.category_id = c.id
+    LEFT JOIN equipment_categories c ON e.type = c.name
     WHERE e.next_maintenance_date IS NOT NULL
     AND e.next_maintenance_date > NOW()
     AND e.next_maintenance_date <= DATE_ADD(NOW(), INTERVAL 30 DAY)
