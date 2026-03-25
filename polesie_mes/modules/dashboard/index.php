@@ -272,18 +272,16 @@ if ($urgentShipmentCount > 0) {
 
 // Модуль ГОСТ Документы - проблемы
 $docsIssues = [];
-$pendingDocsStmt = $db->query("SELECT COUNT(DISTINCT o.id) as count FROM orders o 
-    LEFT JOIN order_items oi ON o.id = oi.order_id 
-    WHERE o.status IN ('ready', 'shipped') 
-    AND NOT EXISTS (SELECT 1 FROM documents d WHERE d.order_id = o.id)");
-$pendingDocsCount = $pendingDocsStmt->fetch()['count'] ?? 0;
-if ($pendingDocsCount > 0) {
+// Проверяем заказы в статусах готовности, которые могут требовать документы
+$readyOrdersStmt = $db->query("SELECT COUNT(*) as count FROM orders WHERE status IN ('ready', 'shipped')");
+$readyOrdersCount = $readyOrdersStmt->fetch()['count'] ?? 0;
+if ($readyOrdersCount > 0) {
     $docsIssues[] = [
         'type' => 'info',
         'title' => 'Требуются документы',
-        'count' => $pendingDocsCount,
-        'description' => 'Заказы без сопроводительной документации',
-        'recommendation' => 'Сформировать паспорта, сертификаты и накладные',
+        'count' => $readyOrdersCount,
+        'description' => 'Заказы готовые к отгрузке или в пути',
+        'recommendation' => 'Проверить наличие сопроводительной документации (паспорта, сертификаты, накладные)',
         'link' => APP_URL . '/modules/gost_docs/index.php'
     ];
 }
