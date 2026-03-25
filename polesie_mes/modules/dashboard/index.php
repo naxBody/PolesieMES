@@ -144,6 +144,150 @@ $stmt = $db->query("
 ");
 $weeklyEfficiency = $stmt->fetch();
 
+// ==========================================
+// СВОДКА ПО МОДУЛЯМ С ПРОБЛЕМАМИ И РЕКОМЕНДАЦИЯМИ
+// ==========================================
+
+// Модуль Заказы - проблемы
+$ordersIssues = [];
+if (!empty($overdueOrders)) {
+    $ordersIssues[] = [
+        'type' => 'critical',
+        'title' => 'Просроченные заказы',
+        'count' => count($overdueOrders),
+        'description' => 'Заказы с нарушенными сроками поставки',
+        'recommendation' => 'Приоритезировать производство и связаться с клиентами',
+        'link' => APP_URL . '/modules/orders/index.php'
+    ];
+}
+$newOrdersCount = $stats['orders']['new_orders'] ?? 0;
+if ($newOrdersCount > 5) {
+    $ordersIssues[] = [
+        'type' => 'warning',
+        'title' => 'Много новых заказов',
+        'count' => $newOrdersCount,
+        'description' => 'Требуют обработки и подтверждения',
+        'recommendation' => 'Распределить заказы между менеджерами',
+        'link' => APP_URL . '/modules/orders/index.php'
+    ];
+}
+
+// Модуль Производство - проблемы
+$productionIssues = [];
+if (!empty($overdueTasks)) {
+    $productionStmt = $db->query("SELECT pt.*, p.name as product_name, DATEDIFF(NOW(), pt.planned_end) as days_overdue
+        FROM production_tasks pt LEFT JOIN products p ON pt.product_id = p.id
+        WHERE pt.status NOT IN ('completed', 'rejected') AND pt.planned_end < NOW()");
+    $overdueTasks = $productionStmt->fetchAll();
+    if (!empty($overdueTasks)) {
+        $productionIssues[] = [
+            'type' => 'critical',
+            'title' => 'Просроченные задания',
+            'count' => count($overdueTasks),
+            'description' => 'Производственные задания с нарушенными сроками',
+            'recommendation' => 'Перераспределить ресурсы и ускорить выполнение',
+            'link' => APP_URL . '/modules/production/index.php'
+        ];
+    }
+}
+$pausedTasksStmt = $db->query("SELECT COUNT(*) as count FROM production_tasks WHERE status = 'paused'");
+$pausedTasksCount = $pausedTasksStmt->fetch()['count'] ?? 0;
+if ($pausedTasksCount > 0) {
+    $productionIssues[] = [
+        'type' => 'warning',
+        'title' => 'Приостановленные задания',
+        'count' => $pausedTasksCount,
+        'description' => 'Задания ожидающие возобновления',
+        'recommendation' => 'Выяснить причины простоя и устранить их',
+        'link' => APP_URL . '/modules/production/index.php'
+    ];
+}
+
+// Модуль Склад - проблемы
+$warehouseIssues = [];
+$lowStockStmt = $db->query("SELECT COUNT(*) as count FROM materials WHERE current_stock < min_stock");
+$lowStockCount = $lowStockStmt->fetch()['count'] ?? 0;
+$outOfStockStmt = $db->query("SELECT COUNT(*) as count FROM materials WHERE current_stock <= 0");
+$outOfStockCount = $outOfStockStmt->fetch()['count'] ?? 0;
+
+if ($outOfStockCount > 0) {
+    $warehouseIssues[] = [
+        'type' => 'critical',
+        'title' => 'Отсутствуют материалы',
+        'count' => $outOfStockCount,
+        'description' => 'Материалы полностью закончились',
+        'recommendation' => 'Срочно оформить заказ поставщикам',
+        'link' => APP_URL . '/modules/warehouse/index.php'
+    ];
+}
+if ($lowStockCount > 0) {
+    $warehouseIssues[] = [
+        'type' => 'warning',
+        'title' => 'Низкий запас материалов',
+        'count' => $lowStockCount,
+        'description' => 'Материалы ниже минимального уровня',
+        'recommendation' => 'Запланировать пополнение запасов',
+        'link' => APP_URL . '/modules/warehouse/index.php'
+    ];
+}
+
+// Модуль Оборудование - проблемы
+$equipmentIssues = [];
+if (($stats['equipment']['broken'] ?? 0) > 0) {
+    $equipmentIssues[] = [
+        'type' => 'critical',
+        'title' => 'Неисправное оборудование',
+        'count' => $stats['equipment']['broken'],
+        'description' => 'Оборудование требует ремонта',
+        'recommendation' => 'Вызвать ремонтную службу или создать заявку на ремонт',
+        'link' => APP_URL . '/modules/equipment/index.php'
+    ];
+}
+$maintenanceCount = $stats['equipment']['maintenance'] ?? 0;
+if ($maintenanceCount > 0) {
+    $equipmentIssues[] = [
+        'type' => 'warning',
+        'title' => 'На обслуживании',
+        'count' => $maintenanceCount,
+        'description' => 'Оборудование проходит плановое ТО',
+        'recommendation' => 'Контролировать сроки завершения обслуживания',
+        'link' => APP_URL . '/modules/equipment/index.php'
+    ];
+}
+
+// Модуль Отгрузка - проблемы
+$shipmentIssues = [];
+$readyToShipStmt = $db->query("SELECT COUNT(*) as count FROM orders WHERE status = 'ready' AND delivery_date < DATE_ADD(NOW(), INTERVAL 3 DAY)");
+$urgentShipmentCount = $readyToShipStmt->fetch()['count'] ?? 0;
+if ($urgentShipmentCount > 0) {
+    $shipmentIssues[] = [
+        'type' => 'warning',
+        'title' => 'Срочная отгрузка',
+        'count' => $urgentShipmentCount,
+        'description' => 'Заказы готовые к отгрузке в ближайшие 3 дня',
+        'recommendation' => 'Организовать транспортировку и подготовить документы',
+        'link' => APP_URL . '/modules/shipment/index.php'
+    ];
+}
+
+// Модуль ГОСТ Документы - проблемы
+$docsIssues = [];
+$pendingDocsStmt = $db->query("SELECT COUNT(DISTINCT o.id) as count FROM orders o 
+    LEFT JOIN order_items oi ON o.id = oi.order_id 
+    WHERE o.status IN ('ready', 'shipped') 
+    AND NOT EXISTS (SELECT 1 FROM documents d WHERE d.order_id = o.id)");
+$pendingDocsCount = $pendingDocsStmt->fetch()['count'] ?? 0;
+if ($pendingDocsCount > 0) {
+    $docsIssues[] = [
+        'type' => 'info',
+        'title' => 'Требуются документы',
+        'count' => $pendingDocsCount,
+        'description' => 'Заказы без сопроводительной документации',
+        'recommendation' => 'Сформировать паспорта, сертификаты и накладные',
+        'link' => APP_URL . '/modules/gost_docs/index.php'
+    ];
+}
+
 $pageTitle = 'Панель управления | ' . APP_NAME;
 $currentPage = 'dashboard';
 ?>
@@ -920,6 +1064,289 @@ $currentPage = 'dashboard';
             line-height: 1.5;
         }
         
+        /* Issue Badges for Module Summary */
+        .issues-scroll-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 0.5rem;
+        }
+        
+        .issues-scroll-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .issues-scroll-container::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 3px;
+        }
+        
+        .issues-scroll-container::-webkit-scrollbar-thumb {
+            background: rgba(255, 107, 107, 0.5);
+            border-radius: 3px;
+        }
+        
+        .issue-badge {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            padding: 1rem 1.25rem;
+            border-radius: 12px;
+            border: 1px solid;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.02);
+        }
+        
+        .issue-badge.critical {
+            border-color: rgba(255, 69, 58, 0.4);
+            background: rgba(255, 69, 58, 0.08);
+        }
+        
+        .issue-badge.warning {
+            border-color: rgba(255, 214, 10, 0.4);
+            background: rgba(255, 214, 10, 0.08);
+        }
+        
+        .issue-badge.info {
+            border-color: rgba(90, 200, 250, 0.4);
+            background: rgba(90, 200, 250, 0.08);
+        }
+        
+        .issue-badge:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .issue-badge-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        
+        .issue-badge.critical .issue-badge-icon {
+            background: rgba(255, 69, 58, 0.2);
+            color: #ff453a;
+        }
+        
+        .issue-badge.warning .issue-badge-icon {
+            background: rgba(255, 214, 10, 0.2);
+            color: #ffd60a;
+        }
+        
+        .issue-badge.info .issue-badge-icon {
+            background: rgba(90, 200, 250, 0.2);
+            color: #5ac8fa;
+        }
+        
+        .issue-badge-content {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .issue-badge-title {
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .issue-count-badge {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 0.2rem 0.6rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .issue-badge-desc {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin: 0 0 0.5rem 0;
+        }
+        
+        .issue-badge-action {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .issue-badge-action i {
+            color: #ffd60a;
+        }
+        
+        .issue-badge-link {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+        
+        .issue-badge-link:hover {
+            background: var(--gradient-primary);
+            transform: translateX(3px);
+        }
+        
+        /* Modules Grid */
+        #modules-grid {
+            scroll-margin-top: 100px;
+        }
+        
+        .modules-section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: var(--text-primary);
+        }
+        
+        .module-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            backdrop-filter: var(--backdrop-blur);
+            transition: all 0.3s ease;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .module-card:hover {
+            border-color: var(--border-glow);
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg), 0 0 30px rgba(255, 107, 107, 0.15);
+        }
+        
+        .module-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .module-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+        
+        .module-icon.orders { background: rgba(90, 200, 250, 0.2); color: #5ac8fa; }
+        .module-icon.production { background: rgba(255, 214, 10, 0.2); color: #ffd60a; }
+        .module-icon.warehouse { background: rgba(48, 209, 88, 0.2); color: #30d158; }
+        .module-icon.equipment { background: rgba(255, 142, 83, 0.2); color: #FF8E53; }
+        .module-icon.shipment { background: rgba(90, 200, 250, 0.2); color: #5ac8fa; }
+        .module-icon.gost { background: rgba(255, 107, 107, 0.2); color: #ff6b6b; }
+        
+        .module-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--text-primary);
+        }
+        
+        .module-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        
+        .module-stat-item {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 0.75rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .module-stat-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        
+        .module-stat-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .module-issues-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            flex: 1;
+        }
+        
+        .module-issue-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 0;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .module-issue-item:last-child {
+            border-bottom: none;
+        }
+        
+        .module-issue-item i {
+            font-size: 0.75rem;
+        }
+        
+        .module-issue-item.critical i { color: #ff453a; }
+        .module-issue-item.warning i { color: #ffd60a; }
+        .module-issue-item.success i { color: #30d158; }
+        
+        .module-link-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin-top: auto;
+        }
+        
+        .module-link-btn:hover {
+            background: var(--gradient-primary);
+            border-color: transparent;
+            transform: translateY(-2px);
+        }
+        
         .empty-state {
             padding: 3rem 1.5rem;
             text-align: center;
@@ -1380,6 +1807,43 @@ $currentPage = 'dashboard';
             </div>
         </div>
 
+        <!-- Сводка проблем по модулям -->
+        <?php 
+        $allIssues = array_merge($ordersIssues, $productionIssues, $warehouseIssues, $equipmentIssues, $shipmentIssues, $docsIssues);
+        if (!empty($allIssues)): 
+        ?>
+        <div class="card mb-4" style="border-color: rgba(255, 107, 107, 0.3);" id="modules-alerts">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-exclamation-triangle" style="color: #ff6b6b;"></i>
+                    Проблемы и рекомендации по модулям
+                </div>
+                <a href="#modules-grid" class="card-link">Перейти к модулям ↓</a>
+            </div>
+            <div class="card-body" style="padding: 1.5rem;">
+                <div class="issues-scroll-container">
+                    <?php foreach ($allIssues as $issue): ?>
+                    <div class="issue-badge <?= $issue['type'] ?>">
+                        <div class="issue-badge-icon">
+                            <i class="fas fa-<?= $issue['type'] == 'critical' ? 'exclamation-circle' : ($issue['type'] == 'warning' ? 'exclamation-triangle' : 'info-circle') ?>"></i>
+                        </div>
+                        <div class="issue-badge-content">
+                            <div class="issue-badge-title"><?= e($issue['title']) ?> <span class="issue-count-badge"><?= $issue['count'] ?></span></div>
+                            <p class="issue-badge-desc"><?= e($issue['description']) ?></p>
+                            <div class="issue-badge-action">
+                                <i class="fas fa-lightbulb"></i> <?= e($issue['recommendation']) ?>
+                            </div>
+                        </div>
+                        <a href="<?= $issue['link'] ?>" class="issue-badge-link">
+                            <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
+
         <!-- Блок рекомендаций и проблем -->
         <?php if (!empty($overdueOrders) || !empty($lowStockMaterials) || ($stats['equipment']['broken'] ?? 0) > 0): ?>
         <div class="card mb-4" style="border-color: rgba(255, 69, 58, 0.3);">
@@ -1560,6 +2024,234 @@ $currentPage = 'dashboard';
 
             <!-- Боковая панель -->
             <div class="side-panel">
+                <!-- Сводка по модулям -->
+                <div id="modules-grid" style="margin-bottom: 1.5rem;">
+                    <h2 class="modules-section-title">
+                        <i class="fas fa-th-large"></i> Модули системы
+                    </h2>
+                    <div class="modules-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
+                        
+                        <!-- Заказы -->
+                        <div class="module-card">
+                            <div class="module-header">
+                                <div class="module-icon orders">
+                                    <i class="fas fa-shopping-cart"></i>
+                                </div>
+                                <div class="module-title">Заказы</div>
+                            </div>
+                            <div class="module-stats">
+                                <div class="module-stat-item">
+                                    <div class="module-stat-value"><?= $stats['orders']['total_orders'] ?? 0 ?></div>
+                                    <div class="module-stat-label">Всего</div>
+                                </div>
+                                <div class="module-stat-item">
+                                    <div class="module-stat-value" style="color: #30d158;"><?= $stats['orders']['new_orders'] ?? 0 ?></div>
+                                    <div class="module-stat-label">Новые</div>
+                                </div>
+                            </div>
+                            <ul class="module-issues-list">
+                                <?php if (!empty($overdueOrders)): ?>
+                                <li class="module-issue-item critical">
+                                    <i class="fas fa-exclamation-circle"></i>
+                                    <span><?= count($overdueOrders) ?> просрочено</span>
+                                </li>
+                                <?php else: ?>
+                                <li class="module-issue-item success">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Все в срок</span>
+                                </li>
+                                <?php endif; ?>
+                            </ul>
+                            <a href="<?= APP_URL ?>/modules/orders/index.php" class="module-link-btn">
+                                Перейти <i class="fas fa-arrow-right"></i>
+                            </a>
+                        </div>
+
+                        <!-- Производство -->
+                        <div class="module-card">
+                            <div class="module-header">
+                                <div class="module-icon production">
+                                    <i class="fas fa-cogs"></i>
+                                </div>
+                                <div class="module-title">Производство</div>
+                            </div>
+                            <div class="module-stats">
+                                <div class="module-stat-item">
+                                    <div class="module-stat-value"><?= $stats['production']['in_progress'] ?? 0 ?></div>
+                                    <div class="module-stat-label">В работе</div>
+                                </div>
+                                <div class="module-stat-item">
+                                    <div class="module-stat-value" style="color: #ffd60a;"><?= $stats['production']['planned'] ?? 0 ?></div>
+                                    <div class="module-stat-label">В плане</div>
+                                </div>
+                            </div>
+                            <ul class="module-issues-list">
+                                <?php if ($weeklyEfficiency && $weeklyEfficiency['efficiency_percent']): ?>
+                                <li class="module-issue-item success">
+                                    <i class="fas fa-chart-line"></i>
+                                    <span>Эффективность: <?= $weeklyEfficiency['efficiency_percent'] ?>%</span>
+                                </li>
+                                <?php endif; ?>
+                                <?php if (!empty($overdueTasks)): ?>
+                                <li class="module-issue-item critical">
+                                    <i class="fas fa-exclamation-circle"></i>
+                                    <span><?= count($overdueTasks) ?> просрочено</span>
+                                </li>
+                                <?php endif; ?>
+                            </ul>
+                            <a href="<?= APP_URL ?>/modules/production/index.php" class="module-link-btn">
+                                Перейти <i class="fas fa-arrow-right"></i>
+                            </a>
+                        </div>
+
+                        <!-- Склад -->
+                        <div class="module-card">
+                            <div class="module-header">
+                                <div class="module-icon warehouse">
+                                    <i class="fas fa-warehouse"></i>
+                                </div>
+                                <div class="module-title">Склад</div>
+                            </div>
+                            <div class="module-stats">
+                                <div class="module-stat-item">
+                                    <div class="module-stat-value"><?= $materialStats['total'] ?? 0 ?></div>
+                                    <div class="module-stat-label">Позиций</div>
+                                </div>
+                                <div class="module-stat-item">
+                                    <div class="module-stat-value" style="color: #ff453a;"><?= $outOfStockCount ?? 0 ?></div>
+                                    <div class="module-stat-label">Нет на складе</div>
+                                </div>
+                            </div>
+                            <ul class="module-issues-list">
+                                <?php if ($lowStockCount > 0): ?>
+                                <li class="module-issue-item warning">
+                                    <i class="fas fa-triangle-exclamation"></i>
+                                    <span><?= $lowStockCount ?> ниже нормы</span>
+                                </li>
+                                <?php else: ?>
+                                <li class="module-issue-item success">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Запасы в норме</span>
+                                </li>
+                                <?php endif; ?>
+                            </ul>
+                            <a href="<?= APP_URL ?>/modules/warehouse/index.php" class="module-link-btn">
+                                Перейти <i class="fas fa-arrow-right"></i>
+                            </a>
+                        </div>
+
+                        <!-- Оборудование -->
+                        <div class="module-card">
+                            <div class="module-header">
+                                <div class="module-icon equipment">
+                                    <i class="fas fa-tools"></i>
+                                </div>
+                                <div class="module-title">Оборудование</div>
+                            </div>
+                            <div class="module-stats">
+                                <div class="module-stat-item">
+                                    <div class="module-stat-value" style="color: #30d158;"><?= $stats['equipment']['operational'] ?? 0 ?></div>
+                                    <div class="module-stat-label">В работе</div>
+                                </div>
+                                <div class="module-stat-item">
+                                    <div class="module-stat-value" style="color: #ff453a;"><?= $stats['equipment']['broken'] ?? 0 ?></div>
+                                    <div class="module-stat-label">Неисправно</div>
+                                </div>
+                            </div>
+                            <ul class="module-issues-list">
+                                <?php if (($stats['equipment']['maintenance'] ?? 0) > 0): ?>
+                                <li class="module-issue-item warning">
+                                    <i class="fas fa-wrench"></i>
+                                    <span><?= $stats['equipment']['maintenance'] ?> на ТО</span>
+                                </li>
+                                <?php endif; ?>
+                                <?php if (($stats['equipment']['broken'] ?? 0) == 0): ?>
+                                <li class="module-issue-item success">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Все исправно</span>
+                                </li>
+                                <?php endif; ?>
+                            </ul>
+                            <a href="<?= APP_URL ?>/modules/equipment/index.php" class="module-link-btn">
+                                Перейти <i class="fas fa-arrow-right"></i>
+                            </a>
+                        </div>
+
+                        <!-- Отгрузка -->
+                        <div class="module-card">
+                            <div class="module-header">
+                                <div class="module-icon shipment">
+                                    <i class="fas fa-truck"></i>
+                                </div>
+                                <div class="module-title">Отгрузка</div>
+                            </div>
+                            <div class="module-stats">
+                                <div class="module-stat-item">
+                                    <div class="module-stat-value"><?= $shipmentStats['ready']['count'] ?? 0 ?></div>
+                                    <div class="module-stat-label">Готовы</div>
+                                </div>
+                                <div class="module-stat-item">
+                                    <div class="module-stat-value" style="color: #5ac8fa;"><?= $shipmentStats['shipped']['count'] ?? 0 ?></div>
+                                    <div class="module-stat-label">В пути</div>
+                                </div>
+                            </div>
+                            <ul class="module-issues-list">
+                                <?php if ($urgentShipmentCount > 0): ?>
+                                <li class="module-issue-item warning">
+                                    <i class="fas fa-clock"></i>
+                                    <span><?= $urgentShipmentCount ?> срочных</span>
+                                </li>
+                                <?php else: ?>
+                                <li class="module-issue-item success">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>График соблюдается</span>
+                                </li>
+                                <?php endif; ?>
+                            </ul>
+                            <a href="<?= APP_URL ?>/modules/shipment/index.php" class="module-link-btn">
+                                Перейти <i class="fas fa-arrow-right"></i>
+                            </a>
+                        </div>
+
+                        <!-- ГОСТ Документы -->
+                        <div class="module-card">
+                            <div class="module-header">
+                                <div class="module-icon gost">
+                                    <i class="fas fa-file-contract"></i>
+                                </div>
+                                <div class="module-title">ГОСТ Документы</div>
+                            </div>
+                            <div class="module-stats">
+                                <div class="module-stat-item">
+                                    <div class="module-stat-value"><?= count($availableOrders) ?></div>
+                                    <div class="module-stat-label">Доступно</div>
+                                </div>
+                                <div class="module-stat-item">
+                                    <div class="module-stat-value" style="color: #ffd60a;"><?= $pendingDocsCount ?? 0 ?></div>
+                                    <div class="module-stat-label">Требуют</div>
+                                </div>
+                            </div>
+                            <ul class="module-issues-list">
+                                <?php if ($pendingDocsCount > 0): ?>
+                                <li class="module-issue-item warning">
+                                    <i class="fas fa-file-alt"></i>
+                                    <span><?= $pendingDocsCount ?> без документов</span>
+                                </li>
+                                <?php else: ?>
+                                <li class="module-issue-item success">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Все оформлено</span>
+                                </li>
+                                <?php endif; ?>
+                            </ul>
+                            <a href="<?= APP_URL ?>/modules/gost_docs/index.php" class="module-link-btn">
+                                Перейти <i class="fas fa-arrow-right"></i>
+                            </a>
+                        </div>
+
+                    </div>
+                </div>
+
                 <!-- Требуют внимания -->
                 <div class="alert-card">
                     <div class="alert-header warning">
