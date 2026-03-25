@@ -108,26 +108,105 @@ $pageTitle = 'ГОСТ Документы | ' . APP_NAME;
     <div class="glow-overlay"></div>
     <div class="grid-overlay"></div>
     <!-- Navbar -->
-    <nav class="navbar">
-        <a href="<?= APP_URL ?>/modules/dashboard/index.php" class="nav-brand">
+    <nav class="navbar" id="navbar">
+        <a href="<?= APP_URL ?>" class="nav-brand">
             <div class="brand-logo">
-                <svg viewBox="0 0 24 24" fill="white"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
             </div>
             <span class="brand-name">PolesieMES</span>
         </a>
-        
+
         <ul class="nav-menu">
-            <li><a href="<?= APP_URL ?>/modules/dashboard/index.php" class="nav-link"><i class="fas fa-home"></i> Главная</a></li>
-            <li><a href="<?= APP_URL ?>/modules/orders/index.php" class="nav-link"><i class="fas fa-shopping-cart"></i> Заказы</a></li>
-            <li><a href="<?= APP_URL ?>/modules/production/index.php" class="nav-link"><i class="fas fa-industry"></i> Производство</a></li>
-            <li><a href="<?= APP_URL ?>/modules/shipment/index.php" class="nav-link"><i class="fas fa-truck"></i> Отгрузка</a></li>
-            <li><a href="<?= APP_URL ?>/modules/gost_docs/index.php" class="nav-link active"><i class="fas fa-file-contract"></i> ГОСТ Документы</a></li>
+            <li>
+                <a href="<?= APP_URL ?>/modules/dashboard/index.php" class="nav-link">
+                    <i class="fas fa-chart-line"></i>
+                    Главная
+                </a>
+            </li>
+
+            <?php if (hasRole(['admin', 'manager'])): ?>
+            <li>
+                <a href="<?= APP_URL ?>/modules/orders/index.php" class="nav-link">
+                    <i class="fas fa-shopping-cart"></i>
+                    Заказы
+                </a>
+            </li>
+            <?php endif; ?>
+
+            <?php if (hasRole(['admin', 'manager', 'technologist', 'operator'])): ?>
+            <li>
+                <a href="<?= APP_URL ?>/modules/production/index.php" class="nav-link">
+                    <i class="fas fa-cogs"></i>
+                    Производство
+                </a>
+            </li>
+            <?php endif; ?>
+
+            <?php if (hasRole(['admin', 'manager', 'warehouse_manager'])): ?>
+            <li>
+                <a href="<?= APP_URL ?>/modules/warehouse/index.php" class="nav-link">
+                    <i class="fas fa-warehouse"></i>
+                    Склад
+                </a>
+            </li>
+            <?php endif; ?>
+
+            <?php if (hasRole(['admin', 'manager', 'technologist'])): ?>
+            <li>
+                <a href="<?= APP_URL ?>/modules/equipment/index.php" class="nav-link">
+                    <i class="fas fa-tools"></i>
+                    Оборудование
+                </a>
+            </li>
+            <?php endif; ?>
+
+            <?php if (hasRole(['admin', 'manager', 'logistician'])): ?>
+            <li>
+                <a href="<?= APP_URL ?>/modules/shipment/index.php" class="nav-link">
+                    <i class="fas fa-truck"></i>
+                    Отгрузка
+                </a>
+            </li>
+            <?php endif; ?>
+
+            <?php if (hasRole(['admin', 'manager', 'technologist'])): ?>
+            <li>
+                <a href="<?= APP_URL ?>/modules/documents/index.php" class="nav-link active">
+                    <i class="fas fa-file-contract"></i>
+                    Документы
+                </a>
+            </li>
+            <?php endif; ?>
+
+            <?php if (hasRole('admin')): ?>
+            <li>
+                <a href="<?= APP_URL ?>/modules/employees/index.php" class="nav-link">
+                    <i class="fas fa-users"></i>
+                    Сотрудники
+                </a>
+            </li>
+            <?php endif; ?>
         </ul>
-        
+
         <div class="user-menu">
-            <span style="color: var(--text-secondary);"><?= e(getCurrentUser()['username']) ?></span>
-            <a href="<?= APP_URL ?>/modules/auth/logout.php" class="btn-logout" style="padding: 0.5rem 1rem; background: var(--glass-bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); text-decoration: none;">Выход</a>
+            <div class="user-avatar">
+                <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+            </div>
+            <div class="user-info">
+                <span class="user-name"><?= e($_SESSION['full_name']) ?></span>
+                <span class="user-role"><?= e(getRoleName($_SESSION['role'])) ?></span>
+            </div>
+            <a href="<?= APP_URL ?>/modules/auth/logout.php" class="btn-logout">
+                <i class="fas fa-sign-out-alt"></i>
+                Выход
+            </a>
         </div>
+
+        <button class="mobile-menu-btn" onclick="toggleMobileMenu()">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
     </nav>
 
     <!-- Main Content -->
@@ -137,6 +216,11 @@ $pageTitle = 'ГОСТ Документы | ' . APP_NAME;
                 <h1><i class="fas fa-file-contract"></i> Документация ГОСТ (Беларусь)</h1>
                 <p>Формирование сопроводительной документации по стандартам РБ</p>
             </div>
+            <?php if (hasRole(['admin', 'manager', 'technologist'])): ?>
+            <a href="../documents/index.php" class="btn-primary-custom">
+                <i class="fas fa-folder-open"></i> Перейти к Документам
+            </a>
+            <?php endif; ?>
         </div>
 
         <?php if ($order): ?>
@@ -289,5 +373,11 @@ $pageTitle = 'ГОСТ Документы | ' . APP_NAME;
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function toggleMobileMenu() {
+            const navMenu = document.querySelector('.nav-menu');
+            navMenu.classList.toggle('active');
+        }
+    </script>
 </body>
 </html>

@@ -40,7 +40,7 @@ $stmt = $db->query("
         SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active,
         SUM(CASE WHEN status = 'vacation' THEN 1 ELSE 0 END) as vacation,
         SUM(CASE WHEN status = 'sick' THEN 1 ELSE 0 END) as sick,
-        SUM(CASE WHEN status = 'terminated' THEN 1 ELSE 0 END) as terminated
+        SUM(CASE WHEN status = 'terminated' THEN 1 ELSE 0 END) as `terminated`
     FROM employees
 ");
 $employeeStats = $stmt->fetch();
@@ -190,9 +190,9 @@ $pageTitle = 'Управление сотрудниками | ' . APP_NAME;
 
             <?php if (hasRole(['admin', 'manager', 'technologist'])): ?>
             <li>
-                <a href="<?= APP_URL ?>/modules/gost_docs/index.php" class="nav-link">
+                <a href="<?= APP_URL ?>/modules/documents/index.php" class="nav-link">
                     <i class="fas fa-file-contract"></i>
-                    ГОСТ Документы
+                    Документы
                 </a>
             </li>
             <?php endif; ?>

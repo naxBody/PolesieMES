@@ -270,7 +270,7 @@ if ($urgentShipmentCount > 0) {
     ];
 }
 
-// Модуль ГОСТ Документы - проблемы
+// Модуль Документы - проблемы
 $docsIssues = [];
 // Проверяем заказы в статусах готовности, которые могут требовать документы
 $readyOrdersStmt = $db->query("SELECT COUNT(*) as count FROM orders WHERE status IN ('ready', 'shipped')");
@@ -282,7 +282,7 @@ if ($readyOrdersCount > 0) {
         'count' => $readyOrdersCount,
         'description' => 'Заказы готовые к отгрузке или в пути',
         'recommendation' => 'Проверить наличие сопроводительной документации (паспорта, сертификаты, накладные)',
-        'link' => APP_URL . '/modules/gost_docs/index.php'
+        'link' => APP_URL . '/modules/documents/index.php'
     ];
 }
 
@@ -1620,9 +1620,9 @@ $currentPage = 'dashboard';
 
             <?php if (hasRole(['admin', 'manager', 'technologist'])): ?>
             <li>
-                <a href="<?= APP_URL ?>/modules/gost_docs/index.php" class="nav-link">
+                <a href="<?= APP_URL ?>/modules/documents/index.php" class="nav-link">
                     <i class="fas fa-file-contract"></i>
-                    ГОСТ Документы
+                    Документы
                 </a>
             </li>
             <?php endif; ?>
@@ -2211,13 +2211,13 @@ $currentPage = 'dashboard';
                             </a>
                         </div>
 
-                        <!-- ГОСТ Документы -->
+                        <!-- Документы -->
                         <div class="module-card">
                             <div class="module-header">
                                 <div class="module-icon gost">
                                     <i class="fas fa-file-contract"></i>
                                 </div>
-                                <div class="module-title">ГОСТ Документы</div>
+                                <div class="module-title">Документы</div>
                             </div>
                             <div class="module-stats">
                                 <div class="module-stat-item">
@@ -2242,7 +2242,7 @@ $currentPage = 'dashboard';
                                 </li>
                                 <?php endif; ?>
                             </ul>
-                            <a href="<?= APP_URL ?>/modules/gost_docs/index.php" class="module-link-btn">
+                            <a href="<?= APP_URL ?>/modules/documents/index.php" class="module-link-btn">
                                 Перейти <i class="fas fa-arrow-right"></i>
                             </a>
                         </div>

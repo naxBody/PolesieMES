@@ -223,9 +223,9 @@ $pageTitle = 'Управление складом | ' . APP_NAME;
 
             <?php if (hasRole(['admin', 'manager', 'technologist'])): ?>
             <li>
-                <a href="<?= APP_URL ?>/modules/gost_docs/index.php" class="nav-link">
+                <a href="<?= APP_URL ?>/modules/documents/index.php" class="nav-link">
                     <i class="fas fa-file-contract"></i>
-                    ГОСТ Документы
+                    Документы
                 </a>
             </li>
             <?php endif; ?>
