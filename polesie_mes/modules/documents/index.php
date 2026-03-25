@@ -1,6 +1,5 @@
 <?php
 session_start();
-require_once '../../config/database.php';
 
 // Проверка авторизации
 if (!isset($_SESSION['user_id'])) {
@@ -8,22 +7,22 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
-$pdo = getDBConnection();
-
-// Получаем документы. 
-// Так как отдельной таблицы может не быть, используем демо-данные для отображения функционала страницы
+// Демо-данные документов (так как таблица еще не создана в БД)
 $documents = [
     ['id' => 1, 'name' => 'ГОСТ 2.105-95 ЕСКД', 'type' => 'ГОСТ', 'status' => 'active', 'date' => '2023-10-15', 'size' => '2.4 MB'],
     ['id' => 2, 'name' => 'Инструкция по охране труда', 'type' => 'Инструкция', 'status' => 'active', 'date' => '2023-11-20', 'size' => '1.1 MB'],
     ['id' => 3, 'name' => 'План эвакуации 2024', 'type' => 'План', 'status' => 'archive', 'date' => '2024-01-10', 'size' => '5.8 MB'],
     ['id' => 4, 'name' => 'Договор поставки №45', 'type' => 'Договор', 'status' => 'draft', 'date' => '2024-02-05', 'size' => '0.8 MB'],
     ['id' => 5, 'name' => 'Сертификат соответствия', 'type' => 'Сертификат', 'status' => 'active', 'date' => '2023-12-12', 'size' => '1.5 MB'],
+    ['id' => 6, 'name' => 'ГОСТ 19.101-78 ЕСПД', 'type' => 'ГОСТ', 'status' => 'active', 'date' => '2023-09-05', 'size' => '3.2 MB'],
+    ['id' => 7, 'name' => 'Регламент техобслуживания', 'type' => 'Инструкция', 'status' => 'active', 'date' => '2024-03-01', 'size' => '1.8 MB'],
 ];
 
 // Статистика
 $total_docs = count($documents);
 $active_docs = count(array_filter($documents, fn($d) => ($d['status'] ?? '') === 'active'));
 $archive_docs = count(array_filter($documents, fn($d) => ($d['status'] ?? '') === 'archive'));
+$draft_docs = count(array_filter($documents, fn($d) => ($d['status'] ?? '') === 'draft'));
 ?>
 <!DOCTYPE html>
 <html lang="ru">
@@ -399,6 +398,15 @@ $archive_docs = count(array_filter($documents, fn($d) => ($d['status'] ?? '') ==
                 <div class="stat-info">
                     <h3><?php echo $archive_docs; ?></h3>
                     <p>В архиве</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background: rgba(243, 156, 18, 0.1); color: var(--warning-color);">
+                    <i class="fas fa-file-edit"></i>
+                </div>
+                <div class="stat-info">
+                    <h3><?php echo $draft_docs; ?></h3>
+                    <p>Черновики</p>
                 </div>
             </div>
         </div>
