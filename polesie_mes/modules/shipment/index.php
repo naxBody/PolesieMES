@@ -126,7 +126,7 @@ $pageTitle = 'Отгрузка продукции | ' . APP_NAME;
             <li><a href="<?= APP_URL ?>/modules/shipment/index.php" class="nav-link active"><i class="fas fa-truck"></i> Отгрузка</a></li>
             <?php endif; ?>
             <?php if (hasRole(['admin', 'manager', 'technologist'])): ?>
-            <li><a href="<?= APP_URL ?>/modules/gost_docs/index.php" class="nav-link"><i class="fas fa-file-contract"></i> ГОСТ Документы</a></li>
+            <li><a href="<?= APP_URL ?>/modules/documents/index.php" class="nav-link"><i class="fas fa-file-contract"></i> Документы</a></li>
             <?php endif; ?>
             <?php if (hasRole('admin')): ?>
             <li><a href="<?= APP_URL ?>/modules/employees/index.php" class="nav-link"><i class="fas fa-users"></i> Сотрудники</a></li>
@@ -223,7 +223,7 @@ $pageTitle = 'Отгрузка продукции | ' . APP_NAME;
                                         <i class="fas fa-check"></i> Завершить
                                     </a>
                                     <?php endif; ?>
-                                    <a href="../gost_docs/index.php?order_id=<?= $order['id'] ?>" class="btn-action btn-docs">
+                                    <a href="../documents/index.php?order_id=<?= $order['id'] ?>" class="btn-action btn-docs">
                                         <i class="fas fa-file-alt"></i> Документы
                                     </a>
                                 </td>

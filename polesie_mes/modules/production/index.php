@@ -164,7 +164,7 @@ $pageTitle = 'Контроль производства | ' . APP_NAME;
             <li><a href="<?= APP_URL ?>/modules/shipment/index.php" class="nav-link"><i class="fas fa-truck"></i> Отгрузка</a></li>
             <?php endif; ?>
             <?php if (hasRole(['admin', 'manager', 'technologist'])): ?>
-            <li><a href="<?= APP_URL ?>/modules/gost_docs/index.php" class="nav-link"><i class="fas fa-file-contract"></i> ГОСТ Документы</a></li>
+            <li><a href="<?= APP_URL ?>/modules/documents/index.php" class="nav-link"><i class="fas fa-file-contract"></i> Документы</a></li>
             <?php endif; ?>
             <?php if (hasRole('admin')): ?>
             <li><a href="<?= APP_URL ?>/modules/employees/index.php" class="nav-link"><i class="fas fa-users"></i> Сотрудники</a></li>
