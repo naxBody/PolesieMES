@@ -1,11 +1,21 @@
 <?php
-session_start();
+/**
+ * Модуль управления документами - Главная страница
+ * PolesieMES - Система управления производством ОАО "Полесьеэлектромаш"
+ * 
+ * Реестр технической документации, ГОСТов, инструкций и договоров
+ */
+
+require_once __DIR__ . '/../../config/config.php';
+require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../includes/auth_functions.php';
+require_once __DIR__ . '/../../includes/helpers.php';
 
 // Проверка авторизации
-if (!isset($_SESSION['user_id'])) {
-    header('Location: ../../login.php');
-    exit;
-}
+requireAuth();
+
+$db = getDB();
+$user = getCurrentUser();
 
 // Демо-данные документов (так как таблица еще не создана в БД)
 $documents = [
@@ -23,448 +33,254 @@ $total_docs = count($documents);
 $active_docs = count(array_filter($documents, fn($d) => ($d['status'] ?? '') === 'active'));
 $archive_docs = count(array_filter($documents, fn($d) => ($d['status'] ?? '') === 'archive'));
 $draft_docs = count(array_filter($documents, fn($d) => ($d['status'] ?? '') === 'draft'));
+
+$pageTitle = 'Управление документами | ' . APP_NAME;
 ?>
 <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Документы - PolesieMES</title>
-    <link rel="stylesheet" href="../../assets/css/style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title><?= e($pageTitle) ?></title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/common-style.css">
     <style>
-        :root {
-            --primary-color: #2c3e50;
-            --secondary-color: #34495e;
-            --accent-color: #3498db;
-            --text-color: #333;
-            --bg-color: #f5f6fa;
-            --card-bg: #ffffff;
-            --success-color: #27ae60;
-            --warning-color: #f39c12;
-            --danger-color: #c0392b;
-            --border-radius: 12px;
-            --shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            overflow-x: hidden;
-        }
-
-        /* Навигация (как на главной) */
-        .navbar {
-            background: rgba(44, 62, 80, 0.95);
-            backdrop-filter: blur(10px);
-            padding: 1rem 2rem;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 1000;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-        }
-
-        .nav-logo {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: white;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .nav-menu {
-            display: flex;
-            gap: 20px;
-            list-style: none;
-            margin: 0;
-            padding: 0;
-        }
-
-        .nav-menu a {
-            color: rgba(255,255,255,0.8);
-            text-decoration: none;
-            font-weight: 500;
-            transition: all 0.3s;
-            padding: 8px 16px;
-            border-radius: 6px;
-        }
-
-        .nav-menu a:hover, .nav-menu a.active {
-            color: white;
-            background: rgba(255,255,255,0.1);
-        }
-
-        .nav-user {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            color: white;
-        }
-
-        .nav-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: var(--accent-color);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-        }
-
-        .mobile-menu-btn {
-            display: none;
-            background: none;
-            border: none;
-            color: white;
-            font-size: 1.5rem;
-            cursor: pointer;
-        }
-
-        /* Контент */
-        .container {
-            max-width: 1400px;
-            margin: 100px auto 40px;
-            padding: 0 20px;
-        }
-
-        .page-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-            flex-wrap: wrap;
-            gap: 20px;
-        }
-
-        .page-title h1 {
-            margin: 0;
-            font-size: 2rem;
-            color: var(--primary-color);
-        }
-
-        .page-title p {
-            margin: 5px 0 0;
-            color: #7f8c8d;
-        }
-
-        .btn {
-            padding: 10px 20px;
-            border-radius: 8px;
-            border: none;
-            cursor: pointer;
-            font-weight: 600;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        .btn-primary {
-            background: var(--accent-color);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: #2980b9;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
-        }
-
-        /* Карточки статистики */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .stat-card {
-            background: var(--card-bg);
-            padding: 25px;
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow);
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            transition: transform 0.3s;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-5px);
-        }
-
-        .stat-icon {
-            width: 60px;
-            height: 60px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-        }
-
-        .stat-icon.blue { background: rgba(52, 152, 219, 0.1); color: var(--accent-color); }
-        .stat-icon.green { background: rgba(39, 174, 96, 0.1); color: var(--success-color); }
-        .stat-icon.orange { background: rgba(243, 156, 18, 0.1); color: var(--warning-color); }
-
-        .stat-info h3 {
-            margin: 0;
-            font-size: 2rem;
-            color: var(--primary-color);
-        }
-
-        .stat-info p {
-            margin: 0;
-            color: #7f8c8d;
-            font-size: 0.9rem;
-        }
-
-        /* Таблица */
-        .table-container {
-            background: var(--card-bg);
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow);
-            overflow: hidden;
-            overflow-x: auto;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        thead {
-            background: #f8f9fa;
-            border-bottom: 2px solid #eee;
-        }
-
-        th {
-            padding: 15px 20px;
-            text-align: left;
-            font-weight: 600;
-            color: var(--secondary-color);
-            text-transform: uppercase;
-            font-size: 0.85rem;
-            letter-spacing: 0.5px;
-        }
-
-        td {
-            padding: 15px 20px;
-            border-bottom: 1px solid #eee;
-            vertical-align: middle;
-        }
-
-        tr:last-child td {
-            border-bottom: none;
-        }
-
-        tr:hover {
-            background: #f8f9fa;
-        }
-
-        .doc-name {
-            font-weight: 600;
-            color: var(--primary-color);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .doc-icon {
-            color: var(--accent-color);
-            font-size: 1.2rem;
-        }
-
-        .badge {
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-
-        .badge-active { background: rgba(39, 174, 96, 0.1); color: var(--success-color); }
-        .badge-archive { background: rgba(149, 165, 166, 0.1); color: #7f8c8d; }
-        .badge-draft { background: rgba(243, 156, 18, 0.1); color: var(--warning-color); }
-
-        .action-btn {
-            background: none;
-            border: none;
-            cursor: pointer;
-            color: #7f8c8d;
-            padding: 5px;
-            border-radius: 4px;
-            transition: all 0.2s;
-        }
-
-        .action-btn:hover {
-            background: #f1f2f6;
-            color: var(--accent-color);
-        }
-
-        @media (max-width: 768px) {
-            .nav-menu {
-                display: none;
-                position: absolute;
-                top: 100%;
-                left: 0;
-                right: 0;
-                background: var(--primary-color);
-                flex-direction: column;
-                padding: 20px;
-                gap: 10px;
-            }
-            .nav-menu.active { display: flex; }
-            .mobile-menu-btn { display: block; }
-            .page-header { flex-direction: column; align-items: flex-start; }
-            .stats-grid { grid-template-columns: 1fr; }
-        }
+        /* Дополнительные стили для конкретной страницы */
     </style>
 </head>
 <body>
-
-    <!-- Навигация -->
+    <!-- Анимированный фон -->
+    <div class="particles-container">
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+    </div>
+    <div class="glow-overlay"></div>
+    <div class="grid-overlay"></div>
+    <!-- Navbar -->
     <nav class="navbar" id="navbar">
-        <a href="../../index.php" class="nav-logo">
-            <i class="fas fa-industry"></i> PolesieMES
+        <a href="<?= APP_URL ?>" class="nav-brand">
+            <div class="brand-logo">
+                <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            </div>
+            <span class="brand-name">PolesieMES</span>
         </a>
-        
-        <ul class="nav-menu" id="navMenu">
-            <li><a href="../../index.php"><i class="fas fa-home"></i> Главная</a></li>
-            <li><a href="../equipment/index.php"><i class="fas fa-cogs"></i> Оборудование</a></li>
-            <li><a href="../warehouse/index.php"><i class="fas fa-boxes"></i> Склад</a></li>
-            <li><a href="../employees/index.php"><i class="fas fa-users"></i> Сотрудники</a></li>
-            <li><a href="index.php" class="active"><i class="fas fa-file-alt"></i> Документы</a></li>
+
+        <ul class="nav-menu">
+            <li>
+                <a href="<?= APP_URL ?>/modules/dashboard/index.php" class="nav-link">
+                    <i class="fas fa-chart-line"></i>
+                    Главная
+                </a>
+            </li>
+
+            <?php if (hasRole(['admin', 'manager'])): ?>
+            <li>
+                <a href="<?= APP_URL ?>/modules/orders/index.php" class="nav-link">
+                    <i class="fas fa-shopping-cart"></i>
+                    Заказы
+                </a>
+            </li>
+            <?php endif; ?>
+
+            <?php if (hasRole(['admin', 'manager', 'technologist', 'operator'])): ?>
+            <li>
+                <a href="<?= APP_URL ?>/modules/production/index.php" class="nav-link">
+                    <i class="fas fa-cogs"></i>
+                    Производство
+                </a>
+            </li>
+            <?php endif; ?>
+
+            <?php if (hasRole(['admin', 'manager', 'warehouse_manager'])): ?>
+            <li>
+                <a href="<?= APP_URL ?>/modules/warehouse/index.php" class="nav-link">
+                    <i class="fas fa-warehouse"></i>
+                    Склад
+                </a>
+            </li>
+            <?php endif; ?>
+
+            <?php if (hasRole(['admin', 'manager', 'technologist'])): ?>
+            <li>
+                <a href="<?= APP_URL ?>/modules/equipment/index.php" class="nav-link">
+                    <i class="fas fa-tools"></i>
+                    Оборудование
+                </a>
+            </li>
+            <?php endif; ?>
+
+            <?php if (hasRole(['admin', 'manager', 'logistician'])): ?>
+            <li>
+                <a href="<?= APP_URL ?>/modules/shipment/index.php" class="nav-link">
+                    <i class="fas fa-truck"></i>
+                    Отгрузка
+                </a>
+            </li>
+            <?php endif; ?>
+
+            <?php if (hasRole(['admin', 'manager', 'technologist'])): ?>
+            <li>
+                <a href="<?= APP_URL ?>/modules/documents/index.php" class="nav-link active">
+                    <i class="fas fa-file-contract"></i>
+                    Документы
+                </a>
+            </li>
+            <?php endif; ?>
+
+            <?php if (hasRole('admin')): ?>
+            <li>
+                <a href="<?= APP_URL ?>/modules/employees/index.php" class="nav-link">
+                    <i class="fas fa-users"></i>
+                    Сотрудники
+                </a>
+            </li>
+            <?php endif; ?>
         </ul>
 
-        <div class="nav-user">
-            <div class="nav-avatar">
-                <?php echo strtoupper(substr($_SESSION['username'] ?? 'U', 0, 1)); ?>
+        <div class="user-menu">
+            <div class="user-avatar">
+                <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
             </div>
-            <span><?php echo htmlspecialchars($_SESSION['username'] ?? 'Гость'); ?></span>
+            <div class="user-info">
+                <span class="user-name"><?= e($_SESSION['full_name']) ?></span>
+                <span class="user-role"><?= e(getRoleName($_SESSION['role'])) ?></span>
+            </div>
+            <a href="<?= APP_URL ?>/modules/auth/logout.php" class="btn-logout">
+                <i class="fas fa-sign-out-alt"></i>
+                Выход
+            </a>
         </div>
 
-        <button class="mobile-menu-btn" onclick="toggleMenu()">
-            <i class="fas fa-bars"></i>
+        <button class="mobile-menu-btn" onclick="toggleMobileMenu()">
+            <span></span>
+            <span></span>
+            <span></span>
         </button>
     </nav>
 
-    <div class="container">
+    <!-- Main Content -->
+    <div class="main-content">
         <div class="page-header">
             <div class="page-title">
-                <h1>Управление документами</h1>
+                <h1><i class="fas fa-file-contract"></i> Управление документами</h1>
                 <p>Реестр технической документации, ГОСТов и инструкций</p>
             </div>
-            <button class="btn btn-primary" onclick="alert('Функция загрузки документа будет доступна в следующей версии')">
+            <?php if (hasRole(['admin', 'manager', 'technologist'])): ?>
+            <a href="#" class="btn-primary-custom" onclick="alert('Функция загрузки документа будет доступна в следующей версии'); return false;">
                 <i class="fas fa-plus"></i> Добавить документ
-            </button>
+            </a>
+            <?php endif; ?>
         </div>
 
-        <!-- Статистика -->
+        <!-- Statistics -->
         <div class="stats-grid">
             <div class="stat-card">
-                <div class="stat-icon blue">
-                    <i class="fas fa-file-contract"></i>
-                </div>
-                <div class="stat-info">
-                    <h3><?php echo $total_docs; ?></h3>
-                    <p>Всего документов</p>
-                </div>
+                <div class="stat-value"><?= $total_docs ?></div>
+                <div class="stat-label">Всего документов</div>
             </div>
             <div class="stat-card">
-                <div class="stat-icon green">
-                    <i class="fas fa-check-circle"></i>
-                </div>
-                <div class="stat-info">
-                    <h3><?php echo $active_docs; ?></h3>
-                    <p>Действующие</p>
-                </div>
+                <div class="stat-value" style="color: var(--success-color);"><?= $active_docs ?></div>
+                <div class="stat-label">Действующие</div>
             </div>
             <div class="stat-card">
-                <div class="stat-icon orange">
-                    <i class="fas fa-archive"></i>
-                </div>
-                <div class="stat-info">
-                    <h3><?php echo $archive_docs; ?></h3>
-                    <p>В архиве</p>
-                </div>
+                <div class="stat-value" style="color: var(--warning-color);"><?= $archive_docs ?></div>
+                <div class="stat-label">В архиве</div>
             </div>
             <div class="stat-card">
-                <div class="stat-icon" style="background: rgba(243, 156, 18, 0.1); color: var(--warning-color);">
-                    <i class="fas fa-file-edit"></i>
-                </div>
-                <div class="stat-info">
-                    <h3><?php echo $draft_docs; ?></h3>
-                    <p>Черновики</p>
-                </div>
+                <div class="stat-value" style="color: var(--info-color);"><?= $draft_docs ?></div>
+                <div class="stat-label">Черновики</div>
             </div>
         </div>
 
-        <!-- Таблица документов -->
-        <div class="table-container">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Наименование</th>
-                        <th>Тип</th>
-                        <th>Дата добавления</th>
-                        <th>Размер</th>
-                        <th>Статус</th>
-                        <th>Действия</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($documents as $doc): ?>
-                    <tr>
-                        <td>
-                            <div class="doc-name">
-                                <i class="fas fa-file-pdf doc-icon"></i>
-                                <?php echo htmlspecialchars($doc['name']); ?>
-                            </div>
-                        </td>
-                        <td><?php echo htmlspecialchars($doc['type']); ?></td>
-                        <td><?php echo date('d.m.Y', strtotime($doc['date'])); ?></td>
-                        <td><?php echo $doc['size']; ?></td>
-                        <td>
-                            <?php
-                            $statusClass = 'badge-active';
-                            $statusText = 'Действует';
-                            if ($doc['status'] === 'archive') {
-                                $statusClass = 'badge-archive';
-                                $statusText = 'Архив';
-                            } elseif ($doc['status'] === 'draft') {
-                                $statusClass = 'badge-draft';
-                                $statusText = 'Черновик';
-                            }
-                            ?>
-                            <span class="badge <?php echo $statusClass; ?>"><?php echo $statusText; ?></span>
-                        </td>
-                        <td>
-                            <button class="action-btn" title="Скачать"><i class="fas fa-download"></i></button>
-                            <button class="action-btn" title="Просмотр"><i class="fas fa-eye"></i></button>
-                            <button class="action-btn" title="Редактировать"><i class="fas fa-edit"></i></button>
-                        </td>
-                    </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
+        <!-- Documents Table -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-list"></i> Реестр документов
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Наименование</th>
+                                <th>Тип</th>
+                                <th>Дата добавления</th>
+                                <th>Размер</th>
+                                <th>Статус</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($documents as $doc): ?>
+                            <tr>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                        <i class="fas fa-file-pdf" style="color: var(--danger-color);"></i>
+                                        <?= e($doc['name']) ?>
+                                    </div>
+                                </td>
+                                <td><?= e($doc['type']) ?></td>
+                                <td><?= formatDate($doc['date']) ?></td>
+                                <td><?= e($doc['size']) ?></td>
+                                <td>
+                                    <?php
+                                    $statusClass = 'badge-success';
+                                    $statusText = 'Действует';
+                                    if ($doc['status'] === 'archive') {
+                                        $statusClass = 'badge-secondary';
+                                        $statusText = 'Архив';
+                                    } elseif ($doc['status'] === 'draft') {
+                                        $statusClass = 'badge-warning';
+                                        $statusText = 'Черновик';
+                                    }
+                                    ?>
+                                    <span class="badge <?= $statusClass ?>"><?= $statusText ?></span>
+                                </td>
+                                <td>
+                                    <button class="action-btn" title="Скачать"><i class="fas fa-download"></i></button>
+                                    <button class="action-btn" title="Просмотр"><i class="fas fa-eye"></i></button>
+                                    <?php if (hasRole(['admin', 'manager', 'technologist'])): ?>
+                                    <button class="action-btn" title="Редактировать"><i class="fas fa-edit"></i></button>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
-        function toggleMenu() {
-            const menu = document.getElementById('navMenu');
+        // Navbar scroll effect
+        window.addEventListener('scroll', function() {
+            const navbar = document.getElementById('navbar');
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+
+        // Mobile menu toggle
+        function toggleMobileMenu() {
+            const menu = document.querySelector('.nav-menu');
             menu.classList.toggle('active');
         }
     </script>
