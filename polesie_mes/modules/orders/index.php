@@ -262,5 +262,18 @@ $pageTitle = 'Управление заказами | ' . APP_NAME;
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Анимированный фон и скрипты из common-style.css -->
+    <script>
+        // Scroll effect for navbar
+        window.addEventListener('scroll', function() {
+            const navbar = document.getElementById('navbar') || document.querySelector('.navbar');
+            if (navbar && window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else if (navbar) {
+                navbar.classList.remove('scrolled');
+            }
+        });
+    </script>
 </body>
 </html>
