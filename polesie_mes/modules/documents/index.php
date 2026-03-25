@@ -1,546 +1,471 @@
 <?php
-/**
- * Модуль управления документами - Главная страница
- * PolesieMES - Система управления производством ОАО "Полесьеэлектромаш"
- * 
- * Управление всеми документами предприятия:
- * - ГОСТ документы (паспорта, руководства, сертификаты)
- * - Внутренние документы (приказы, распоряжения)
- * - Технические документы (чертежи, спецификации)
- * - Договоры и контракты
- */
-
-require_once __DIR__ . '/../../config/config.php';
-require_once __DIR__ . '/../../config/database.php';
-require_once __DIR__ . '/../../includes/auth_functions.php';
-require_once __DIR__ . '/../../includes/helpers.php';
+session_start();
 
 // Проверка авторизации
-requireAuth();
-
-$db = getDB();
-$user = getCurrentUser();
-
-// Категории документов
-$documentCategories = [
-    'gost' => ['name' => 'ГОСТ Документы', 'icon' => 'fa-file-contract', 'color' => 'var(--primary-color)'],
-    'internal' => ['name' => 'Внутренние документы', 'icon' => 'fa-file-alt', 'color' => 'var(--info-color)'],
-    'technical' => ['name' => 'Технические документы', 'icon' => 'fa-drafting-compass', 'color' => 'var(--warning-color)'],
-    'contracts' => ['name' => 'Договоры и контракты', 'icon' => 'fa-handshake', 'color' => 'var(--success-color)'],
-];
-
-// Получение последних документов
-$stmt = $db->query("
-    SELECT d.*, 
-           CASE 
-               WHEN d.category = 'gost' THEN 'ГОСТ Документы'
-               WHEN d.category = 'internal' THEN 'Внутренние документы'
-               WHEN d.category = 'technical' THEN 'Технические документы'
-               WHEN d.category = 'contracts' THEN 'Договоры и контракты'
-               ELSE 'Другое'
-           END as category_name,
-           e.first_name as author_first_name,
-           e.last_name as author_last_name
-    FROM documents d
-    LEFT JOIN employees e ON d.author_id = e.id
-    ORDER BY d.created_at DESC
-    LIMIT 20
-");
-$recentDocuments = $stmt->fetchAll();
-
-// Статистика по документам
-$stmt = $db->query("
-    SELECT 
-        COUNT(*) as total,
-        SUM(CASE WHEN category = 'gost' THEN 1 ELSE 0 END) as gost_count,
-        SUM(CASE WHEN category = 'internal' THEN 1 ELSE 0 END) as internal_count,
-        SUM(CASE WHEN category = 'technical' THEN 1 ELSE 0 END) as technical_count,
-        SUM(CASE WHEN category = 'contracts' THEN 1 ELSE 0 END) as contracts_count
-    FROM documents
-");
-$docStats = $stmt->fetch();
-
-// Документы, требующие внимания (с истекающим сроком действия)
-$stmt = $db->query("
-    SELECT d.*, 
-           CASE 
-               WHEN d.category = 'gost' THEN 'ГОСТ Документы'
-               WHEN d.category = 'internal' THEN 'Внутренние документы'
-               WHEN d.category = 'technical' THEN 'Технические документы'
-               WHEN d.category = 'contracts' THEN 'Договоры и контракты'
-               ELSE 'Другое'
-           END as category_name,
-           DATEDIFF(d.expiry_date, NOW()) as days_until_expiry
-    FROM documents d
-    WHERE d.expiry_date IS NOT NULL 
-      AND d.expiry_date <= DATE_ADD(NOW(), INTERVAL 30 DAY)
-      AND d.status = 'active'
-    ORDER BY d.expiry_date ASC
-    LIMIT 10
-");
-$expiringDocuments = $stmt->fetchAll();
-
-// Проблемы с документами
-$documentIssues = [];
-
-if (!empty($expiringDocuments)) {
-    $documentIssues[] = [
-        'type' => 'warning',
-        'title' => 'Истекающий срок действия',
-        'count' => count($expiringDocuments),
-        'message' => 'Документы требуют продления или обновления',
-        'recommendation' => 'Проверить документы и инициировать процедуру продления'
-    ];
+if (!isset($_SESSION['user_id'])) {
+    header('Location: ../../login.php');
+    exit;
 }
 
-$pageTitle = 'Документы | ' . APP_NAME;
-?>
+// Демо-данные документов (так как таблица еще не создана в БД)
+$documents = [
+    ['id' => 1, 'name' => 'ГОСТ 2.105-95 ЕСКД', 'type' => 'ГОСТ', 'status' => 'active', 'date' => '2023-10-15', 'size' => '2.4 MB'],
+    ['id' => 2, 'name' => 'Инструкция по охране труда', 'type' => 'Инструкция', 'status' => 'active', 'date' => '2023-11-20', 'size' => '1.1 MB'],
+    ['id' => 3, 'name' => 'План эвакуации 2024', 'type' => 'План', 'status' => 'archive', 'date' => '2024-01-10', 'size' => '5.8 MB'],
+    ['id' => 4, 'name' => 'Договор поставки №45', 'type' => 'Договор', 'status' => 'draft', 'date' => '2024-02-05', 'size' => '0.8 MB'],
+    ['id' => 5, 'name' => 'Сертификат соответствия', 'type' => 'Сертификат', 'status' => 'active', 'date' => '2023-12-12', 'size' => '1.5 MB'],
+    ['id' => 6, 'name' => 'ГОСТ 19.101-78 ЕСПД', 'type' => 'ГОСТ', 'status' => 'active', 'date' => '2023-09-05', 'size' => '3.2 MB'],
+    ['id' => 7, 'name' => 'Регламент техобслуживания', 'type' => 'Инструкция', 'status' => 'active', 'date' => '2024-03-01', 'size' => '1.8 MB'],
+];
 
+// Статистика
+$total_docs = count($documents);
+$active_docs = count(array_filter($documents, fn($d) => ($d['status'] ?? '') === 'active'));
+$archive_docs = count(array_filter($documents, fn($d) => ($d['status'] ?? '') === 'archive'));
+$draft_docs = count(array_filter($documents, fn($d) => ($d['status'] ?? '') === 'draft'));
+?>
 <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= e($pageTitle) ?></title>
-    
-    <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    
-    <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/common-style.css">
+    <title>Документы - PolesieMES</title>
+    <link rel="stylesheet" href="../../assets/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        .category-card {
-            background: var(--glass-bg);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 2rem;
-            text-align: center;
-            transition: all 0.3s ease;
-            cursor: pointer;
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #34495e;
+            --accent-color: #3498db;
+            --text-color: #333;
+            --bg-color: #f5f6fa;
+            --card-bg: #ffffff;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --danger-color: #c0392b;
+            --border-radius: 12px;
+            --shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
-        
-        .category-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-            border-color: var(--primary-color);
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            overflow-x: hidden;
         }
-        
-        .category-icon {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto 1rem;
+
+        /* Навигация (как на главной) */
+        .navbar {
+            background: rgba(44, 62, 80, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .nav-logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-menu {
+            display: flex;
+            gap: 20px;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .nav-menu a {
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s;
+            padding: 8px 16px;
+            border-radius: 6px;
+        }
+
+        .nav-menu a:hover, .nav-menu a.active {
+            color: white;
+            background: rgba(255,255,255,0.1);
+        }
+
+        .nav-user {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: white;
+        }
+
+        .nav-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--accent-color);
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.05);
-            font-size: 2rem;
+            font-weight: bold;
         }
-        
-        .category-count {
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin: 1rem 0;
+
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
         }
-        
-        .document-card {
-            background: var(--glass-bg);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-bottom: 1rem;
-            transition: all 0.3s ease;
+
+        /* Контент */
+        .container {
+            max-width: 1400px;
+            margin: 100px auto 40px;
+            padding: 0 20px;
         }
-        
-        .document-card:hover {
-            border-color: var(--primary-color);
-            background: rgba(255, 255, 255, 0.08);
-        }
-        
-        .document-meta {
+
+        .page-header {
             display: flex;
-            gap: 1.5rem;
-            margin-top: 1rem;
-            font-size: 0.85rem;
-            color: var(--text-secondary);
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 20px;
         }
-        
-        .document-meta i {
-            margin-right: 0.5rem;
+
+        .page-title h1 {
+            margin: 0;
+            font-size: 2rem;
+            color: var(--primary-color);
         }
-        
-        .status-badge {
-            padding: 0.25rem 0.75rem;
-            border-radius: 20px;
-            font-size: 0.75rem;
+
+        .page-title p {
+            margin: 5px 0 0;
+            color: #7f8c8d;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
             font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: transform 0.2s, box-shadow 0.2s;
         }
-        
-        .status-active {
-            background: rgba(48, 209, 88, 0.2);
-            color: var(--success-color);
+
+        .btn-primary {
+            background: var(--accent-color);
+            color: white;
         }
-        
-        .status-expiring {
-            background: rgba(255, 159, 67, 0.2);
-            color: var(--warning-color);
+
+        .btn-primary:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
         }
-        
-        .status-expired {
-            background: rgba(255, 59, 48, 0.2);
-            color: var(--danger-color);
+
+        /* Карточки статистики */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
         }
-        
-        .status-draft {
-            background: rgba(142, 142, 147, 0.2);
-            color: var(--text-secondary);
+
+        .stat-card {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            transition: transform 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .stat-icon.blue { background: rgba(52, 152, 219, 0.1); color: var(--accent-color); }
+        .stat-icon.green { background: rgba(39, 174, 96, 0.1); color: var(--success-color); }
+        .stat-icon.orange { background: rgba(243, 156, 18, 0.1); color: var(--warning-color); }
+
+        .stat-info h3 {
+            margin: 0;
+            font-size: 2rem;
+            color: var(--primary-color);
+        }
+
+        .stat-info p {
+            margin: 0;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+
+        /* Таблица */
+        .table-container {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: #f8f9fa;
+            border-bottom: 2px solid #eee;
+        }
+
+        th {
+            padding: 15px 20px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--secondary-color);
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+        }
+
+        td {
+            padding: 15px 20px;
+            border-bottom: 1px solid #eee;
+            vertical-align: middle;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .doc-name {
+            font-weight: 600;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .doc-icon {
+            color: var(--accent-color);
+            font-size: 1.2rem;
+        }
+
+        .badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-active { background: rgba(39, 174, 96, 0.1); color: var(--success-color); }
+        .badge-archive { background: rgba(149, 165, 166, 0.1); color: #7f8c8d; }
+        .badge-draft { background: rgba(243, 156, 18, 0.1); color: var(--warning-color); }
+
+        .action-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #7f8c8d;
+            padding: 5px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .action-btn:hover {
+            background: #f1f2f6;
+            color: var(--accent-color);
+        }
+
+        @media (max-width: 768px) {
+            .nav-menu {
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: var(--primary-color);
+                flex-direction: column;
+                padding: 20px;
+                gap: 10px;
+            }
+            .nav-menu.active { display: flex; }
+            .mobile-menu-btn { display: block; }
+            .page-header { flex-direction: column; align-items: flex-start; }
+            .stats-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
-    <!-- Анимированный фон -->
-    <div class="particles-container">
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-    </div>
-    <div class="glow-overlay"></div>
-    <div class="grid-overlay"></div>
-    
-    <!-- Navbar -->
+
+    <!-- Навигация -->
     <nav class="navbar" id="navbar">
-        <a href="<?= APP_URL ?>" class="nav-brand">
-            <div class="brand-logo">
-                <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-            </div>
-            <span class="brand-name">PolesieMES</span>
+        <a href="../../index.php" class="nav-logo">
+            <i class="fas fa-industry"></i> PolesieMES
         </a>
-
-        <ul class="nav-menu">
-            <li>
-                <a href="<?= APP_URL ?>/modules/dashboard/index.php" class="nav-link">
-                    <i class="fas fa-chart-line"></i>
-                    Главная
-                </a>
-            </li>
-
-            <?php if (hasRole(['admin', 'manager'])): ?>
-            <li>
-                <a href="<?= APP_URL ?>/modules/orders/index.php" class="nav-link">
-                    <i class="fas fa-shopping-cart"></i>
-                    Заказы
-                </a>
-            </li>
-            <?php endif; ?>
-
-            <?php if (hasRole(['admin', 'manager', 'technologist', 'operator'])): ?>
-            <li>
-                <a href="<?= APP_URL ?>/modules/production/index.php" class="nav-link">
-                    <i class="fas fa-cogs"></i>
-                    Производство
-                </a>
-            </li>
-            <?php endif; ?>
-
-            <?php if (hasRole(['admin', 'manager', 'warehouse_manager'])): ?>
-            <li>
-                <a href="<?= APP_URL ?>/modules/warehouse/index.php" class="nav-link">
-                    <i class="fas fa-warehouse"></i>
-                    Склад
-                </a>
-            </li>
-            <?php endif; ?>
-
-            <?php if (hasRole(['admin', 'manager', 'technologist'])): ?>
-            <li>
-                <a href="<?= APP_URL ?>/modules/equipment/index.php" class="nav-link">
-                    <i class="fas fa-tools"></i>
-                    Оборудование
-                </a>
-            </li>
-            <?php endif; ?>
-
-            <?php if (hasRole(['admin', 'manager', 'logistician'])): ?>
-            <li>
-                <a href="<?= APP_URL ?>/modules/shipment/index.php" class="nav-link">
-                    <i class="fas fa-truck"></i>
-                    Отгрузка
-                </a>
-            </li>
-            <?php endif; ?>
-
-            <?php if (hasRole(['admin', 'manager', 'technologist'])): ?>
-            <li>
-                <a href="<?= APP_URL ?>/modules/documents/index.php" class="nav-link active">
-                    <i class="fas fa-file-contract"></i>
-                    Документы
-                </a>
-            </li>
-            <?php endif; ?>
-
-            <?php if (hasRole('admin')): ?>
-            <li>
-                <a href="<?= APP_URL ?>/modules/employees/index.php" class="nav-link">
-                    <i class="fas fa-users"></i>
-                    Сотрудники
-                </a>
-            </li>
-            <?php endif; ?>
+        
+        <ul class="nav-menu" id="navMenu">
+            <li><a href="../../index.php"><i class="fas fa-home"></i> Главная</a></li>
+            <li><a href="../equipment/index.php"><i class="fas fa-cogs"></i> Оборудование</a></li>
+            <li><a href="../warehouse/index.php"><i class="fas fa-boxes"></i> Склад</a></li>
+            <li><a href="../employees/index.php"><i class="fas fa-users"></i> Сотрудники</a></li>
+            <li><a href="index.php" class="active"><i class="fas fa-file-alt"></i> Документы</a></li>
         </ul>
 
-        <div class="user-menu">
-            <div class="user-avatar">
-                <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+        <div class="nav-user">
+            <div class="nav-avatar">
+                <?php echo strtoupper(substr($_SESSION['username'] ?? 'U', 0, 1)); ?>
             </div>
-            <div class="user-info">
-                <span class="user-name"><?= e($_SESSION['full_name']) ?></span>
-                <span class="user-role"><?= e(getRoleName($_SESSION['role'])) ?></span>
-            </div>
-            <a href="<?= APP_URL ?>/modules/auth/logout.php" class="btn-logout">
-                <i class="fas fa-sign-out-alt"></i>
-                Выход
-            </a>
+            <span><?php echo htmlspecialchars($_SESSION['username'] ?? 'Гость'); ?></span>
         </div>
 
-        <button class="mobile-menu-btn" onclick="toggleMobileMenu()">
-            <span></span>
-            <span></span>
-            <span></span>
+        <button class="mobile-menu-btn" onclick="toggleMenu()">
+            <i class="fas fa-bars"></i>
         </button>
     </nav>
 
-    <!-- Main Content -->
-    <div class="main-content">
+    <div class="container">
         <div class="page-header">
             <div class="page-title">
-                <h1><i class="fas fa-file-contract"></i> Управление документами</h1>
-                <p>Централизованное хранение и управление документацией предприятия</p>
+                <h1>Управление документами</h1>
+                <p>Реестр технической документации, ГОСТов и инструкций</p>
             </div>
-            <?php if (hasRole(['admin', 'manager', 'technologist'])): ?>
-            <a href="create.php" class="btn-primary-custom">
+            <button class="btn btn-primary" onclick="alert('Функция загрузки документа будет доступна в следующей версии')">
                 <i class="fas fa-plus"></i> Добавить документ
-            </a>
-            <?php endif; ?>
+            </button>
         </div>
 
-        <!-- Statistics -->
+        <!-- Статистика -->
         <div class="stats-grid">
             <div class="stat-card">
-                <div class="stat-value"><?= $docStats['total'] ?? 0 ?></div>
-                <div class="stat-label">Всего документов</div>
+                <div class="stat-icon blue">
+                    <i class="fas fa-file-contract"></i>
+                </div>
+                <div class="stat-info">
+                    <h3><?php echo $total_docs; ?></h3>
+                    <p>Всего документов</p>
+                </div>
             </div>
             <div class="stat-card">
-                <div class="stat-value" style="color: var(--primary-color);"><?= $docStats['gost_count'] ?? 0 ?></div>
-                <div class="stat-label">ГОСТ Документы</div>
+                <div class="stat-icon green">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="stat-info">
+                    <h3><?php echo $active_docs; ?></h3>
+                    <p>Действующие</p>
+                </div>
             </div>
             <div class="stat-card">
-                <div class="stat-value" style="color: var(--info-color);"><?= $docStats['internal_count'] ?? 0 ?></div>
-                <div class="stat-label">Внутренние</div>
+                <div class="stat-icon orange">
+                    <i class="fas fa-archive"></i>
+                </div>
+                <div class="stat-info">
+                    <h3><?php echo $archive_docs; ?></h3>
+                    <p>В архиве</p>
+                </div>
             </div>
             <div class="stat-card">
-                <div class="stat-value" style="color: var(--warning-color);"><?= $docStats['technical_count'] ?? 0 ?></div>
-                <div class="stat-label">Технические</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" style="color: var(--success-color);"><?= $docStats['contracts_count'] ?? 0 ?></div>
-                <div class="stat-label">Договоры</div>
+                <div class="stat-icon" style="background: rgba(243, 156, 18, 0.1); color: var(--warning-color);">
+                    <i class="fas fa-file-edit"></i>
+                </div>
+                <div class="stat-info">
+                    <h3><?php echo $draft_docs; ?></h3>
+                    <p>Черновики</p>
+                </div>
             </div>
         </div>
 
-        <!-- Document Categories -->
-        <div class="card">
-            <div class="card-header">
-                <div class="card-title">
-                    <i class="fas fa-folder-open"></i> Категории документов
-                </div>
-            </div>
-            <div class="card-body">
-                <div class="row g-4">
-                    <?php foreach ($documentCategories as $key => $category): ?>
-                    <div class="col-md-6 col-lg-3">
-                        <div class="category-card" onclick="window.location.href='category.php?cat=<?= $key ?>'">
-                            <div class="category-icon" style="color: <?= $category['color'] ?>;">
-                                <i class="fas <?= $category['icon'] ?>"></i>
+        <!-- Таблица документов -->
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Наименование</th>
+                        <th>Тип</th>
+                        <th>Дата добавления</th>
+                        <th>Размер</th>
+                        <th>Статус</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($documents as $doc): ?>
+                    <tr>
+                        <td>
+                            <div class="doc-name">
+                                <i class="fas fa-file-pdf doc-icon"></i>
+                                <?php echo htmlspecialchars($doc['name']); ?>
                             </div>
-                            <h4><?= $category['name'] ?></h4>
-                            <div class="category-count" style="color: <?= $category['color'] ?>;">
-                                <?= $docStats[$key . '_count'] ?? 0 ?>
-                            </div>
-                            <p style="color: var(--text-secondary); font-size: 0.9rem;">
-                                <?php if ($key == 'gost'): ?>
-                                    Паспорта, руководства, сертификаты
-                                <?php elseif ($key == 'internal'): ?>
-                                    Приказы, распоряжения, инструкции
-                                <?php elseif ($key == 'technical'): ?>
-                                    Чертежи, спецификации, ТУ
-                                <?php else: ?>
-                                    Контракты, соглашения, договоры
-                                <?php endif; ?>
-                            </p>
-                        </div>
-                    </div>
+                        </td>
+                        <td><?php echo htmlspecialchars($doc['type']); ?></td>
+                        <td><?php echo date('d.m.Y', strtotime($doc['date'])); ?></td>
+                        <td><?php echo $doc['size']; ?></td>
+                        <td>
+                            <?php
+                            $statusClass = 'badge-active';
+                            $statusText = 'Действует';
+                            if ($doc['status'] === 'archive') {
+                                $statusClass = 'badge-archive';
+                                $statusText = 'Архив';
+                            } elseif ($doc['status'] === 'draft') {
+                                $statusClass = 'badge-draft';
+                                $statusText = 'Черновик';
+                            }
+                            ?>
+                            <span class="badge <?php echo $statusClass; ?>"><?php echo $statusText; ?></span>
+                        </td>
+                        <td>
+                            <button class="action-btn" title="Скачать"><i class="fas fa-download"></i></button>
+                            <button class="action-btn" title="Просмотр"><i class="fas fa-eye"></i></button>
+                            <button class="action-btn" title="Редактировать"><i class="fas fa-edit"></i></button>
+                        </td>
+                    </tr>
                     <?php endforeach; ?>
-                </div>
-            </div>
-        </div>
-
-        <!-- Issues & Recommendations -->
-        <?php if (!empty($documentIssues)): ?>
-        <div class="issues-section">
-            <h2 class="section-title"><i class="fas fa-exclamation-triangle"></i> Проблемы и рекомендации</h2>
-            <div class="issues-grid">
-                <?php foreach ($documentIssues as $issue): ?>
-                <div class="issue-card <?= $issue['type'] ?>">
-                    <div class="issue-icon <?= $issue['type'] ?>">
-                        <i class="fas fa-<?= $issue['type'] == 'critical' ? 'exclamation-circle' : ($issue['type'] == 'warning' ? 'exclamation-triangle' : 'info-circle') ?>"></i>
-                    </div>
-                    <div class="issue-content" style="flex: 1;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                            <h4><?= $issue['title'] ?></h4>
-                            <span class="issue-count"><?= $issue['count'] ?></span>
-                        </div>
-                        <p><?= $issue['message'] ?></p>
-                        <div class="issue-recommendation">
-                            <i class="fas fa-lightbulb"></i> <?= $issue['recommendation'] ?>
-                        </div>
-                    </div>
-                </div>
-                <?php endforeach; ?>
-            </div>
-        </div>
-        <?php endif; ?>
-
-        <!-- Expiring Documents -->
-        <?php if (!empty($expiringDocuments)): ?>
-        <div class="card">
-            <div class="card-header">
-                <div class="card-title">
-                    <i class="fas fa-clock"></i> Истекающие документы
-                </div>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Название</th>
-                                <th>Категория</th>
-                                <th>Срок действия</th>
-                                <th>Дней осталось</th>
-                                <th>Статус</th>
-                                <th>Действия</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($expiringDocuments as $doc): ?>
-                            <tr>
-                                <td><strong><?= e($doc['title']) ?></strong></td>
-                                <td><?= e($doc['category_name']) ?></td>
-                                <td><?= date('d.m.Y', strtotime($doc['expiry_date'])) ?></td>
-                                <td>
-                                    <span style="color: <?= $doc['days_until_expiry'] <= 7 ? 'var(--danger-color)' : 'var(--warning-color)' ?>;">
-                                        <?= $doc['days_until_expiry'] ?> дн.
-                                    </span>
-                                </td>
-                                <td>
-                                    <span class="status-badge status-<?= $doc['days_until_expiry'] <= 0 ? 'expired' : ($doc['days_until_expiry'] <= 7 ? 'expiring' : 'expiring') ?>">
-                                        <?= $doc['days_until_expiry'] <= 0 ? 'Истёк' : 'Истекает' ?>
-                                    </span>
-                                </td>
-                                <td>
-                                    <a href="view.php?id=<?= $doc['id'] ?>" class="btn-action">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
-                                    <a href="edit.php?id=<?= $doc['id'] ?>" class="btn-action">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                </td>
-                            </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-        <?php endif; ?>
-
-        <!-- Recent Documents -->
-        <div class="card">
-            <div class="card-header">
-                <div class="card-title">
-                    <i class="fas fa-history"></i> Последние документы
-                </div>
-            </div>
-            <div class="card-body">
-                <?php if (empty($recentDocuments)): ?>
-                <div style="text-align: center; padding: 3rem; color: var(--text-secondary);">
-                    <i class="fas fa-folder-open" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
-                    <p>Документы ещё не добавлены</p>
-                    <?php if (hasRole(['admin', 'manager', 'technologist'])): ?>
-                    <a href="create.php" class="btn-primary-custom" style="margin-top: 1rem;">
-                        <i class="fas fa-plus"></i> Добавить первый документ
-                    </a>
-                    <?php endif; ?>
-                </div>
-                <?php else: ?>
-                <div class="row g-3">
-                    <?php foreach ($recentDocuments as $doc): ?>
-                    <div class="col-md-6 col-lg-4">
-                        <div class="document-card">
-                            <div style="display: flex; justify-content: space-between; align-items: start;">
-                                <div style="flex: 1;">
-                                    <h4 style="margin-bottom: 0.5rem; font-size: 1.1rem;"><?= e($doc['title']) ?></h4>
-                                    <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 0.5rem;">
-                                        <?= e($doc['category_name']) ?>
-                                    </p>
-                                    <?php if ($doc['description']): ?>
-                                    <p style="font-size: 0.85rem; color: var(--text-secondary);">
-                                        <?= e(mb_substr($doc['description'], 0, 100)) ?><?= mb_strlen($doc['description']) > 100 ? '...' : '' ?>
-                                    </p>
-                                    <?php endif; ?>
-                                </div>
-                                <span class="status-badge status-<?= $doc['status'] == 'active' ? 'active' : ($doc['status'] == 'draft' ? 'draft' : 'expired') ?>">
-                                    <?= $doc['status'] == 'active' ? 'Активен' : ($doc['status'] == 'draft' ? 'Черновик' : 'Архив') ?>
-                                </span>
-                            </div>
-                            <div class="document-meta">
-                                <span><i class="fas fa-user"></i> <?= e($doc['author_first_name'] . ' ' . $doc['author_last_name']) ?></span>
-                                <span><i class="fas fa-calendar"></i> <?= date('d.m.Y', strtotime($doc['created_at'])) ?></span>
-                                <?php if ($doc['expiry_date']): ?>
-                                <span><i class="fas fa-hourglass-end"></i> до <?= date('d.m.Y', strtotime($doc['expiry_date'])) ?></span>
-                                <?php endif; ?>
-                            </div>
-                            <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
-                                <a href="view.php?id=<?= $doc['id'] ?>" class="btn-action" style="flex: 1; text-align: center;">
-                                    <i class="fas fa-eye"></i> Просмотр
-                                </a>
-                                <?php if (hasRole(['admin', 'manager', 'technologist'])): ?>
-                                <a href="edit.php?id=<?= $doc['id'] ?>" class="btn-action">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                    </div>
-                    <?php endforeach; ?>
-                </div>
-                <?php endif; ?>
-            </div>
+                </tbody>
+            </table>
         </div>
     </div>
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        function toggleMobileMenu() {
-            const navMenu = document.querySelector('.nav-menu');
-            navMenu.classList.toggle('active');
+        function toggleMenu() {
+            const menu = document.getElementById('navMenu');
+            menu.classList.toggle('active');
         }
     </script>
 </body>
