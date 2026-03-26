@@ -264,9 +264,10 @@ $pageTitle = 'Управление складом | ' . APP_NAME;
                 <p>Контроль материалов и готовой продукции</p>
             </div>
             <?php if (hasRole(['admin', 'manager', 'storekeeper'])): ?>
-            <a href="create.php" class="btn-primary-custom">
-                <i class="fas fa-plus"></i> Поступление
-            </a>
+            <div style="display: flex; gap: 0.5rem;">
+                <a href="receipt.php" class="btn-primary-custom"><i class="fas fa-truck-loading"></i> Поступление</a>
+                <a href="consumption.php" class="btn btn-warning" style="padding: 0.6rem 1.2rem; border-radius: 8px; text-decoration: none; color: white;"><i class="fas fa-dolly"></i> Расход</a>
+            </div>
             <?php endif; ?>
         </div>
 
