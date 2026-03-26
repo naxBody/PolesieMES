@@ -1,1 +1,54 @@
-Nothing needs to be added to .gitignore since the changes only include a PHP source file (view.php) which is a regular source code file that should be tracked in version control.
+# Compiled and build artifacts
+*.pyc
+__pycache__/
+
+# Dependencies
+vendor/
+composer.lock
+
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+
+# Environment
+.env
+.env.local
+*.env.*
+
+# Editors
+.vscode/
+.idea/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Cache directories
+.cache/
+.php_cs.cache
+
+# Distribution and build artifacts
+dist/
+build/
+coverage/
+htmlcov/
+*.phar
+
+# IDE specific
+nbproject/
+.settings/
+
+# Web server
+.htaccess
+.webassets-cache
+
+# PHP specific
+*.pid
+.svn/
+CVS/
