@@ -19,17 +19,18 @@ $user = getCurrentUser();
 
 // Получение всех сотрудников с информацией
 $stmt = $db->query("
-    SELECT e.*, p.name as position_name,
+    SELECT s.*, d.name as position_name,
            CASE 
-               WHEN e.status = 'active' THEN 'normal'
-               WHEN e.status = 'vacation' THEN 'info'
-               WHEN e.status = 'sick' THEN 'warning'
-               WHEN e.status = 'terminated' THEN 'critical'
+               WHEN s.status = 'active' THEN 'normal'
+               WHEN s.status = 'vacation' THEN 'info'
+               WHEN s.status = 'sick' THEN 'warning'
+               WHEN s.status = 'terminated' THEN 'critical'
                ELSE 'normal'
            END as status_class
-    FROM employees e
-    LEFT JOIN positions p ON e.position_id = p.id
-    ORDER BY e.last_name ASC, e.first_name ASC
+    FROM staff s
+    LEFT JOIN dictionaries d ON s.position_id = d.id AND d.dict_type = 'position'
+    WHERE s.role != 'admin' OR s.id IS NOT NULL
+    ORDER BY s.last_name ASC, s.first_name ASC
 ");
 $employees = $stmt->fetchAll();
 
@@ -41,28 +42,29 @@ $stmt = $db->query("
         SUM(CASE WHEN status = 'vacation' THEN 1 ELSE 0 END) as vacation,
         SUM(CASE WHEN status = 'sick' THEN 1 ELSE 0 END) as sick,
         SUM(CASE WHEN status = 'terminated' THEN 1 ELSE 0 END) as `terminated`
-    FROM employees
+    FROM staff
+    WHERE role IN ('manager', 'operator', 'warehouse_keeper')
 ");
 $employeeStats = $stmt->fetch();
 
 // Сотрудники в отпуске или на больничном
 $stmt = $db->query("
-    SELECT e.*, p.name as position_name
-    FROM employees e
-    LEFT JOIN positions p ON e.position_id = p.id
-    WHERE e.status IN ('vacation', 'sick')
-    ORDER BY e.updated_at DESC
+    SELECT s.*, d.name as position_name
+    FROM staff s
+    LEFT JOIN dictionaries d ON s.position_id = d.id AND d.dict_type = 'position'
+    WHERE s.status IN ('vacation', 'sick') AND s.role IN ('manager', 'operator', 'warehouse_keeper')
+    ORDER BY s.updated_at DESC
     LIMIT 10
 ");
 $awayEmployees = $stmt->fetchAll();
 
 // Новые сотрудники (за последний месяц)
 $stmt = $db->query("
-    SELECT e.*, p.name as position_name
-    FROM employees e
-    LEFT JOIN positions p ON e.position_id = p.id
-    WHERE e.hire_date >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-    ORDER BY e.hire_date DESC
+    SELECT s.*, d.name as position_name
+    FROM staff s
+    LEFT JOIN dictionaries d ON s.position_id = d.id AND d.dict_type = 'position'
+    WHERE s.hire_date >= DATE_SUB(NOW(), INTERVAL 30 DAY) AND s.role IN ('manager', 'operator', 'warehouse_keeper')
+    ORDER BY s.hire_date DESC
     LIMIT 10
 ");
 $newEmployees = $stmt->fetchAll();

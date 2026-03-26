@@ -29,24 +29,20 @@ if ($order_id) {
     // Детали конкретного заказа
     $stmt = $db->prepare("
         SELECT o.*, c.name as customer_name, c.inn, c.address, c.phone as customer_phone, c.email,
-               e.first_name as manager_first_name, e.last_name as manager_last_name
+               s.first_name as manager_first_name, s.last_name as manager_last_name
         FROM orders o
-        LEFT JOIN customers c ON o.customer_id = c.id
-        LEFT JOIN employees e ON o.manager_id = e.id
+        LEFT JOIN partners c ON o.customer_id = c.id
+        LEFT JOIN staff s ON o.manager_id = s.id
         WHERE o.id = ?
     ");
     $stmt->execute([$order_id]);
     $order = $stmt->fetch();
     
-    // Состав заказа
-    $stmt = $db->prepare("
-        SELECT oi.*, p.name as product_name, p.product_code, p.description, p.category
-        FROM order_items oi
-        LEFT JOIN products p ON oi.product_id = p.id
-        WHERE oi.order_id = ?
-    ");
-    $stmt->execute([$order_id]);
-    $orderItems = $stmt->fetchAll();
+    // Состав заказа (из JSON)
+    $orderItems = [];
+    if ($order && !empty($order['items_json'])) {
+        $orderItems = json_decode($order['items_json'], true);
+    }
 } else {
     $order = null;
     $orderItems = [];
@@ -57,7 +53,7 @@ $stmt = $db->query("
     SELECT o.*, c.name as customer_name, c.inn,
            DATE_FORMAT(o.updated_at, '%d.%m.%Y') as last_update
     FROM orders o
-    LEFT JOIN customers c ON o.customer_id = c.id
+    LEFT JOIN partners c ON o.customer_id = c.id
     WHERE o.status IN ('ready', 'shipped', 'completed')
     ORDER BY o.updated_at DESC
 ");

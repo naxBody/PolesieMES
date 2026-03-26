@@ -1,6 +1,7 @@
 <?php
 /**
  * Функции аутентификации и авторизации
+ * Обновленная версия для работы с таблицей staff
  */
 
 // Запуск сессии только если она еще не запущена
@@ -14,38 +15,20 @@ if (session_status() === PHP_SESSION_NONE) {
 function authenticate($username, $password) {
     $db = getDB();
     
-    // Проверяем существование таблицы employees
-    $tableExists = false;
-    try {
-        $stmt = $db->query("SHOW TABLES LIKE 'employees'");
-        $tableExists = $stmt->rowCount() > 0;
-    } catch (PDOException $e) {
-        $tableExists = false;
-    }
-    
-    if ($tableExists) {
-        // Полный запрос с данными сотрудника
-        $stmt = $db->prepare("
-            SELECT u.*, e.first_name, e.last_name, e.middle_name, e.employee_code
-            FROM users u
-            LEFT JOIN employees e ON u.employee_id = e.id
-            WHERE u.username = :username AND u.is_active = 1
-        ");
-    } else {
-        // Упрощенный запрос без таблицы employees
-        $stmt = $db->prepare("
-            SELECT u.*, '' as first_name, '' as last_name, '' as middle_name, '' as employee_code
-            FROM users u
-            WHERE u.username = :username AND u.is_active = 1
-        ");
-    }
+    // Запрос к объединенной таблице staff
+    $stmt = $db->prepare("
+        SELECT id, employee_code, username, password, first_name, last_name, middle_name, 
+               position_id, email, phone, department, role, status, is_active, last_login
+        FROM staff
+        WHERE username = :username AND is_active = 1
+    ");
     
     $stmt->execute(['username' => $username]);
     $user = $stmt->fetch();
     
     if ($user && $user['password'] === $password) {
         // Обновление времени последнего входа
-        $updateStmt = $db->prepare("UPDATE users SET last_login = NOW() WHERE id = :id");
+        $updateStmt = $db->prepare("UPDATE staff SET last_login = NOW() WHERE id = :id");
         $updateStmt->execute(['id' => $user['id']]);
         
         // Логирование входа
@@ -174,12 +157,13 @@ function logActivity($userId, $action, $module, $recordId = null, $description =
     $ipAddress = $_SERVER['REMOTE_ADDR'] ?? null;
     
     $stmt = $db->prepare("
-        INSERT INTO activity_log (user_id, action, module, record_id, description, ip_address)
-        VALUES (:user_id, :action, :module, :record_id, :description, :ip_address)
+        INSERT INTO journal (journal_type, user_id, action, module, record_id, description, ip_address)
+        VALUES (:journal_type, :user_id, :action, :module, :record_id, :description, :ip_address)
     ");
     
     try {
         $stmt->execute([
+            'journal_type' => 'activity',
             'user_id' => $userId,
             'action' => $action,
             'module' => $module,
@@ -209,29 +193,11 @@ function requireAuth() {
 function getUserFullName($userId) {
     $db = getDB();
     
-    // Проверяем существование таблицы employees
-    $tableExists = false;
-    try {
-        $stmt = $db->query("SHOW TABLES LIKE 'employees'");
-        $tableExists = $stmt->rowCount() > 0;
-    } catch (PDOException $e) {
-        $tableExists = false;
-    }
-    
-    if ($tableExists) {
-        $stmt = $db->prepare("
-            SELECT e.first_name, e.last_name, e.middle_name
-            FROM users u
-            JOIN employees e ON u.employee_id = e.id
-            WHERE u.id = :user_id
-        ");
-    } else {
-        $stmt = $db->prepare("
-            SELECT username as first_name, '' as last_name, '' as middle_name
-            FROM users
-            WHERE id = :user_id
-        ");
-    }
+    $stmt = $db->prepare("
+        SELECT first_name, last_name, middle_name
+        FROM staff
+        WHERE id = :user_id
+    ");
     
     $stmt->execute(['user_id' => $userId]);
     $user = $stmt->fetch();

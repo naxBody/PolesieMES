@@ -1,16 +1,37 @@
-# Examples
-Input:
-### Added files:
-['polesie_mes/README.md', 'polesie_mes/sql/database.sql']
+```
+# Compiled and build artifacts
+*.pyc
+__pycache__/
 
-### Deleted files:
-[]
+# Dependencies
+vendor/
+composer.lock
 
-### Modified files:
-['polesie_mes/README.md', 'polesie_mes/sql/database.sql']
+# Logs and temp files
+*.log
+*.tmp
+*.swp
 
-###current .gitignore Content
-(empty)
+# Environment
+.env
+.env.local
+*.env.*
 
-Expected Output:
-(empty)
+# Editors
+.vscode/
+.idea/
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Backup and swap files
+*~
+*.bak
+*.swp
+*.swo
+
+# PHP specific
+*.php~
+.htaccess
+```

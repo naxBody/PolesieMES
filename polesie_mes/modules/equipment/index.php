@@ -19,27 +19,28 @@ $user = getCurrentUser();
 
 // Получение всего оборудования с статусами
 $stmt = $db->query("
-    SELECT e.*, 
-           c.name as category_name,
-           l.name as location_name,
+    SELECT i.*, 
+           d.name as category_name,
+           d2.name as location_name,
            CASE 
-               WHEN e.status = 'operational' THEN 'normal'
-               WHEN e.status = 'maintenance' THEN 'warning'
-               WHEN e.status = 'broken' THEN 'critical'
-               WHEN e.status = 'offline' THEN 'info'
+               WHEN i.status = 'operational' THEN 'normal'
+               WHEN i.status = 'maintenance' THEN 'warning'
+               WHEN i.status = 'broken' THEN 'critical'
+               WHEN i.status = 'offline' THEN 'info'
                ELSE 'normal'
            END as status_class
-    FROM equipment e
-    LEFT JOIN equipment_categories c ON e.type = c.name
-    LEFT JOIN locations l ON e.location = l.name
+    FROM items i
+    LEFT JOIN dictionaries d ON i.category_id = d.id AND d.dict_type = 'category'
+    LEFT JOIN dictionaries d2 ON i.location_id = d2.id AND d2.dict_type = 'location'
+    WHERE i.item_type = 'equipment'
     ORDER BY 
-        CASE e.status 
+        CASE i.status 
             WHEN 'broken' THEN 1 
             WHEN 'maintenance' THEN 2 
             WHEN 'offline' THEN 3 
             ELSE 4 
         END,
-        e.name ASC
+        i.name ASC
 ");
 $equipment = $stmt->fetchAll();
 
@@ -51,43 +52,45 @@ $stmt = $db->query("
         SUM(CASE WHEN status = 'maintenance' THEN 1 ELSE 0 END) as maintenance,
         SUM(CASE WHEN status = 'broken' THEN 1 ELSE 0 END) as broken,
         SUM(CASE WHEN status = 'offline' THEN 1 ELSE 0 END) as offline
-    FROM equipment
+    FROM items
+    WHERE item_type = 'equipment'
 ");
 $equipmentStats = $stmt->fetch();
 
 // Оборудование требующее внимания (сломанное или на обслуживании)
 $stmt = $db->query("
-    SELECT e.*, c.name as category_name, 
-           m.description as maintenance_description,
-           m.scheduled_date, m.completed_date
-    FROM equipment e
-    LEFT JOIN equipment_categories c ON e.type = c.name
-    LEFT JOIN maintenance_logs m ON e.id = m.equipment_id AND m.status = 'in_progress'
-    WHERE e.status IN ('broken', 'maintenance')
-    ORDER BY e.status DESC, e.name ASC
+    SELECT i.*, d.name as category_name, 
+           j.description as maintenance_description,
+           j.scheduled_date, j.completed_date
+    FROM items i
+    LEFT JOIN dictionaries d ON i.category_id = d.id AND d.dict_type = 'category'
+    LEFT JOIN journal j ON i.id = j.item_id AND j.journal_type = 'maintenance' AND j.maintenance_status = 'in_progress'
+    WHERE i.item_type = 'equipment' AND i.status IN ('broken', 'maintenance')
+    ORDER BY i.status DESC, i.name ASC
     LIMIT 10
 ");
 $attentionEquipment = $stmt->fetchAll();
 
 // Последние события обслуживания
 $stmt = $db->query("
-    SELECT ml.*, e.name as equipment_name, emp.first_name, emp.last_name
-    FROM maintenance_logs ml
-    LEFT JOIN equipment e ON ml.equipment_id = e.id
-    LEFT JOIN employees emp ON ml.technician_id = emp.id
-    ORDER BY ml.created_at DESC
+    SELECT j.*, i.name as equipment_name, s.first_name, s.last_name
+    FROM journal j
+    LEFT JOIN items i ON j.item_id = i.id
+    LEFT JOIN staff s ON j.technician_id = s.id
+    WHERE j.journal_type = 'maintenance'
+    ORDER BY j.created_at DESC
     LIMIT 10
 ");
 $recentMaintenance = $stmt->fetchAll();
 
 // Предстоящее ТО
 $stmt = $db->query("
-    SELECT e.name as equipment_name, c.name as category_name,
+    SELECT i.name as equipment_name, d.name as category_name,
            30 as days_until
-    FROM equipment e
-    LEFT JOIN equipment_categories c ON e.type = c.name
-    WHERE e.status = 'operational'
-    ORDER BY e.name ASC
+    FROM items i
+    LEFT JOIN dictionaries d ON i.category_id = d.id AND d.dict_type = 'category'
+    WHERE i.item_type = 'equipment' AND i.status = 'operational'
+    ORDER BY i.name ASC
     LIMIT 10
 ");
 $upcomingMaintenance = $stmt->fetchAll();

@@ -93,11 +93,10 @@ $recentOrders = $stmt->fetchAll();
 
 // Производственные задания требующие внимания
 $stmt = $db->query("
-    SELECT pt.*, p.name as product_name, ps.name as stage_name, e.first_name, e.last_name
+    SELECT pt.*, p.name as product_name, pt.stage_name, s.first_name, s.last_name
     FROM production_tasks pt
-    LEFT JOIN products p ON pt.product_id = p.id
-    LEFT JOIN production_stages ps ON pt.stage_id = ps.id
-    LEFT JOIN employees e ON pt.assigned_to = e.id
+    LEFT JOIN items p ON pt.product_id = p.id
+    LEFT JOIN staff s ON pt.assigned_to = s.id
     WHERE pt.status IN ('in_progress', 'paused')
     ORDER BY pt.planned_end ASC
     LIMIT 5
@@ -106,8 +105,8 @@ $activeTasks = $stmt->fetchAll();
 
 // Проблемы с материалами (ниже минимального запаса)
 $stmt = $db->query("
-    SELECT * FROM materials
-    WHERE current_stock < min_stock
+    SELECT * FROM items
+    WHERE item_type = 'material' AND current_stock < min_stock
     ORDER BY (min_stock - current_stock) DESC
     LIMIT 5
 ");
@@ -116,8 +115,8 @@ $lowStockMaterials = $stmt->fetchAll();
 // Активные пользователи онлайн (по активности в журнале событий)
 $stmt = $db->query("
     SELECT COUNT(DISTINCT user_id) as online_users
-    FROM activity_log
-    WHERE created_at > DATE_SUB(NOW(), INTERVAL 15 MINUTE)
+    FROM journal
+    WHERE journal_type = 'activity' AND created_at > DATE_SUB(NOW(), INTERVAL 15 MINUTE)
 ");
 $onlineUsers = $stmt->fetch()['online_users'] ?? 0;
 
@@ -125,7 +124,7 @@ $onlineUsers = $stmt->fetch()['online_users'] ?? 0;
 $stmt = $db->query("
     SELECT o.*, c.name as customer_name, DATEDIFF(NOW(), o.delivery_date) as days_overdue
     FROM orders o
-    LEFT JOIN customers c ON o.customer_id = c.id
+    LEFT JOIN partners c ON o.customer_id = c.id
     WHERE o.status NOT IN ('completed', 'cancelled')
     AND o.delivery_date < NOW()
     ORDER BY o.delivery_date ASC
