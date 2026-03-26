@@ -3,10 +3,6 @@
 *.pyc
 __pycache__/
 
-# Dependencies
-vendor/
-composer.lock
-
 # Logs and temp files
 *.log
 *.tmp
@@ -21,17 +17,8 @@ composer.lock
 .vscode/
 .idea/
 
-# OS specific
-.DS_Store
-Thumbs.db
-
-# Backup and swap files
-*~
-*.bak
-*.swp
-*.swo
-
-# PHP specific
-*.php~
-.htaccess
+# Dependencies
+node_modules/
+.venv/
+venv/
 ```
