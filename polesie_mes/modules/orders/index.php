@@ -18,11 +18,11 @@ $user = getCurrentUser();
 // Получение всех заказов с информацией о клиентах
 $stmt = $db->query("
     SELECT o.*, c.name as customer_name, c.inn, c.phone as customer_phone, 
-           e.first_name as manager_first_name, e.last_name as manager_last_name,
+           s.first_name as manager_first_name, s.last_name as manager_last_name,
            DATEDIFF(o.delivery_date, NOW()) as days_until_delivery
     FROM orders o
-    LEFT JOIN customers c ON o.customer_id = c.id
-    LEFT JOIN employees e ON o.manager_id = e.id
+    LEFT JOIN partners c ON o.customer_id = c.id
+    LEFT JOIN staff s ON o.manager_id = s.id
     ORDER BY o.created_at DESC
 ");
 $orders = $stmt->fetchAll();
@@ -45,7 +45,7 @@ while ($row = $stmt->fetch()) {
 $stmt = $db->query("
     SELECT o.*, c.name as customer_name, DATEDIFF(NOW(), o.delivery_date) as days_overdue
     FROM orders o
-    LEFT JOIN customers c ON o.customer_id = c.id
+    LEFT JOIN partners c ON o.customer_id = c.id
     WHERE o.status NOT IN ('completed', 'cancelled')
     AND o.delivery_date < NOW()
     ORDER BY o.delivery_date ASC
@@ -56,7 +56,7 @@ $overdueOrders = $stmt->fetchAll();
 $stmt = $db->query("
     SELECT o.*, c.name as customer_name
     FROM orders o
-    LEFT JOIN customers c ON o.customer_id = c.id
+    LEFT JOIN partners c ON o.customer_id = c.id
     WHERE o.status IN ('new', 'confirmed')
     ORDER BY o.created_at DESC
     LIMIT 10

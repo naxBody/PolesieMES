@@ -18,9 +18,9 @@ $user = getCurrentUser();
 // Получение всех производственных заданий
 $stmt = $db->query("
     SELECT pt.*, 
-           p.name as product_name, p.product_code,
-           ps.name as stage_name,
-           e.first_name as assigned_first_name, e.last_name as assigned_last_name,
+           p.name as product_name, p.item_code as product_code,
+           pt.stage_name,
+           s.first_name as assigned_first_name, s.last_name as assigned_last_name,
            o.order_number,
            TIMESTAMPDIFF(HOUR, pt.planned_start, pt.planned_end) as planned_hours,
            CASE 
@@ -28,11 +28,9 @@ $stmt = $db->query("
                ELSE NULL
            END as actual_hours
     FROM production_tasks pt
-    LEFT JOIN products p ON pt.product_id = p.id
-    LEFT JOIN production_stages ps ON pt.stage_id = ps.id
-    LEFT JOIN employees e ON pt.assigned_to = e.id
-    LEFT JOIN order_items oi ON pt.order_item_id = oi.id
-    LEFT JOIN orders o ON oi.order_id = o.id
+    LEFT JOIN items p ON pt.product_id = p.id
+    LEFT JOIN staff s ON pt.assigned_to = s.id
+    LEFT JOIN orders o ON pt.order_id = o.id
     ORDER BY pt.created_at DESC
 ");
 $tasks = $stmt->fetchAll();
@@ -52,15 +50,13 @@ while ($row = $stmt->fetch()) {
 
 // Задания в работе
 $stmt = $db->query("
-    SELECT pt.*, p.name as product_name, ps.name as stage_name,
-           e.first_name, e.last_name,
+    SELECT pt.*, p.name as product_name, pt.stage_name,
+           s.first_name, s.last_name,
            o.order_number
     FROM production_tasks pt
-    LEFT JOIN products p ON pt.product_id = p.id
-    LEFT JOIN production_stages ps ON pt.stage_id = ps.id
-    LEFT JOIN employees e ON pt.assigned_to = e.id
-    LEFT JOIN order_items oi ON pt.order_item_id = oi.id
-    LEFT JOIN orders o ON oi.order_id = o.id
+    LEFT JOIN items p ON pt.product_id = p.id
+    LEFT JOIN staff s ON pt.assigned_to = s.id
+    LEFT JOIN orders o ON pt.order_id = o.id
     WHERE pt.status = 'in_progress'
     ORDER BY pt.planned_end ASC
 ");
@@ -70,34 +66,34 @@ $activeTasks = $stmt->fetchAll();
 $stmt = $db->query("
     SELECT pt.*, p.name as product_name, DATEDIFF(NOW(), pt.planned_end) as days_overdue
     FROM production_tasks pt
-    LEFT JOIN products p ON pt.product_id = p.id
+    LEFT JOIN items p ON pt.product_id = p.id
     WHERE pt.status NOT IN ('completed', 'rejected')
     AND pt.planned_end < NOW()
 ");
 $overdueTasks = $stmt->fetchAll();
 
-// Эффективность по этапам производства
+// Эффективность по этапам производства (группировка по stage_name)
 $stmt = $db->query("
-    SELECT ps.name as stage_name,
+    SELECT stage_name,
            COUNT(*) as total_tasks,
-           SUM(CASE WHEN pt.status = 'completed' THEN 1 ELSE 0 END) as completed,
-           ROUND(SUM(CASE WHEN pt.status = 'completed' THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 1) as efficiency
-    FROM production_tasks pt
-    JOIN production_stages ps ON pt.stage_id = ps.id
-    GROUP BY ps.id, ps.name
-    ORDER BY ps.sequence_order
+           SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
+           ROUND(SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 1) as efficiency
+    FROM production_tasks
+    WHERE stage_name IS NOT NULL
+    GROUP BY stage_name
+    ORDER BY MIN(stage_sequence)
 ");
 $stageEfficiency = $stmt->fetchAll();
 
 // Загрузка по сотрудникам
 $stmt = $db->query("
-    SELECT e.first_name, e.last_name,
+    SELECT s.first_name, s.last_name,
            COUNT(*) as total_tasks,
            SUM(CASE WHEN pt.status = 'completed' THEN 1 ELSE 0 END) as completed,
            SUM(CASE WHEN pt.status = 'in_progress' THEN 1 ELSE 0 END) as in_progress
     FROM production_tasks pt
-    JOIN employees e ON pt.assigned_to = e.id
-    GROUP BY e.id, e.first_name, e.last_name
+    JOIN staff s ON pt.assigned_to = s.id
+    GROUP BY s.id, s.first_name, s.last_name
     ORDER BY total_tasks DESC
     LIMIT 10
 ");

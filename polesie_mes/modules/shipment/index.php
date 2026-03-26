@@ -18,11 +18,11 @@ $user = getCurrentUser();
 // Получение готовых к отгрузке заказов
 $stmt = $db->query("
     SELECT o.*, c.name as customer_name, c.inn, c.address, c.phone as customer_phone, c.email,
-           e.first_name as manager_first_name, e.last_name as manager_last_name,
+           s.first_name as manager_first_name, s.last_name as manager_last_name,
            DATEDIFF(NOW(), o.delivery_date) as days_since_delivery
     FROM orders o
-    LEFT JOIN customers c ON o.customer_id = c.id
-    LEFT JOIN employees e ON o.manager_id = e.id
+    LEFT JOIN partners c ON o.customer_id = c.id
+    LEFT JOIN staff s ON o.manager_id = s.id
     WHERE o.status IN ('ready', 'shipped')
     ORDER BY o.delivery_date ASC
 ");
@@ -58,7 +58,7 @@ $stmt = $db->query("
     SELECT o.*, c.name as customer_name, 
            DATE_FORMAT(o.updated_at, '%d.%m.%Y %H:%i') as last_update
     FROM orders o
-    LEFT JOIN customers c ON o.customer_id = c.id
+    LEFT JOIN partners c ON o.customer_id = c.id
     WHERE o.status IN ('ready', 'shipped', 'completed')
     ORDER BY o.updated_at DESC
     LIMIT 50

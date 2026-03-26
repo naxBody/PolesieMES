@@ -19,19 +19,20 @@ $user = getCurrentUser();
 
 // Получение всех материалов с статусами
 $stmt = $db->query("
-    SELECT m.*, 
-           c.name as category_name,
-           u.name as unit_name,
+    SELECT i.*, 
+           d.name as category_name,
+           d2.name as unit_name,
            CASE 
-               WHEN m.current_stock <= 0 THEN 'critical'
-               WHEN m.current_stock < m.min_stock THEN 'low'
-               WHEN m.current_stock > (m.min_stock * 2) THEN 'overstock'
+               WHEN i.current_stock <= 0 THEN 'critical'
+               WHEN i.current_stock < i.min_stock THEN 'low'
+               WHEN i.current_stock > (i.min_stock * 2) THEN 'overstock'
                ELSE 'normal'
            END as stock_status
-    FROM materials m
-    LEFT JOIN material_categories c ON m.category = c.name
-    LEFT JOIN units u ON m.unit = u.name
-    ORDER BY stock_status, m.name ASC
+    FROM items i
+    LEFT JOIN dictionaries d ON i.category_id = d.id AND d.dict_type = 'category'
+    LEFT JOIN dictionaries d2 ON i.unit_id = d2.id AND d2.dict_type = 'unit'
+    WHERE i.item_type = 'material'
+    ORDER BY stock_status, i.name ASC
 ");
 $materials = $stmt->fetchAll();
 
@@ -43,16 +44,17 @@ $stmt = $db->query("
         SUM(CASE WHEN current_stock < min_stock AND current_stock > 0 THEN 1 ELSE 0 END) as low_stock,
         SUM(CASE WHEN current_stock > (min_stock * 2) THEN 1 ELSE 0 END) as overstock,
         SUM(CASE WHEN current_stock >= min_stock AND current_stock <= (min_stock * 2) THEN 1 ELSE 0 END) as normal
-    FROM materials
+    FROM items
+    WHERE item_type = 'material'
 ");
 $materialStats = $stmt->fetch();
 
 // Материалы требующие пополнения
 $stmt = $db->query("
-    SELECT m.*, c.name as category_name, (m.min_stock - m.current_stock) as shortage
-    FROM materials m
-    LEFT JOIN material_categories c ON m.category = c.name
-    WHERE m.current_stock < m.min_stock
+    SELECT i.*, d.name as category_name, (i.min_stock - i.current_stock) as shortage
+    FROM items i
+    LEFT JOIN dictionaries d ON i.category_id = d.id AND d.dict_type = 'category'
+    WHERE i.item_type = 'material' AND i.current_stock < i.min_stock
     ORDER BY shortage DESC
     LIMIT 10
 ");
@@ -60,32 +62,25 @@ $reorderMaterials = $stmt->fetchAll();
 
 // Последние движения на складе
 $stmt = $db->query("
-    SELECT mt.*, m.name as material_name, e.first_name, e.last_name,
-           mt.operation_type, mt.quantity, mt.created_at
-    FROM material_transactions mt
-    LEFT JOIN materials m ON mt.material_id = m.id
-    LEFT JOIN employees e ON mt.user_id = e.id
-    ORDER BY mt.created_at DESC
+    SELECT mvt.*, i.name as material_name, s.first_name, s.last_name,
+           mvt.movement_type as operation_type, mvt.quantity, mvt.movement_date as created_at
+    FROM movements mvt
+    LEFT JOIN items i ON mvt.item_id = i.id
+    LEFT JOIN staff s ON mvt.employee_id = s.id
+    WHERE mvt.movement_type IN ('receipt', 'consumption', 'return', 'adjustment')
+    ORDER BY mvt.movement_date DESC
     LIMIT 10
 ");
 $recentTransactions = $stmt->fetchAll();
 
 // Готовая продукция на складе
 $stmt = $db->query("
-    SELECT p.*, c.name as category_name, 
-           SUM(oi.quantity - COALESCE(shipped.quantity, 0)) as available_stock
-    FROM products p
-    LEFT JOIN product_categories c ON p.category = c.name
-    LEFT JOIN order_items oi ON p.id = oi.product_id
-    LEFT JOIN orders o ON oi.order_id = o.id
-    LEFT JOIN (
-        SELECT order_item_id, SUM(quantity) as quantity
-        FROM shipments
-        GROUP BY order_item_id
-    ) shipped ON oi.id = shipped.order_item_id
-    WHERE o.status IN ('completed', 'ready')
-    GROUP BY p.id
-    HAVING available_stock > 0
+    SELECT i.*, d.name as category_name, 
+           i.current_stock as available_stock
+    FROM items i
+    LEFT JOIN dictionaries d ON i.category_id = d.id AND d.dict_type = 'category'
+    WHERE i.item_type = 'product' AND i.current_stock > 0
+    ORDER BY i.name ASC
     LIMIT 10
 ");
 $finishedGoods = $stmt->fetchAll();
