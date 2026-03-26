@@ -50,7 +50,7 @@ function login($username, $password) {
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['username'] = $user['username'];
         $_SESSION['role'] = $user['role'];
-        $_SESSION['employee_id'] = $user['employee_id'];
+        $_SESSION['employee_code'] = $user['employee_code'];
         $_SESSION['full_name'] = trim($user['last_name'] . ' ' . $user['first_name'] . ' ' . $user['middle_name']);
         $_SESSION['logged_in'] = true;
         $_SESSION['login_time'] = time();
@@ -143,7 +143,7 @@ function getCurrentUser() {
         'id' => $_SESSION['user_id'],
         'username' => $_SESSION['username'],
         'role' => $_SESSION['role'],
-        'employee_id' => $_SESSION['employee_id'],
+        'employee_code' => $_SESSION['employee_code'],
         'full_name' => $_SESSION['full_name']
     ];
 }

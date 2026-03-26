@@ -77,15 +77,16 @@ $stmt = $db->query("
         SUM(CASE WHEN status = 'operational' THEN 1 ELSE 0 END) as operational,
         SUM(CASE WHEN status = 'maintenance' THEN 1 ELSE 0 END) as maintenance,
         SUM(CASE WHEN status = 'broken' THEN 1 ELSE 0 END) as broken
-    FROM equipment
+    FROM items
+    WHERE item_type = 'equipment'
 ");
 $stats['equipment'] = $stmt->fetch();
 
 // Последние заказы
 $stmt = $db->query("
-    SELECT o.*, c.name as customer_name
+    SELECT o.*, p.name as customer_name
     FROM orders o
-    LEFT JOIN customers c ON o.customer_id = c.id
+    LEFT JOIN partners p ON o.customer_id = p.id
     ORDER BY o.created_at DESC
     LIMIT 5
 ");
@@ -173,21 +174,19 @@ if ($newOrdersCount > 5) {
 
 // Модуль Производство - проблемы
 $productionIssues = [];
+$productionStmt = $db->query("SELECT pt.*, p.name as product_name, DATEDIFF(NOW(), pt.planned_end) as days_overdue
+    FROM production_tasks pt LEFT JOIN items p ON pt.product_id = p.id
+    WHERE pt.status NOT IN ('completed', 'rejected') AND pt.planned_end < NOW()");
+$overdueTasks = $productionStmt->fetchAll();
 if (!empty($overdueTasks)) {
-    $productionStmt = $db->query("SELECT pt.*, p.name as product_name, DATEDIFF(NOW(), pt.planned_end) as days_overdue
-        FROM production_tasks pt LEFT JOIN products p ON pt.product_id = p.id
-        WHERE pt.status NOT IN ('completed', 'rejected') AND pt.planned_end < NOW()");
-    $overdueTasks = $productionStmt->fetchAll();
-    if (!empty($overdueTasks)) {
-        $productionIssues[] = [
-            'type' => 'critical',
-            'title' => 'Просроченные задания',
-            'count' => count($overdueTasks),
-            'description' => 'Производственные задания с нарушенными сроками',
-            'recommendation' => 'Перераспределить ресурсы и ускорить выполнение',
-            'link' => APP_URL . '/modules/production/index.php'
-        ];
-    }
+    $productionIssues[] = [
+        'type' => 'critical',
+        'title' => 'Просроченные задания',
+        'count' => count($overdueTasks),
+        'description' => 'Производственные задания с нарушенными сроками',
+        'recommendation' => 'Перераспределить ресурсы и ускорить выполнение',
+        'link' => APP_URL . '/modules/production/index.php'
+    ];
 }
 $pausedTasksStmt = $db->query("SELECT COUNT(*) as count FROM production_tasks WHERE status = 'paused'");
 $pausedTasksCount = $pausedTasksStmt->fetch()['count'] ?? 0;
@@ -204,9 +203,9 @@ if ($pausedTasksCount > 0) {
 
 // Модуль Склад - проблемы
 $warehouseIssues = [];
-$lowStockStmt = $db->query("SELECT COUNT(*) as count FROM materials WHERE current_stock < min_stock");
+$lowStockStmt = $db->query("SELECT COUNT(*) as count FROM items WHERE item_type = 'material' AND current_stock < min_stock");
 $lowStockCount = $lowStockStmt->fetch()['count'] ?? 0;
-$outOfStockStmt = $db->query("SELECT COUNT(*) as count FROM materials WHERE current_stock <= 0");
+$outOfStockStmt = $db->query("SELECT COUNT(*) as count FROM items WHERE item_type = 'material' AND current_stock <= 0");
 $outOfStockCount = $outOfStockStmt->fetch()['count'] ?? 0;
 
 if ($outOfStockCount > 0) {
