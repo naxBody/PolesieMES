@@ -24,7 +24,7 @@
     <?php if (isLoggedIn()): ?>
     <!-- Верхняя навигационная панель -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top shadow-sm">
-        <div class="container-fluid">
+        <div class="container-fluid px-3">
             <a class="navbar-brand d-flex align-items-center" href="<?= APP_URL ?>">
                 <i class="fas fa-industry me-2"></i>
                 <span class="fw-bold">PolesieMES</span>
@@ -39,7 +39,7 @@
                     <li class="nav-item">
                         <a class="nav-link <?= ($currentPage ?? '') == 'dashboard' ? 'active' : '' ?>" href="<?= APP_URL ?>/modules/dashboard/index.php">
                             <i class="fas fa-tachometer-alt me-1"></i>
-                            Панель управления
+                            <span class="d-none d-lg-inline">Панель управления</span>
                         </a>
                     </li>
                     
@@ -47,7 +47,7 @@
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle <?= ($currentModule ?? '') == 'orders' ? 'active' : '' ?>" href="#" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-shopping-cart me-1"></i>
-                            Заказы
+                            <span class="d-none d-lg-inline">Заказы</span>
                         </a>
                         <ul class="dropdown-menu">
                             <li><a class="dropdown-item" href="<?= APP_URL ?>/modules/orders/index.php"><i class="fas fa-list me-2"></i>Все заказы</a></li>
@@ -56,20 +56,20 @@
                     </li>
                     <?php endif; ?>
                     
-                    <?php if (hasRole(['admin', 'manager', 'technologist', 'operator'])): ?>
+                    <?php if (hasRole(['admin', 'manager', 'operator'])): ?>
                     <li class="nav-item">
                         <a class="nav-link <?= ($currentPage ?? '') == 'production' ? 'active' : '' ?>" href="<?= APP_URL ?>/modules/production/index.php">
                             <i class="fas fa-cogs me-1"></i>
-                            Производство
+                            <span class="d-none d-lg-inline">Производство</span>
                         </a>
                     </li>
                     <?php endif; ?>
                     
-                    <?php if (hasRole(['admin', 'manager', 'quality_inspector'])): ?>
+                    <?php if (hasRole(['admin', 'manager'])): ?>
                     <li class="nav-item">
                         <a class="nav-link <?= ($currentPage ?? '') == 'quality' ? 'active' : '' ?>" href="<?= APP_URL ?>/modules/quality/index.php">
                             <i class="fas fa-check-circle me-1"></i>
-                            Контроль качества
+                            <span class="d-none d-lg-inline">Контроль качества</span>
                         </a>
                     </li>
                     <?php endif; ?>
@@ -78,7 +78,16 @@
                     <li class="nav-item">
                         <a class="nav-link <?= ($currentPage ?? '') == 'warehouse' ? 'active' : '' ?>" href="<?= APP_URL ?>/modules/warehouse/index.php">
                             <i class="fas fa-warehouse me-1"></i>
-                            Склад
+                            <span class="d-none d-lg-inline">Склад</span>
+                        </a>
+                    </li>
+                    <?php endif; ?>
+                    
+                    <?php if (hasRole(['admin', 'operator'])): ?>
+                    <li class="nav-item">
+                        <a class="nav-link <?= ($currentPage ?? '') == 'equipment' ? 'active' : '' ?>" href="<?= APP_URL ?>/modules/equipment/index.php">
+                            <i class="fas fa-tools me-1"></i>
+                            <span class="d-none d-lg-inline">Оборудование</span>
                         </a>
                     </li>
                     <?php endif; ?>
@@ -87,7 +96,7 @@
                     <li class="nav-item">
                         <a class="nav-link <?= ($currentPage ?? '') == 'reports' ? 'active' : '' ?>" href="<?= APP_URL ?>/modules/reports/index.php">
                             <i class="fas fa-chart-bar me-1"></i>
-                            Отчеты
+                            <span class="d-none d-lg-inline">Отчеты</span>
                         </a>
                     </li>
                     <?php endif; ?>
@@ -95,12 +104,12 @@
                     <?php if (hasRole('admin')): ?>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-users me-1"></i>
-                            Администрирование
+                            <i class="fas fa-users-cog me-1"></i>
+                            <span class="d-none d-lg-inline">Админ</span>
                         </a>
                         <ul class="dropdown-menu">
                             <li><a class="dropdown-item" href="<?= APP_URL ?>/modules/employees/index.php"><i class="fas fa-user-tie me-2"></i>Сотрудники</a></li>
-                            <li><a class="dropdown-item" href="<?= APP_URL ?>/modules/auth/users.php"><i class="fas fa-users-cog me-2"></i>Пользователи</a></li>
+                            <li><a class="dropdown-item" href="<?= APP_URL ?>/modules/auth/users.php"><i class="fas fa-users me-2"></i>Пользователи</a></li>
                         </ul>
                     </li>
                     <?php endif; ?>
@@ -110,7 +119,7 @@
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-user-circle me-1 fa-lg"></i>
-                            <span class="ms-1"><?= e($_SESSION['full_name']) ?></span>
+                            <span class="ms-1 d-none d-lg-inline"><?= e($_SESSION['full_name']) ?></span>
                             <span class="badge bg-light text-dark ms-2"><?= e(getRoleName($_SESSION['role'])) ?></span>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
@@ -124,39 +133,29 @@
         </div>
     </nav>
     
-    <!-- Боковая панель (опционально) -->
-    <?php if (isset($showSidebar) && $showSidebar): ?>
-    <div class="sidebar-wrapper">
-        <aside class="sidebar">
-            <?= $sidebarContent ?? '' ?>
-        </aside>
-        
-        <main class="main-content">
-    <?php else: ?>
+    <!-- Основной контент -->
     <main class="main-content-full">
-    <?php endif; ?>
-    
-    <div class="container-fluid py-4">
-        <?php
-        $flash = getFlashMessage();
-        if ($flash):
-        ?>
-        <div class="alert alert-<?= e($flash['type']) ?> alert-dismissible fade show" role="alert">
-            <i class="fas fa-<?= $flash['type'] == 'success' ? 'check-circle' : ($flash['type'] == 'error' ? 'exclamation-circle' : 'info-circle') ?> me-2"></i>
-            <?= e($flash['message']) ?>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-        <?php endif; ?>
-        
-        <?php if (isset($pageHeader)): ?>
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1 class="h3 mb-0 text-gray-800"><?= e($pageHeader) ?></h1>
-            <?php if (isset($pageActions)): ?>
-            <div class="btn-group">
-                <?= $pageActions ?>
+        <div class="container-fluid py-3">
+            <?php
+            $flash = getFlashMessage();
+            if ($flash):
+            ?>
+            <div class="alert alert-<?= e($flash['type']) ?> alert-dismissible fade show py-2" role="alert">
+                <i class="fas fa-<?= $flash['type'] == 'success' ? 'check-circle' : ($flash['type'] == 'error' ? 'exclamation-circle' : 'info-circle') ?> me-2"></i>
+                <?= e($flash['message']) ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
             <?php endif; ?>
-        </div>
-        <?php endif; ?>
-        
-        <?php endif; // isLoggedIn() ?>
+            
+            <?php if (isset($pageHeader)): ?>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h1 class="h4 mb-0"><?= e($pageHeader) ?></h1>
+                <?php if (isset($pageActions)): ?>
+                <div class="btn-group">
+                    <?= $pageActions ?>
+                </div>
+                <?php endif; ?>
+            </div>
+            <?php endif; ?>
+            
+            <?php endif; // isLoggedIn() ?>
