@@ -1,10 +1,43 @@
 -- PolesieMES - Система управления производством ОАО "Полесьеэлектромаш"
 -- База данных для XAMPP/phpMyAdmin
+-- Оптимизированная версия: объединенные таблицы, сокращенные роли и сотрудники
 
 CREATE DATABASE IF NOT EXISTS polesie_mes CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE polesie_mes;
 
--- Таблица должностей
+-- ==================== СПРАВОЧНИКИ ====================
+
+-- Единицы измерения (базовый справочник)
+CREATE TABLE units (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(50) NOT NULL,
+    short_name VARCHAR(20),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Категории (единый справочник для всех типов категорий)
+CREATE TABLE categories (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    code VARCHAR(50),
+    type ENUM('material', 'product', 'equipment') NOT NULL,
+    description TEXT,
+    parent_id INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (parent_id) REFERENCES categories(id)
+);
+
+-- Расположения/места хранения
+CREATE TABLE locations (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    code VARCHAR(50) UNIQUE,
+    type ENUM('warehouse', 'shop_floor', 'office', 'external') DEFAULT 'warehouse',
+    address TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Должности
 CREATE TABLE positions (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
@@ -13,7 +46,7 @@ CREATE TABLE positions (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Таблица сотрудников
+-- Сотрудники
 CREATE TABLE employees (
     id INT AUTO_INCREMENT PRIMARY KEY,
     employee_code VARCHAR(20) UNIQUE NOT NULL,
@@ -31,13 +64,13 @@ CREATE TABLE employees (
     FOREIGN KEY (position_id) REFERENCES positions(id)
 );
 
--- Таблица пользователей (авторизация)
+-- Пользователи (авторизация) - сокращенные роли
 CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     employee_id INT UNIQUE,
     username VARCHAR(50) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
-    role ENUM('admin', 'manager', 'technologist', 'operator', 'quality_inspector', 'warehouse_keeper') NOT NULL,
+    role ENUM('admin', 'manager', 'operator', 'warehouse_keeper') NOT NULL,
     is_active BOOLEAN DEFAULT TRUE,
     last_login TIMESTAMP NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -197,12 +230,15 @@ CREATE TABLE equipment (
     id INT AUTO_INCREMENT PRIMARY KEY,
     equipment_code VARCHAR(50) UNIQUE NOT NULL,
     name VARCHAR(200) NOT NULL,
+    category_id INT,
     type VARCHAR(100),
-    location VARCHAR(100),
+    location_id INT,
     status ENUM('operational', 'maintenance', 'broken', 'offline') DEFAULT 'operational',
     last_maintenance DATE,
     next_maintenance DATE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (category_id) REFERENCES categories(id),
+    FOREIGN KEY (location_id) REFERENCES locations(id)
 );
 
 -- Журнал событий
@@ -215,75 +251,6 @@ CREATE TABLE activity_log (
     description TEXT,
     ip_address VARCHAR(45),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id)
-);
-
--- Справочник единиц измерения
-CREATE TABLE units (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(50) NOT NULL,
-    short_name VARCHAR(20),
-    description TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Категории материалов
-CREATE TABLE material_categories (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    code VARCHAR(50) UNIQUE,
-    description TEXT,
-    parent_id INT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (parent_id) REFERENCES material_categories(id)
-);
-
--- Расположения/места хранения
-CREATE TABLE locations (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    code VARCHAR(50) UNIQUE,
-    type ENUM('warehouse', 'shop_floor', 'office', 'external') DEFAULT 'warehouse',
-    address TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Категории оборудования
-CREATE TABLE equipment_categories (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    code VARCHAR(50) UNIQUE,
-    description TEXT,
-    parent_id INT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (parent_id) REFERENCES equipment_categories(id)
-);
-
--- Категории продукции
-CREATE TABLE product_categories (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    code VARCHAR(50) UNIQUE,
-    description TEXT,
-    parent_id INT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (parent_id) REFERENCES product_categories(id)
-);
-
--- Движение материалов (транзакции)
-CREATE TABLE material_transactions (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    material_id INT NOT NULL,
-    operation_type ENUM('receipt', 'consumption', 'return', 'adjustment', 'transfer') NOT NULL,
-    quantity DECIMAL(12,3) NOT NULL,
-    warehouse_from VARCHAR(100),
-    warehouse_to VARCHAR(100),
-    reference_type VARCHAR(50),
-    reference_id INT,
-    user_id INT,
-    notes TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (material_id) REFERENCES materials(id),
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
@@ -326,22 +293,33 @@ CREATE TABLE maintenance_logs (
 -- ==================== ЗАПОЛНЕНИЕ ДАННЫМИ ====================
 
 -- Единицы измерения
-INSERT INTO units (name, short_name, description) VALUES
-('Штука', 'шт', 'Единица измерения количества изделий'),
-('Килограмм', 'кг', 'Единица измерения массы'),
-('Метр', 'м', 'Единица измерения длины'),
-('Литр', 'л', 'Единица измерения объема'),
-('Набор', 'наб', 'Комплект изделий'),
-('Пара', 'пара', 'Два изделия в комплекте');
+INSERT INTO units (name, short_name) VALUES
+('Штука', 'шт'),
+('Килограмм', 'кг'),
+('Метр', 'м'),
+('Литр', 'л'),
+('Набор', 'наб'),
+('Пара', 'пара');
 
--- Категории материалов
-INSERT INTO material_categories (name, code, description) VALUES
-('Металлопрокат', 'METAL', 'Черные и цветные металлы'),
-('Электротехнические материалы', 'ELECTRO', 'Провода, кабели, изоляция'),
-('Лакокрасочные материалы', 'PAINT', 'Краски, эмали, растворители'),
-('Крепеж', 'FASTENER', 'Болты, гайки, винты'),
-('Упаковочные материалы', 'PACKAGE', 'Тара и упаковка'),
-('Сырье', 'RAW', 'Основное сырье для производства');
+-- Категории (объединенный справочник)
+INSERT INTO categories (name, code, type, description) VALUES
+('Металлопрокат', 'METAL', 'material', 'Черные и цветные металлы'),
+('Электротехнические материалы', 'ELECTRO', 'material', 'Провода, кабели, изоляция'),
+('Лакокрасочные материалы', 'PAINT', 'material', 'Краски, эмали, растворители'),
+('Крепеж', 'FASTENER', 'material', 'Болты, гайки, винты'),
+('Упаковочные материалы', 'PACKAGE', 'material', 'Тара и упаковка'),
+('Сырье', 'RAW', 'material', 'Основное сырье для производства'),
+('Электродвигатели', 'MOTOR', 'product', 'Асинхронные и синхронные двигатели'),
+('Генераторы', 'GENERATOR', 'product', 'Электрогенераторы различной мощности'),
+('Трансформаторы', 'TRANSFORMER', 'product', 'Силовые трансформаторы'),
+('Насосное оборудование', 'PUMP', 'product', 'Насосы и насосные агрегаты'),
+('Устройства управления', 'CONTROL', 'product', 'Щиты управления и автоматики'),
+('Кабельная продукция', 'CABLE', 'product', 'Силовые и контрольные кабели'),
+('Станки', 'MACHINE', 'equipment', 'Металлообрабатывающие станки'),
+('Подъемное оборудование', 'CRANE', 'equipment', 'Краны, тали, подъемники'),
+('Сварочное оборудование', 'WELD', 'equipment', 'Сварочные аппараты'),
+('Измерительные приборы', 'MEASURE', 'equipment', 'Контрольно-измерительные приборы'),
+('Транспорт', 'TRANSPORT', 'equipment', 'Погрузчики, тележки');
 
 -- Расположения
 INSERT INTO locations (name, code, type) VALUES
@@ -352,69 +330,34 @@ INSERT INTO locations (name, code, type) VALUES
 ('Цех №1', 'SHOP-1', 'shop_floor'),
 ('Цех №2', 'SHOP-2', 'shop_floor');
 
--- Категории оборудования
-INSERT INTO equipment_categories (name, code, description) VALUES
-('Станки', 'MACHINE', 'Металлообрабатывающие станки'),
-('Подъемное оборудование', 'CRANE', 'Краны, тали, подъемники'),
-('Сварочное оборудование', 'WELD', 'Сварочные аппараты'),
-('Измерительные приборы', 'MEASURE', 'Контрольно-измерительные приборы'),
-('Транспорт', 'TRANSPORT', 'Погрузчики, тележки');
-
--- Категории продукции
-INSERT INTO product_categories (name, code, description) VALUES
-('Электродвигатели', 'MOTOR', 'Асинхронные и синхронные двигатели'),
-('Генераторы', 'GENERATOR', 'Электрогенераторы различной мощности'),
-('Трансформаторы', 'TRANSFORMER', 'Силовые трансформаторы'),
-('Насосное оборудование', 'PUMP', 'Насосы и насосные агрегаты'),
-('Устройства управления', 'CONTROL', 'Щиты управления и автоматики'),
-('Кабельная продукция', 'CABLE', 'Силовые и контрольные кабели');
-
--- Должности
+-- Должности (сокращенный список)
 INSERT INTO positions (name, code, description) VALUES
-('Директор', 'DIR', 'Руководитель предприятия'),
-('Начальник производства', 'PROD_HEAD', 'Руководитель производственного отдела'),
-('Менеджер по продажам', 'SALES_MGR', 'Работа с клиентами и заказами'),
-('Технолог', 'TECH', 'Разработка технологических процессов'),
-('Оператор станка', 'OPERATOR', 'Работа на производственном оборудовании'),
-('Инспектор ОТК', 'QC_INSPECTOR', 'Контроль качества продукции'),
-('Кладовщик', 'STOREKEEPER', 'Учет материалов на складе'),
-('Инженер', 'ENGINEER', 'Техническое сопровождение'),
-('Мастер смены', 'SHIFT_MASTER', 'Руководство сменой');
+('Администратор', 'ADMIN', 'Полный доступ ко всем модулям системы'),
+('Менеджер', 'MANAGER', 'Управление заказами, клиентами, производством'),
+('Оператор', 'OPERATOR', 'Работа с производственными заданиями'),
+('Кладовщик', 'STOREKEEPER', 'Учет материалов на складе');
 
--- Сотрудники
+-- Сотрудники (основной персонал - 8 человек)
 INSERT INTO employees (employee_code, first_name, last_name, middle_name, position_id, email, phone, department, hire_date, status) VALUES
-('EMP001', 'Александр', 'Иванов', 'Петрович', 1, 'director@polesie.by', '+375291111111', 'Администрация', '2018-01-15', 'active'),
-('EMP002', 'Елена', 'Смирнова', 'Владимировна', 2, 'prod.head@polesie.by', '+375292222222', 'Производство', '2018-03-20', 'active'),
-('EMP003', 'Дмитрий', 'Козлов', 'Андреевич', 3, 'sales1@polesie.by', '+375293333333', 'Отдел продаж', '2019-06-10', 'active'),
-('EMP004', 'Ольга', 'Новикова', 'Сергеевна', 3, 'sales2@polesie.by', '+375294444444', 'Отдел продаж', '2020-02-15', 'active'),
-('EMP005', 'Сергей', 'Федоров', 'Игоревич', 4, 'tech1@polesie.by', '+375295555555', 'Технический отдел', '2019-09-01', 'active'),
-('EMP006', 'Наталья', 'Морозова', 'Дмитриевна', 4, 'tech2@polesie.by', '+375296666666', 'Технический отдел', '2020-11-20', 'active'),
-('EMP007', 'Андрей', 'Волков', 'Николаевич', 5, 'operator1@polesie.by', '+375297777777', 'Цех №1', '2021-01-10', 'active'),
-('EMP008', 'Ирина', 'Лебедева', 'Алексеевна', 5, 'operator2@polesie.by', '+375298888888', 'Цех №1', '2021-03-15', 'active'),
-('EMP009', 'Михаил', 'Соколов', 'Петрович', 6, 'otk1@polesie.by', '+375299999999', 'ОТК', '2020-05-20', 'active'),
-('EMP010', 'Татьяна', 'Попкова', 'Ивановна', 6, 'otk2@polesie.by', '+375291010101', 'ОТК', '2021-07-01', 'active'),
-('EMP011', 'Виктор', 'Григорьев', 'Сергеевич', 7, 'store1@polesie.by', '+375291212121', 'Склад', '2019-04-10', 'active'),
-('EMP012', 'Екатерина', 'Васильева', 'Андреевна', 7, 'store2@polesie.by', '+375291313131', 'Склад', '2020-08-15', 'active'),
-('EMP013', 'Павел', 'Михайлов', 'Владимирович', 8, 'engineer1@polesie.by', '+375291414141', 'Инженерный отдел', '2018-11-01', 'active'),
-('EMP014', 'Анна', 'Алексеева', 'Николаевна', 9, 'master1@polesie.by', '+375291515151', 'Цех №1', '2019-02-20', 'active'),
-('EMP015', 'Игорь', 'Борисов', 'Дмитриевич', 5, 'operator3@polesie.by', '+375291616161', 'Цех №2', '2022-01-15', 'active');
+('EMP001', 'Александр', 'Иванов', 'Петрович', 1, 'admin@polesie.by', '+375291111111', 'Администрация', '2018-01-15', 'active'),
+('EMP002', 'Елена', 'Смирнова', 'Владимировна', 2, 'manager@polesie.by', '+375292222222', 'Производство', '2018-03-20', 'active'),
+('EMP003', 'Дмитрий', 'Козлов', 'Андреевич', 2, 'sales@polesie.by', '+375293333333', 'Отдел продаж', '2019-06-10', 'active'),
+('EMP004', 'Сергей', 'Федоров', 'Игоревич', 2, 'tech@polesie.by', '+375295555555', 'Технический отдел', '2019-09-01', 'active'),
+('EMP005', 'Андрей', 'Волков', 'Николаевич', 3, 'operator1@polesie.by', '+375297777777', 'Цех №1', '2021-01-10', 'active'),
+('EMP006', 'Ирина', 'Лебедева', 'Алексеевна', 3, 'operator2@polesie.by', '+375298888888', 'Цех №1', '2021-03-15', 'active'),
+('EMP007', 'Виктор', 'Григорьев', 'Сергеевич', 4, 'store1@polesie.by', '+375291212121', 'Склад', '2019-04-10', 'active'),
+('EMP008', 'Екатерина', 'Васильева', 'Андреевна', 4, 'store2@polesie.by', '+375291313131', 'Склад', '2020-08-15', 'active');
 
--- Пользователи (пароли без хеша как запрошено)
+-- Пользователи (4 основные роли)
 INSERT INTO users (employee_id, username, password, role, is_active) VALUES
 (1, 'admin', 'admin123', 'admin', TRUE),
-(2, 'prod_head', 'production2024', 'manager', TRUE),
-(3, 'sales1', 'sales123', 'manager', TRUE),
-(4, 'sales2', 'sales456', 'manager', TRUE),
-(5, 'tech1', 'tech2024', 'technologist', TRUE),
-(6, 'tech2', 'tech456', 'technologist', TRUE),
-(7, 'operator1', 'oper123', 'operator', TRUE),
-(8, 'operator2', 'oper456', 'operator', TRUE),
-(9, 'otk1', 'quality123', 'quality_inspector', TRUE),
-(10, 'otk2', 'quality456', 'quality_inspector', TRUE),
-(11, 'store1', 'store123', 'warehouse_keeper', TRUE),
-(12, 'store2', 'store456', 'warehouse_keeper', TRUE),
-(13, 'engineer1', 'eng2024', 'technologist', TRUE),
-(14, 'master1', 'master123', 'manager', TRUE);
+(2, 'manager1', 'manager123', 'manager', TRUE),
+(3, 'manager2', 'sales123', 'manager', TRUE),
+(4, 'manager3', 'tech2024', 'manager', TRUE),
+(5, 'operator1', 'oper123', 'operator', TRUE),
+(6, 'operator2', 'oper456', 'operator', TRUE),
+(7, 'warehouse1', 'store123', 'warehouse_keeper', TRUE),
+(8, 'warehouse2', 'store456', 'warehouse_keeper', TRUE);
 
 -- Клиенты
 INSERT INTO customers (name, inn, address, phone, email, contact_person, country) VALUES
@@ -552,65 +495,65 @@ INSERT INTO equipment (equipment_code, name, type, location, status, last_mainte
 
 -- Примеры производственных заданий
 INSERT INTO production_tasks (task_number, order_item_id, product_id, stage_id, quantity, planned_start, planned_end, status, assigned_to, work_center, notes) VALUES
-('TSK-2024-001', 1, 1, 1, 5, '2024-01-16 08:00:00', '2024-01-16 12:00:00', 'completed', 7, 'Цех №1', 'Подготовка материалов выполнена'),
-('TSK-2024-002', 1, 1, 2, 5, '2024-01-16 13:00:00', '2024-01-17 10:00:00', 'completed', 7, 'Цех №1', 'Раскрой завершен'),
-('TSK-2024-003', 1, 1, 3, 5, '2024-01-17 11:00:00', '2024-01-18 17:00:00', 'completed', 8, 'Цех №1, уч.1', 'Мехобработка на ЧПУ'),
-('TSK-2024-004', 1, 1, 6, 5, '2024-01-19 08:00:00', '2024-01-22 17:00:00', 'completed', 15, 'Цех №2, уч.2', 'Намотка обмоток'),
-('TSK-2024-005', 1, 1, 7, 5, '2024-01-23 08:00:00', '2024-01-25 17:00:00', 'completed', 7, 'Цех №1', 'Сборка двигателя'),
-('TSK-2024-006', 1, 1, 8, 5, '2024-01-26 08:00:00', '2024-01-26 17:00:00', 'completed', 8, 'Цех №1', 'Электромонтаж'),
-('TSK-2024-007', 1, 1, 9, 5, '2024-01-29 08:00:00', '2024-01-29 14:00:00', 'completed', 7, 'Цех №1', 'Предварительные испытания'),
+('TSK-2024-001', 1, 1, 1, 5, '2024-01-16 08:00:00', '2024-01-16 12:00:00', 'completed', 5, 'Цех №1', 'Подготовка материалов выполнена'),
+('TSK-2024-002', 1, 1, 2, 5, '2024-01-16 13:00:00', '2024-01-17 10:00:00', 'completed', 5, 'Цех №1', 'Раскрой завершен'),
+('TSK-2024-003', 1, 1, 3, 5, '2024-01-17 11:00:00', '2024-01-18 17:00:00', 'completed', 6, 'Цех №1, уч.1', 'Мехобработка на ЧПУ'),
+('TSK-2024-004', 1, 1, 6, 5, '2024-01-19 08:00:00', '2024-01-22 17:00:00', 'completed', 6, 'Цех №2, уч.2', 'Намотка обмоток'),
+('TSK-2024-005', 1, 1, 7, 5, '2024-01-23 08:00:00', '2024-01-25 17:00:00', 'completed', 5, 'Цех №1', 'Сборка двигателя'),
+('TSK-2024-006', 1, 1, 8, 5, '2024-01-26 08:00:00', '2024-01-26 17:00:00', 'completed', 6, 'Цех №1', 'Электромонтаж'),
+('TSK-2024-007', 1, 1, 9, 5, '2024-01-29 08:00:00', '2024-01-29 14:00:00', 'completed', 5, 'Цех №1', 'Предварительные испытания'),
 ('TSK-2024-008', 1, 1, 10, 5, '2024-01-29 15:00:00', '2024-01-30 12:00:00', 'completed', NULL, 'ОТК', 'Передано на ОТК'),
-('TSK-2024-009', 1, 1, 11, 5, '2024-01-30 13:00:00', '2024-01-30 17:00:00', 'completed', 11, 'Цех №1', 'Упаковка'),
-('TSK-2024-010', 1, 1, 12, 5, '2024-01-31 08:00:00', '2024-01-31 10:00:00', 'completed', 11, 'Склад', 'Отгружено'),
-('TSK-2024-011', 14, 1, 1, 20, '2024-03-11 08:00:00', '2024-03-11 16:00:00', 'completed', 7, 'Цех №1', 'Подготовка материалов'),
-('TSK-2024-012', 14, 1, 2, 20, '2024-03-12 08:00:00', '2024-03-13 17:00:00', 'completed', 8, 'Цех №1', 'Раскрой'),
-('TSK-2024-013', 14, 1, 3, 20, '2024-03-14 08:00:00', '2024-03-18 17:00:00', 'in_progress', 7, 'Цех №1, уч.1', 'Мехобработка в процессе'),
-('TSK-2024-014', 14, 1, 6, 20, '2024-03-19 08:00:00', '2024-03-25 17:00:00', 'planned', 15, 'Цех №2, уч.2', 'Запланирована намотка'),
-('TSK-2024-015', 15, 11, 1, 4, '2024-03-06 08:00:00', '2024-03-06 10:00:00', 'completed', 11, 'Склад', 'Материалы получены'),
-('TSK-2024-016', 15, 11, 3, 4, '2024-03-06 11:00:00', '2024-03-07 17:00:00', 'completed', 8, 'Цех №1, уч.1', 'Обработка корпуса'),
+('TSK-2024-009', 1, 1, 11, 5, '2024-01-30 13:00:00', '2024-01-30 17:00:00', 'completed', 7, 'Цех №1', 'Упаковка'),
+('TSK-2024-010', 1, 1, 12, 5, '2024-01-31 08:00:00', '2024-01-31 10:00:00', 'completed', 7, 'Склад', 'Отгружено'),
+('TSK-2024-011', 14, 1, 1, 20, '2024-03-11 08:00:00', '2024-03-11 16:00:00', 'completed', 5, 'Цех №1', 'Подготовка материалов'),
+('TSK-2024-012', 14, 1, 2, 20, '2024-03-12 08:00:00', '2024-03-13 17:00:00', 'completed', 6, 'Цех №1', 'Раскрой'),
+('TSK-2024-013', 14, 1, 3, 20, '2024-03-14 08:00:00', '2024-03-18 17:00:00', 'in_progress', 5, 'Цех №1, уч.1', 'Мехобработка в процессе'),
+('TSK-2024-014', 14, 1, 6, 20, '2024-03-19 08:00:00', '2024-03-25 17:00:00', 'planned', 6, 'Цех №2, уч.2', 'Запланирована намотка'),
+('TSK-2024-015', 15, 11, 1, 4, '2024-03-06 08:00:00', '2024-03-06 10:00:00', 'completed', 7, 'Склад', 'Материалы получены'),
+('TSK-2024-016', 15, 11, 3, 4, '2024-03-06 11:00:00', '2024-03-07 17:00:00', 'completed', 6, 'Цех №1, уч.1', 'Обработка корпуса'),
 ('TSK-2024-017', 15, 11, 5, 4, '2024-03-08 08:00:00', '2024-03-08 17:00:00', 'completed', NULL, 'Цех №2, уч.1', 'Покраска'),
-('TSK-2024-018', 15, 11, 7, 4, '2024-03-11 08:00:00', '2024-03-12 17:00:00', 'in_progress', 7, 'Цех №1', 'Сборка щита'),
-('TSK-2024-019', 15, 11, 8, 4, '2024-03-13 08:00:00', '2024-03-13 17:00:00', 'planned', 8, 'Цех №1', 'Электромонтаж'),
-('TSK-2024-020', 16, 11, 1, 6, '2024-03-06 08:00:00', '2024-03-06 11:00:00', 'completed', 12, 'Склад', 'Материалы подготовлены'),
-('TSK-2024-021', 16, 11, 3, 6, '2024-03-06 13:00:00', '2024-03-08 17:00:00', 'in_progress', 7, 'Цех №1, уч.1', 'Мехобработка'),
+('TSK-2024-018', 15, 11, 7, 4, '2024-03-11 08:00:00', '2024-03-12 17:00:00', 'in_progress', 5, 'Цех №1', 'Сборка щита'),
+('TSK-2024-019', 15, 11, 8, 4, '2024-03-13 08:00:00', '2024-03-13 17:00:00', 'planned', 6, 'Цех №1', 'Электромонтаж'),
+('TSK-2024-020', 16, 11, 1, 6, '2024-03-06 08:00:00', '2024-03-06 11:00:00', 'completed', 8, 'Склад', 'Материалы подготовлены'),
+('TSK-2024-021', 16, 11, 3, 6, '2024-03-06 13:00:00', '2024-03-08 17:00:00', 'in_progress', 5, 'Цех №1, уч.1', 'Мехобработка'),
 ('TSK-2024-022', 17, 12, 1, 2, '2024-03-08 08:00:00', '2024-03-08 10:00:00', 'pending', NULL, 'Склад', 'Ожидает начала'),
-('TSK-2024-023', 10, 1, 1, 10, '2024-02-21 08:00:00', '2024-02-21 16:00:00', 'completed', 7, 'Цех №1', 'Подготовка'),
-('TSK-2024-024', 10, 1, 2, 10, '2024-02-22 08:00:00', '2024-02-23 17:00:00', 'completed', 8, 'Цех №1', 'Раскрой'),
-('TSK-2024-025', 10, 1, 3, 10, '2024-02-26 08:00:00', '2024-03-01 17:00:00', 'completed', 7, 'Цех №1, уч.1', 'Мехобработка'),
+('TSK-2024-023', 10, 1, 1, 10, '2024-02-21 08:00:00', '2024-02-21 16:00:00', 'completed', 5, 'Цех №1', 'Подготовка'),
+('TSK-2024-024', 10, 1, 2, 10, '2024-02-22 08:00:00', '2024-02-23 17:00:00', 'completed', 6, 'Цех №1', 'Раскрой'),
+('TSK-2024-025', 10, 1, 3, 10, '2024-02-26 08:00:00', '2024-03-01 17:00:00', 'completed', 5, 'Цех №1, уч.1', 'Мехобработка'),
 ('TSK-2024-026', 10, 1, 4, 10, '2024-03-04 08:00:00', '2024-03-05 17:00:00', 'completed', NULL, 'Цех №1, уч.2', 'Сварка'),
 ('TSK-2024-027', 10, 1, 5, 10, '2024-03-06 08:00:00', '2024-03-07 17:00:00', 'completed', NULL, 'Цех №2, уч.1', 'Покраска'),
-('TSK-2024-028', 10, 1, 6, 10, '2024-03-08 08:00:00', '2024-03-14 17:00:00', 'completed', 15, 'Цех №2, уч.2', 'Намотка'),
-('TSK-2024-029', 10, 1, 7, 10, '2024-03-15 08:00:00', '2024-03-19 17:00:00', 'completed', 7, 'Цех №1', 'Сборка'),
-('TSK-2024-030', 10, 1, 8, 10, '2024-03-20 08:00:00', '2024-03-20 17:00:00', 'completed', 8, 'Цех №1', 'Электромонтаж'),
-('TSK-2024-031', 10, 1, 9, 10, '2024-03-21 08:00:00', '2024-03-21 17:00:00', 'completed', 7, 'Цех №1', 'Испытания'),
+('TSK-2024-028', 10, 1, 6, 10, '2024-03-08 08:00:00', '2024-03-14 17:00:00', 'completed', 6, 'Цех №2, уч.2', 'Намотка'),
+('TSK-2024-029', 10, 1, 7, 10, '2024-03-15 08:00:00', '2024-03-19 17:00:00', 'completed', 5, 'Цех №1', 'Сборка'),
+('TSK-2024-030', 10, 1, 8, 10, '2024-03-20 08:00:00', '2024-03-20 17:00:00', 'completed', 6, 'Цех №1', 'Электромонтаж'),
+('TSK-2024-031', 10, 1, 9, 10, '2024-03-21 08:00:00', '2024-03-21 17:00:00', 'completed', 5, 'Цех №1', 'Испытания'),
 ('TSK-2024-032', 10, 1, 10, 10, '2024-03-22 08:00:00', '2024-03-22 17:00:00', 'completed', NULL, 'ОТК', 'Контроль качества');
 
--- Контроль качества
+-- Контроль качества (inspector_id теперь может быть любым сотрудником или NULL)
 INSERT INTO quality_checks (check_number, production_task_id, inspector_id, check_date, check_type, result, defects_found, defects_description, comments) VALUES
-('QC-2024-001', 8, 9, '2024-01-29 16:00:00', 'final', 'passed', 0, NULL, 'Все параметры в норме. Двигатели готовы к отгрузке.'),
-('QC-2024-002', 32, 9, '2024-03-22 15:00:00', 'final', 'passed', 0, NULL, 'Партия из 10 двигателей прошла все испытания успешно.'),
-('QC-2024-003', 25, 10, '2024-03-01 16:00:00', 'in_process', 'passed', 0, NULL, 'Мехобработка выполнена согласно чертежам.'),
-('QC-2024-004', 26, 10, '2024-03-05 15:00:00', 'in_process', 'conditional', 2, 'Незначительные дефекты сварных швов', 'Требуется зачистка швов перед покраской'),
-('QC-2024-005', 27, 9, '2024-03-07 16:00:00', 'in_process', 'passed', 0, NULL, 'Покрытие равномерное, толщина в норме.'),
-('QC-2024-006', 28, 10, '2024-03-14 16:00:00', 'in_process', 'passed', 0, NULL, 'Сопротивление обмоток соответствует требованиям.'),
-('QC-2024-007', 29, 9, '2024-03-19 16:00:00', 'in_process', 'passed', 0, NULL, 'Сборка выполнена качественно.'),
-('QC-2024-008', 30, 10, '2024-03-20 16:00:00', 'in_process', 'passed', 0, NULL, 'Электрические соединения проверены.'),
-('QC-2024-009', 31, 9, '2024-03-21 16:00:00', 'final', 'passed', 0, NULL, 'Испытания под нагрузкой успешны.');
+('QC-2024-001', 8, 2, '2024-01-29 16:00:00', 'final', 'passed', 0, NULL, 'Все параметры в норме. Двигатели готовы к отгрузке.'),
+('QC-2024-002', 32, 2, '2024-03-22 15:00:00', 'final', 'passed', 0, NULL, 'Партия из 10 двигателей прошла все испытания успешно.'),
+('QC-2024-003', 25, 3, '2024-03-01 16:00:00', 'in_process', 'passed', 0, NULL, 'Мехобработка выполнена согласно чертежам.'),
+('QC-2024-004', 26, 3, '2024-03-05 15:00:00', 'in_process', 'conditional', 2, 'Незначительные дефекты сварных швов', 'Требуется зачистка швов перед покраской'),
+('QC-2024-005', 27, 2, '2024-03-07 16:00:00', 'in_process', 'passed', 0, NULL, 'Покрытие равномерное, толщина в норме.'),
+('QC-2024-006', 28, 3, '2024-03-14 16:00:00', 'in_process', 'passed', 0, NULL, 'Сопротивление обмоток соответствует требованиям.'),
+('QC-2024-007', 29, 2, '2024-03-19 16:00:00', 'in_process', 'passed', 0, NULL, 'Сборка выполнена качественно.'),
+('QC-2024-008', 30, 3, '2024-03-20 16:00:00', 'in_process', 'passed', 0, NULL, 'Электрические соединения проверены.'),
+('QC-2024-009', 31, 2, '2024-03-21 16:00:00', 'final', 'passed', 0, NULL, 'Испытания под нагрузкой успешны.');
 
--- Движение материалов
+-- Движение материалов (employee_id обновлен для новых сотрудников)
 INSERT INTO material_movements (material_id, movement_type, quantity, reference_type, reference_id, warehouse_from, warehouse_to, employee_id, notes) VALUES
-(1, 'receipt', 1000.00, 'purchase_order', 1, NULL, 'Склад А1', 11, 'Поступление от БМЗ'),
-(2, 'receipt', 800.00, 'purchase_order', 1, NULL, 'Склад А1', 11, 'Поступление от БМЗ'),
-(3, 'receipt', 200.00, 'purchase_order', 2, NULL, 'Склад Б2', 12, 'Поступление медной проволоки'),
-(4, 'receipt', 150.00, 'purchase_order', 2, NULL, 'Склад Б2', 12, 'Поступление медной проволоки'),
-(8, 'receipt', 100.00, 'purchase_order', 3, NULL, 'Склад В1', 11, 'Подшипники'),
-(1, 'consumption', 250.00, 'production_task', 1, 'Склад А1', 'Цех №1', 7, 'На заказ ORD-2024-001'),
-(3, 'consumption', 45.00, 'production_task', 4, 'Склад Б2', 'Цех №2', 15, 'На намотку обмоток'),
-(8, 'consumption', 10.00, 'production_task', 5, 'Склад В1', 'Цех №1', 7, 'На сборку двигателей'),
+(1, 'receipt', 1000.00, 'purchase_order', 1, NULL, 'Склад А1', 7, 'Поступление от БМЗ'),
+(2, 'receipt', 800.00, 'purchase_order', 1, NULL, 'Склад А1', 7, 'Поступление от БМЗ'),
+(3, 'receipt', 200.00, 'purchase_order', 2, NULL, 'Склад Б2', 8, 'Поступление медной проволоки'),
+(4, 'receipt', 150.00, 'purchase_order', 2, NULL, 'Склад Б2', 8, 'Поступление медной проволоки'),
+(8, 'receipt', 100.00, 'purchase_order', 3, NULL, 'Склад В1', 7, 'Подшипники'),
+(1, 'consumption', 250.00, 'production_task', 1, 'Склад А1', 'Цех №1', 5, 'На заказ ORD-2024-001'),
+(3, 'consumption', 45.00, 'production_task', 4, 'Склад Б2', 'Цех №2', 6, 'На намотку обмоток'),
+(8, 'consumption', 10.00, 'production_task', 5, 'Склад В1', 'Цех №1', 5, 'На сборку двигателей'),
 (11, 'consumption', 25.00, 'production_task', 7, 'Склад Г1', 'Цех №2', NULL, 'На покраску'),
 (12, 'consumption', 30.00, 'production_task', 7, 'Склад Г1', 'Цех №2', NULL, 'На покраску синей эмалью'),
-(1, 'consumption', 500.00, 'production_task', 11, 'Склад А1', 'Цех №1', 7, 'На крупную партию'),
-(3, 'consumption', 180.00, 'production_task', 14, 'Склад Б2', 'Цех №2', 15, 'На намотку 20 двигателей');
+(1, 'consumption', 500.00, 'production_task', 11, 'Склад А1', 'Цех №1', 5, 'На крупную партию'),
+(3, 'consumption', 180.00, 'production_task', 14, 'Склад Б2', 'Цех №2', 6, 'На намотку 20 двигателей');
 
 -- Журнал активности (примеры)
 INSERT INTO activity_log (user_id, action, module, record_id, description, ip_address) VALUES
@@ -619,26 +562,13 @@ INSERT INTO activity_log (user_id, action, module, record_id, description, ip_ad
 (3, 'create', 'orders', 9, 'Создан новый заказ ORD-2024-009', '192.168.1.102'),
 (4, 'update', 'orders', 10, 'Обновлен заказ ORD-2024-010', '192.168.1.103'),
 (5, 'create', 'production', 13, 'Создано производственное задание TSK-2024-013', '192.168.1.104'),
-(9, 'create', 'quality', 9, 'Создана проверка качества QC-2024-009', '192.168.1.105'),
-(11, 'create', 'warehouse', NULL, 'Проведено поступление материалов', '192.168.1.106'),
+(2, 'create', 'quality', 9, 'Создана проверка качества QC-2024-009', '192.168.1.105'),
+(7, 'create', 'warehouse', NULL, 'Проведено поступление материалов', '192.168.1.106'),
 (2, 'approve', 'production', 13, 'Утверждено производственное задание', '192.168.1.101'),
 (3, 'complete', 'orders', 1, 'Заказ ORD-2024-001 завершен', '192.168.1.102'),
 (1, 'view', 'reports', NULL, 'Сформирован отчет по производству', '192.168.1.100');
 
--- Транзакции материалов
-INSERT INTO material_transactions (material_id, operation_type, quantity, warehouse_from, warehouse_to, reference_type, reference_id, user_id, notes) VALUES
-(1, 'receipt', 1000.00, NULL, 'Склад А1', 'purchase_order', 1, 11, 'Поступление от БМЗ'),
-(2, 'receipt', 800.00, NULL, 'Склад А1', 'purchase_order', 1, 11, 'Поступление от БМЗ'),
-(3, 'receipt', 200.00, NULL, 'Склад Б2', 'purchase_order', 2, 12, 'Поступление медной проволоки'),
-(4, 'receipt', 150.00, NULL, 'Склад Б2', 'purchase_order', 2, 12, 'Поступление медной проволоки'),
-(8, 'receipt', 100.00, NULL, 'Склад В1', 'purchase_order', 3, 11, 'Подшипники'),
-(1, 'consumption', 250.00, 'Склад А1', 'Цех №1', 'production_task', 1, NULL, 'На заказ ORD-2024-001'),
-(3, 'consumption', 45.00, 'Склад Б2', 'Цех №2', 'production_task', 4, NULL, 'На намотку обмоток'),
-(8, 'consumption', 10.00, 'Склад В1', 'Цех №1', 'production_task', 5, NULL, 'На сборку двигателей'),
-(11, 'consumption', 25.00, 'Склад Г1', 'Цех №2', 'production_task', 7, NULL, 'На покраску'),
-(12, 'consumption', 30.00, 'Склад Г1', 'Цех №2', 'production_task', 7, NULL, 'На покраску синей эмалью'),
-(1, 'consumption', 500.00, 'Склад А1', 'Цех №1', 'production_task', 11, NULL, 'На крупную партию'),
-(3, 'consumption', 180.00, 'Склад Б2', 'Цех №2', 'production_task', 14, NULL, 'На намотку 20 двигателей');
+-- Транзакции материалов (удалена дублирующая таблица, используем material_movements)
 
 -- Отгрузки
 INSERT INTO shipments (order_id, order_item_id, shipment_number, shipment_date, quantity, status, notes) VALUES
@@ -647,10 +577,10 @@ INSERT INTO shipments (order_id, order_item_id, shipment_number, shipment_date, 
 (2, 3, 'SHP-2024-003', '2024-03-01 14:00:00', 6, 'delivered', 'Срочная отгрузка для сельхозтехники'),
 (3, 5, 'SHP-2024-004', '2024-03-15 09:00:00', 10, 'delivered', 'Крупная поставка трансформаторов');
 
--- Журнал технического обслуживания
+-- Журнал технического обслуживания (technician_id обновлен)
 INSERT INTO maintenance_logs (equipment_id, technician_id, maintenance_type, description, scheduled_date, completed_date, status, cost, notes) VALUES
-(1, 13, 'preventive', 'Плановое техническое обслуживание', '2024-01-15', '2024-01-15', 'completed', 150.00, 'Замена масла, проверка подшипников'),
-(2, 13, 'corrective', 'Ремонт после поломки', '2024-02-10', '2024-02-12', 'completed', 450.00, 'Замена двигателя привода'),
+(1, 4, 'preventive', 'Плановое техническое обслуживание', '2024-01-15', '2024-01-15', 'completed', 150.00, 'Замена масла, проверка подшипников'),
+(2, 4, 'corrective', 'Ремонт после поломки', '2024-02-10', '2024-02-12', 'completed', 450.00, 'Замена двигателя привода'),
 (3, NULL, 'preventive', 'Плановая проверка', '2024-03-01', NULL, 'planned', NULL, 'Запланировано ТО крана'),
-(4, 13, 'inspection', 'Ежегодная проверка безопасности', '2024-01-20', '2024-01-20', 'completed', 100.00, 'Все параметры в норме'),
+(4, 4, 'inspection', 'Ежегодная проверка безопасности', '2024-01-20', '2024-01-20', 'completed', 100.00, 'Все параметры в норме'),
 (5, NULL, 'preventive', 'Плановое ТО', '2024-03-15', NULL, 'in_progress', NULL, 'Текущее обслуживание сварочного аппарата');
