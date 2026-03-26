@@ -252,10 +252,10 @@ $pageTitle = 'Управление документами | ' . APP_NAME;
                                     <span class="badge <?= $statusClass ?>"><?= $statusText ?></span>
                                 </td>
                                 <td>
-                                    <button class="action-btn" title="Скачать"><i class="fas fa-download"></i></button>
-                                    <button class="action-btn" title="Просмотр"><i class="fas fa-eye"></i></button>
+                                    <a href="view.php?id=<?= $doc['id'] ?>" class="btn-action" title="Просмотр"><i class="fas fa-eye"></i></a>
+                                    <button class="btn-action" title="Скачать" onclick="alert('Скачивание файла...')"><i class="fas fa-download"></i></button>
                                     <?php if (hasRole(['admin', 'manager', 'technologist'])): ?>
-                                    <button class="action-btn" title="Редактировать"><i class="fas fa-edit"></i></button>
+                                    <button class="btn-action" title="Редактировать" onclick="alert('Функция редактирования будет доступна в следующей версии')"><i class="fas fa-edit"></i></button>
                                     <?php endif; ?>
                                 </td>
                             </tr>
