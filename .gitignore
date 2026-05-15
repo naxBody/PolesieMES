@@ -1,1 +1,26 @@
-Nothing should be ignored in this case, as the modified files are all source code and configuration files (.php and .sql) without any build artifacts, dependencies, or temporary files present in the changes.
+```
+# Compiled and build artifacts
+*.pyc
+__pycache__/
+
+# Dependencies
+vendor/
+composer.lock
+
+# Logs and temp files
+*.log
+*.tmp
+
+# Environment
+.env
+.env.local
+*.env.*
+
+# Editors
+.vscode/
+.idea/
+
+# Database
+*.sql
+!polesie_mes/sql/database.sql
+```
