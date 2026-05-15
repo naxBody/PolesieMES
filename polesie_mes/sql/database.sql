@@ -517,13 +517,13 @@ INSERT INTO system_settings (setting_key, setting_value, setting_type, module, d
 ('auto_numbering', 'true', 'boolean', 'general', 'Авто-нумерация заказов', 1),
 ('report_retention_days', '365', 'number', 'reports', 'Срок хранения отчетов (дни)', 1);
 
--- Ожидаемые поставки (заказы поставщикам)
-INSERT INTO purchase_orders (order_number, supplier_id, order_date, expected_delivery, status, priority, notes, created_by) VALUES
-('PO-2024-001', 11, '2024-03-01', '2024-03-15', 'confirmed', 'normal', 'Поставка металлопроката', 2),
-('PO-2024-002', 12, '2024-03-05', '2024-03-18', 'sent', 'high', 'Медная проволока для обмоток', 2),
-('PO-2024-003', 13, '2024-03-08', '2024-03-20', 'confirmed', 'normal', 'Лакокрасочные материалы', 2),
-('PO-2024-004', 11, '2024-03-10', '2024-03-25', 'draft', 'low', 'Дополнительный заказ стали', 2),
-('PO-2024-005', 12, '2024-03-12', '2024-03-22', 'partial', 'urgent', 'Срочная поставка меди', 2);
+-- Ожидаемые поставки (заказы поставщикам) с детализацией по материалам
+INSERT INTO purchase_orders (order_number, supplier_id, order_date, expected_delivery, status, priority, items_json, notes, created_by) VALUES
+('PO-2024-001', 11, '2024-03-01', '2024-03-15', 'confirmed', 'normal', '[{"item_id": 17, "quantity": 500, "price": 25.50}, {"item_id": 18, "quantity": 300, "price": 32.00}]', 'Поставка металлопроката', 2),
+('PO-2024-002', 12, '2024-03-05', '2024-03-18', 'sent', 'high', '[{"item_id": 19, "quantity": 200, "price": 85.00}, {"item_id": 20, "quantity": 150, "price": 45.00}]', 'Медная проволока для обмоток', 2),
+('PO-2024-003', 13, '2024-03-08', '2024-03-20', 'confirmed', 'normal', '[{"item_id": 21, "quantity": 100, "price": 120.00}, {"item_id": 22, "quantity": 80, "price": 95.00}]', 'Лакокрасочные материалы', 2),
+('PO-2024-004', 11, '2024-03-10', '2024-03-25', 'draft', 'low', '[{"item_id": 17, "quantity": 1000, "price": 24.00}]', 'Дополнительный заказ стали', 2),
+('PO-2024-005', 12, '2024-03-12', '2024-03-22', 'partial', 'urgent', '[{"item_id": 19, "quantity": 500, "price": 82.00}, {"item_id": 20, "quantity": 300, "price": 43.00}]', 'Срочная поставка меди', 2);
 
 -- Индексы для производительности
 CREATE INDEX idx_orders_customer ON orders(customer_id);

@@ -152,7 +152,7 @@ if ($materialStats['overstock'] > 0) {
     ];
 }
 
-// 7. Ожидаемые поставки (заказы поставщикам)
+// 7. Ожидаемые поставки (заказы поставщикам) с детализацией
 $stmt = $db->query("
     SELECT po.*, p.name as supplier_name,
            CASE po.status
@@ -172,7 +172,8 @@ $stmt = $db->query("
                ELSE po.priority
            END as priority_name,
            s.first_name as created_by_first,
-           s.last_name as created_by_last
+           s.last_name as created_by_last,
+           JSON_LENGTH(po.items_json) as items_count
     FROM purchase_orders po
     LEFT JOIN partners p ON po.supplier_id = p.id
     LEFT JOIN staff s ON po.created_by = s.id
@@ -198,6 +199,53 @@ $stmt = $db->query("
     LIMIT 10
 ");
 $upcomingDeliveries = $stmt->fetchAll();
+
+// 9. Заказы клиентов требующие отгрузки (готовая продукция)
+$stmt = $db->query("
+    SELECT o.*, c.name as customer_name,
+           CASE o.status
+               WHEN 'new' THEN 'Новый'
+               WHEN 'confirmed' THEN 'Подтвержден'
+               WHEN 'in_production' THEN 'В производстве'
+               WHEN 'quality_check' THEN 'Контроль качества'
+               WHEN 'ready' THEN 'Готов к отгрузке'
+               WHEN 'shipped' THEN 'Отгружен'
+               WHEN 'completed' THEN 'Завершен'
+               WHEN 'cancelled' THEN 'Отменен'
+               ELSE o.status
+           END as status_name,
+           s.first_name as manager_first,
+           s.last_name as manager_last
+    FROM orders o
+    LEFT JOIN partners c ON o.customer_id = c.id
+    LEFT JOIN staff s ON o.manager_id = s.id
+    WHERE o.status IN ('ready', 'shipped')
+    ORDER BY o.delivery_date ASC
+    LIMIT 10
+");
+$readyForShipment = $stmt->fetchAll();
+
+// 10. Производственные задания требующие материалы
+$stmt = $db->query("
+    SELECT pt.*, o.order_number, i.name as product_name,
+           st.first_name as assigned_first, st.last_name as assigned_last,
+           CASE pt.status
+               WHEN 'planned' THEN 'Запланировано'
+               WHEN 'in_progress' THEN 'В работе'
+               WHEN 'paused' THEN 'Приостановлено'
+               WHEN 'completed' THEN 'Завершено'
+               WHEN 'rejected' THEN 'Отклонено'
+               ELSE pt.status
+           END as status_name
+    FROM production_tasks pt
+    LEFT JOIN orders o ON pt.order_id = o.id
+    LEFT JOIN items i ON pt.product_id = i.id
+    LEFT JOIN staff st ON pt.assigned_to = st.id
+    WHERE pt.status IN ('planned', 'in_progress')
+    ORDER BY pt.planned_start ASC
+    LIMIT 10
+");
+$productionTasks = $stmt->fetchAll();
 
 $pageTitle = 'Склад | PolesieMES';
 $currentPage = 'warehouse_dashboard';
@@ -804,6 +852,124 @@ $currentPage = 'warehouse_dashboard';
                                     <span class="text-muted">Ожидание</span>
                                     <?php endif; ?>
                                 </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
+
+        <!-- Заказы готовые к отгрузке -->
+        <?php if (!empty($readyForShipment)): ?>
+        <div class="card" id="shipment-section">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-shipping-fast"></i> Готовы к отгрузке
+                </div>
+                <span class="badge bg-success"><?= count($readyForShipment) ?> заказов</span>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>№ заказа</th>
+                                <th>Клиент</th>
+                                <th>Статус</th>
+                                <th>Дата отгрузки</th>
+                                <th>Менеджер</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($readyForShipment as $order): ?>
+                            <tr>
+                                <td><strong><?= e($order['order_number']) ?></strong></td>
+                                <td><?= e($order['customer_name']) ?></td>
+                                <td>
+                                    <span class="badge bg-<?=
+                                        $order['status'] == 'ready' ? 'success' : 'info'
+                                    ?>">
+                                        <?= e($order['status_name']) ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <?php 
+                                    $shipDate = strtotime($order['delivery_date']);
+                                    $today = time();
+                                    $diffDays = floor(($shipDate - $today) / 86400);
+                                    ?>
+                                    <strong><?= date('d.m.Y', $shipDate) ?></strong>
+                                    <?php if ($diffDays == 0): ?>
+                                        <span class="badge bg-danger">Сегодня!</span>
+                                    <?php elseif ($diffDays == 1): ?>
+                                        <span class="badge bg-warning">Завтра</span>
+                                    <?php elseif ($diffDays > 0 && $diffDays <= 7): ?>
+                                        <span class="badge bg-info">Через <?= $diffDays ?> дн.</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td><?= e(trim($order['manager_last'] . ' ' . $order['manager_first'])) ?></td>
+                                <td>
+                                    <a href="<?= APP_URL ?>/modules/shipment/ship.php?order_id=<?= $order['id'] ?>" class="btn-action btn-sm">
+                                        <i class="fas fa-truck-loading"></i> Отгрузить
+                                    </a>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
+
+        <!-- Производственные задания -->
+        <?php if (!empty($productionTasks)): ?>
+        <div class="card" id="production-section">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-cogs"></i> Активные производственные задания
+                </div>
+                <span class="badge bg-primary"><?= count($productionTasks) ?> заданий</span>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>№ задания</th>
+                                <th>Заказ</th>
+                                <th>Продукция</th>
+                                <th>Этап</th>
+                                <th>Статус</th>
+                                <th>План начало</th>
+                                <th>Ответственный</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($productionTasks as $task): ?>
+                            <tr>
+                                <td><strong><?= e($task['task_number']) ?></strong></td>
+                                <td><?= e($task['order_number'] ?? '-') ?></td>
+                                <td><?= e($task['product_name'] ?? '-') ?></td>
+                                <td><?= e($task['stage_name'] ?? '-') ?></td>
+                                <td>
+                                    <span class="badge bg-<?=
+                                        $task['status'] == 'in_progress' ? 'warning' : 'secondary'
+                                    ?>">
+                                        <?= e($task['status_name']) ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <?php if ($task['planned_start']): ?>
+                                    <?= date('d.m.Y H:i', strtotime($task['planned_start'])) ?>
+                                    <?php else: ?>
+                                    -
+                                    <?php endif; ?>
+                                </td>
+                                <td><?= e(trim($task['assigned_last'] . ' ' . $task['assigned_first']) ?? '-') ?></td>
                             </tr>
                             <?php endforeach; ?>
                         </tbody>
