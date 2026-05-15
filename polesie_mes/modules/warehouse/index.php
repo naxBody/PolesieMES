@@ -189,9 +189,9 @@ $pageTitle = 'Управление складом | ' . APP_NAME;
             </li>
             <?php endif; ?>
 
-            <?php if (hasRole(['admin', 'manager', 'warehouse_manager'])): ?>
+            <?php if (hasRole(['admin', 'manager', 'warehouse_keeper'])): ?>
             <li>
-                <a href="<?= APP_URL ?>/modules/warehouse/index.php" class="nav-link active">
+                <a href="<?= APP_URL ?>/modules/warehouse/warehouse_dashboard.php" class="nav-link active">
                     <i class="fas fa-warehouse"></i>
                     Склад
                 </a>
@@ -263,7 +263,7 @@ $pageTitle = 'Управление складом | ' . APP_NAME;
                 <h1><i class="fas fa-warehouse"></i> Управление складом</h1>
                 <p>Контроль материалов и готовой продукции</p>
             </div>
-            <?php if (hasRole(['admin', 'manager', 'storekeeper'])): ?>
+            <?php if (hasRole(['admin', 'manager', 'warehouse_keeper'])): ?>
             <div style="display: flex; gap: 0.5rem;">
                 <a href="receipt.php" class="btn-primary-custom"><i class="fas fa-truck-loading"></i> Поступление</a>
                 <a href="consumption.php" class="btn btn-warning" style="padding: 0.6rem 1.2rem; border-radius: 8px; text-decoration: none; color: white;"><i class="fas fa-dolly"></i> Расход</a>

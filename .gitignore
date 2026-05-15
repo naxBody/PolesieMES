@@ -1,8 +1,10 @@
+```
 # Compiled and build artifacts
 *.pyc
 __pycache__/
 
 # Dependencies
+node_modules/
 vendor/
 composer.lock
 
@@ -23,32 +25,4 @@ composer.lock
 # OS generated files
 .DS_Store
 Thumbs.db
-
-# Backup files
-*.bak
-*.backup
-*~
-
-# Cache directories
-.cache/
-.php_cs.cache
-
-# Distribution and build artifacts
-dist/
-build/
-coverage/
-htmlcov/
-*.phar
-
-# IDE specific
-nbproject/
-.settings/
-
-# Web server
-.htaccess
-.webassets-cache
-
-# PHP specific
-*.pid
-.svn/
-CVS/
+```

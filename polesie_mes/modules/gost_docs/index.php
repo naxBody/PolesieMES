@@ -138,7 +138,7 @@ $pageTitle = 'ГОСТ Документы | ' . APP_NAME;
             </li>
             <?php endif; ?>
 
-            <?php if (hasRole(['admin', 'manager', 'warehouse_manager'])): ?>
+            <?php if (hasRole(['admin', 'manager', 'warehouse_keeper'])): ?>
             <li>
                 <a href="<?= APP_URL ?>/modules/warehouse/index.php" class="nav-link">
                     <i class="fas fa-warehouse"></i>

@@ -13,6 +13,12 @@ require_once __DIR__ . '/../../includes/helpers.php';
 // Проверка авторизации
 requireAuth();
 
+// Перенаправление работников склада на специализированный дашборд
+if (hasRole('warehouse_keeper')) {
+    header('Location: ' . APP_URL . '/modules/warehouse/warehouse_dashboard.php');
+    exit;
+}
+
 $db = getDB();
 $user = getCurrentUser();
 
@@ -1589,9 +1595,9 @@ $currentPage = 'dashboard';
             </li>
             <?php endif; ?>
 
-            <?php if (hasRole(['admin', 'manager', 'warehouse_manager'])): ?>
+            <?php if (hasRole(['admin', 'manager', 'warehouse_keeper'])): ?>
             <li>
-                <a href="<?= APP_URL ?>/modules/warehouse/index.php" class="nav-link">
+                <a href="<?= APP_URL ?>/modules/warehouse/warehouse_dashboard.php" class="nav-link">
                     <i class="fas fa-warehouse"></i>
                     Склад
                 </a>
