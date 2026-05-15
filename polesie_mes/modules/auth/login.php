@@ -34,10 +34,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             // Перенаправление в зависимости от роли
             if ($role === 'warehouse_keeper') {
+                // Работник склада - только складской дашборд
                 $redirect = '/modules/warehouse/warehouse_dashboard.php';
             } elseif ($role === 'operator') {
+                // Оператор - производство
                 $redirect = '/modules/production/index.php';
             } else {
+                // Администратор и менеджеры - главный дашборд со всеми модулями
                 $redirect = $_GET['redirect'] ?? '/modules/dashboard/index.php';
             }
             

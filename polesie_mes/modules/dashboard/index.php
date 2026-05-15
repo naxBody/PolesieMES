@@ -19,6 +19,9 @@ if (hasRole('warehouse_keeper')) {
     exit;
 }
 
+// Администраторы и менеджеры получают доступ ко всем страницам через главный дашборд
+// Операторы также могут видеть все страницы, но с акцентом на производство
+
 $db = getDB();
 $user = getCurrentUser();
 
@@ -1578,6 +1581,7 @@ $currentPage = 'dashboard';
             </li>
 
             <?php if (hasRole(['admin', 'manager'])): ?>
+            <!-- Заказы - только админ и менеджеры -->
             <li>
                 <a href="<?= APP_URL ?>/modules/orders/index.php" class="nav-link">
                     <i class="fas fa-shopping-cart"></i>
@@ -1586,7 +1590,8 @@ $currentPage = 'dashboard';
             </li>
             <?php endif; ?>
 
-            <?php if (hasRole(['admin', 'manager', 'technologist', 'operator'])): ?>
+            <?php if (hasRole(['admin', 'manager', 'technologist', 'operator', 'warehouse_keeper'])): ?>
+            <!-- Производство - все основные роли -->
             <li>
                 <a href="<?= APP_URL ?>/modules/production/index.php" class="nav-link">
                     <i class="fas fa-cogs"></i>
@@ -1596,6 +1601,7 @@ $currentPage = 'dashboard';
             <?php endif; ?>
 
             <?php if (hasRole(['admin', 'manager', 'warehouse_keeper'])): ?>
+            <!-- Склад -->
             <li>
                 <a href="<?= APP_URL ?>/modules/warehouse/warehouse_dashboard.php" class="nav-link">
                     <i class="fas fa-warehouse"></i>
@@ -1604,7 +1610,8 @@ $currentPage = 'dashboard';
             </li>
             <?php endif; ?>
 
-            <?php if (hasRole(['admin', 'manager', 'technologist'])): ?>
+            <?php if (hasRole(['admin', 'manager', 'technologist', 'operator', 'warehouse_keeper'])): ?>
+            <!-- Оборудование - расширенный доступ -->
             <li>
                 <a href="<?= APP_URL ?>/modules/equipment/index.php" class="nav-link">
                     <i class="fas fa-tools"></i>
@@ -1613,7 +1620,8 @@ $currentPage = 'dashboard';
             </li>
             <?php endif; ?>
 
-            <?php if (hasRole(['admin', 'manager', 'logistician'])): ?>
+            <?php if (hasRole(['admin', 'manager', 'logistician', 'warehouse_keeper'])): ?>
+            <!-- Отгрузка -->
             <li>
                 <a href="<?= APP_URL ?>/modules/shipment/index.php" class="nav-link">
                     <i class="fas fa-truck"></i>
@@ -1622,7 +1630,8 @@ $currentPage = 'dashboard';
             </li>
             <?php endif; ?>
 
-            <?php if (hasRole(['admin', 'manager', 'technologist'])): ?>
+            <?php if (hasRole(['admin', 'manager', 'technologist', 'warehouse_keeper'])): ?>
+            <!-- Документы -->
             <li>
                 <a href="<?= APP_URL ?>/modules/documents/index.php" class="nav-link">
                     <i class="fas fa-file-contract"></i>
@@ -1632,6 +1641,7 @@ $currentPage = 'dashboard';
             <?php endif; ?>
 
             <?php if (hasRole('admin')): ?>
+            <!-- Сотрудники - только админ -->
             <li>
                 <a href="<?= APP_URL ?>/modules/employees/index.php" class="nav-link">
                     <i class="fas fa-users"></i>
@@ -1671,11 +1681,20 @@ $currentPage = 'dashboard';
             </div>
             <div class="quick-actions">
                 <?php if (hasRole(['admin', 'manager'])): ?>
+                <!-- Быстрые действия для админа и менеджера -->
                 <a href="<?= APP_URL ?>/modules/orders/create.php" class="btn-quick primary">
                     <i class="fas fa-plus"></i>
                     Новый заказ
                 </a>
                 <?php endif; ?>
+                
+                <?php if (hasRole(['admin', 'manager', 'warehouse_keeper'])): ?>
+                <a href="<?= APP_URL ?>/modules/warehouse/receipt.php" class="btn-quick">
+                    <i class="fas fa-truck-loading"></i>
+                    Поступление
+                </a>
+                <?php endif; ?>
+                
                 <a href="<?= APP_URL ?>/modules/reports/index.php" class="btn-quick">
                     <i class="fas fa-file-export"></i>
                     Отчёты
