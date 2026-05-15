@@ -29,8 +29,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Введите логин и пароль';
     } else {
         if (login($username, $password)) {
-            // Успешный вход
-            $redirect = $_GET['redirect'] ?? '/modules/dashboard/index.php';
+            // Успешный вход - определяем роль для редиректа
+            $role = $_SESSION['role'];
+            
+            // Перенаправление в зависимости от роли
+            if ($role === 'warehouse_keeper') {
+                $redirect = '/modules/warehouse/warehouse_dashboard.php';
+            } elseif ($role === 'operator') {
+                $redirect = '/modules/production/index.php';
+            } else {
+                $redirect = $_GET['redirect'] ?? '/modules/dashboard/index.php';
+            }
+            
             header('Location: ' . APP_URL . $redirect);
             exit;
         } else {
