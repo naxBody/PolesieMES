@@ -193,7 +193,7 @@ $pageTitle = 'Управление оборудованием | ' . APP_NAME;
             </li>
             <?php endif; ?>
 
-            <?php if (hasRole(['admin', 'manager', 'technologist', 'operator'])): ?>
+            <?php if (hasRole(['admin', 'manager', 'operator', 'warehouse_keeper'])): ?>
             <li>
                 <a href="<?= APP_URL ?>/modules/production/index.php" class="nav-link">
                     <i class="fas fa-cogs"></i>
@@ -211,7 +211,7 @@ $pageTitle = 'Управление оборудованием | ' . APP_NAME;
             </li>
             <?php endif; ?>
 
-            <?php if (hasRole(['admin', 'manager', 'technologist'])): ?>
+            <?php if (hasRole(['admin', 'manager', 'operator', 'warehouse_keeper'])): ?>
             <li>
                 <a href="<?= APP_URL ?>/modules/equipment/index.php" class="nav-link active">
                     <i class="fas fa-tools"></i>
@@ -220,10 +220,10 @@ $pageTitle = 'Управление оборудованием | ' . APP_NAME;
             </li>
             <?php endif; ?>
 
-            <?php if (hasRole(['admin', 'manager', 'logistician'])): ?>
+            <?php if (hasRole(['admin', 'manager', 'warehouse_keeper'])): ?>
             <li>
                 <a href="<?= APP_URL ?>/modules/shipment/index.php" class="nav-link">
-                    <i class="fas fa-truck"></i>
+                    <i class="fas fa-truck-loading"></i>
                     Отгрузка
                 </a>
             </li>
@@ -232,7 +232,7 @@ $pageTitle = 'Управление оборудованием | ' . APP_NAME;
             <?php if (hasRole(['admin', 'manager', 'technologist'])): ?>
             <li>
                 <a href="<?= APP_URL ?>/modules/documents/index.php" class="nav-link">
-                    <i class="fas fa-file-contract"></i>
+                    <i class="fas fa-file-alt"></i>
                     Документы
                 </a>
             </li>
