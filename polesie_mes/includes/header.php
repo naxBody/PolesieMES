@@ -44,6 +44,7 @@
                     </li>
                     
                     <?php if (hasRole(['admin', 'manager'])): ?>
+                    <!-- Заказы - только админ и менеджеры -->
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle <?= ($currentModule ?? '') == 'orders' ? 'active' : '' ?>" href="#" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-shopping-cart me-1"></i>
@@ -56,7 +57,8 @@
                     </li>
                     <?php endif; ?>
                     
-                    <?php if (hasRole(['admin', 'manager', 'operator'])): ?>
+                    <?php if (hasRole(['admin', 'manager', 'operator', 'warehouse_keeper'])): ?>
+                    <!-- Производство - все кроме quality_inspector -->
                     <li class="nav-item">
                         <a class="nav-link <?= ($currentPage ?? '') == 'production' ? 'active' : '' ?>" href="<?= APP_URL ?>/modules/production/index.php">
                             <i class="fas fa-cogs me-1"></i>
@@ -65,7 +67,8 @@
                     </li>
                     <?php endif; ?>
                     
-                    <?php if (hasRole(['admin', 'manager'])): ?>
+                    <?php if (hasRole(['admin', 'manager', 'quality_inspector'])): ?>
+                    <!-- Контроль качества -->
                     <li class="nav-item">
                         <a class="nav-link <?= ($currentPage ?? '') == 'quality' ? 'active' : '' ?>" href="<?= APP_URL ?>/modules/quality/index.php">
                             <i class="fas fa-check-circle me-1"></i>
@@ -75,6 +78,7 @@
                     <?php endif; ?>
                     
                     <?php if (hasRole(['admin', 'manager', 'warehouse_keeper'])): ?>
+                    <!-- Склад -->
                     <li class="nav-item">
                         <a class="nav-link <?= ($currentPage ?? '') == 'warehouse' ? 'active' : '' ?>" href="<?= APP_URL ?>/modules/warehouse/index.php">
                             <i class="fas fa-warehouse me-1"></i>
@@ -83,7 +87,8 @@
                     </li>
                     <?php endif; ?>
                     
-                    <?php if (hasRole(['admin', 'operator'])): ?>
+                    <?php if (hasRole(['admin', 'manager', 'operator', 'warehouse_keeper'])): ?>
+                    <!-- Оборудование -->
                     <li class="nav-item">
                         <a class="nav-link <?= ($currentPage ?? '') == 'equipment' ? 'active' : '' ?>" href="<?= APP_URL ?>/modules/equipment/index.php">
                             <i class="fas fa-tools me-1"></i>
@@ -93,6 +98,7 @@
                     <?php endif; ?>
                     
                     <?php if (hasRole(['admin', 'manager'])): ?>
+                    <!-- Отчеты -->
                     <li class="nav-item">
                         <a class="nav-link <?= ($currentPage ?? '') == 'reports' ? 'active' : '' ?>" href="<?= APP_URL ?>/modules/reports/index.php">
                             <i class="fas fa-chart-bar me-1"></i>
@@ -102,6 +108,7 @@
                     <?php endif; ?>
                     
                     <?php if (hasRole('admin')): ?>
+                    <!-- Администрирование -->
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-users-cog me-1"></i>

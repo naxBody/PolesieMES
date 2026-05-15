@@ -269,67 +269,82 @@ $currentPage = 'warehouse_dashboard';
     
     <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/common-style.css">
     <style>
-        /* Стили для дашборда склада */
-        .warehouse-actions {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        /* Стили для дашборда склада - обновленный дизайн */
+        
+        /* Панель быстрых действий - горизонтальная с кнопками */
+        .quick-actions-bar {
+            display: flex;
             gap: 1rem;
             margin-bottom: 2rem;
+            flex-wrap: wrap;
+            align-items: center;
         }
         
-        .action-card {
+        .btn-action {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.875rem 1.5rem;
             background: var(--glass-bg);
             backdrop-filter: var(--backdrop-blur);
             border: 1px solid var(--glass-border);
-            border-radius: 16px;
-            padding: 1.5rem;
-            text-align: center;
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 0.95rem;
+            text-decoration: none;
             transition: all 0.3s ease;
             cursor: pointer;
-            text-decoration: none;
-            color: var(--text-primary);
         }
         
-        .action-card:hover {
-            transform: translateY(-5px);
-            box-shadow: var(--glow-primary);
+        .btn-action:hover {
+            background: rgba(255, 255, 255, 0.08);
             border-color: var(--primary-glow);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(255, 107, 107, 0.2);
         }
         
-        .action-icon {
-            width: 60px;
-            height: 60px;
-            margin: 0 auto 1rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
+        .btn-action i {
+            font-size: 1.25rem;
+            width: 24px;
+            text-align: center;
+        }
+        
+        .btn-action.primary {
+            background: var(--gradient-primary);
+            border: none;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+        }
+        
+        .btn-action.primary:hover {
+            box-shadow: 0 6px 25px rgba(255, 107, 107, 0.5);
+        }
+        
+        /* Статистика в виде компактных карточек */
+        .stats-compact-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 0.75rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-compact-item {
+            background: var(--glass-bg);
+            backdrop-filter: var(--backdrop-blur);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 1rem;
+            text-align: center;
+        }
+        
+        .stat-compact-value {
             font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
         }
         
-        .action-icon.receipt {
-            background: linear-gradient(135deg, #30d158, #24a945);
-        }
-        
-        .action-icon.consumption {
-            background: linear-gradient(135deg, #ffd60a, #ff9f0a);
-        }
-        
-        .action-icon.inventory {
-            background: linear-gradient(135deg, #5ac8fa, #0a84ff);
-        }
-        
-        .action-icon.history {
-            background: linear-gradient(135deg, #bf5af2, #5e5ce6);
-        }
-        
-        .action-title {
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-        }
-        
-        .action-desc {
-            font-size: 0.85rem;
+        .stat-compact-label {
+            font-size: 0.8rem;
             color: var(--text-muted);
         }
         
@@ -372,33 +387,6 @@ $currentPage = 'warehouse_dashboard';
             border-radius: 20px;
             font-size: 0.75rem;
             font-weight: 600;
-        }
-        
-        .quick-stats-row {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-        
-        .quick-stat-item {
-            background: var(--glass-bg);
-            backdrop-filter: var(--backdrop-blur);
-            border: 1px solid var(--glass-border);
-            border-radius: 12px;
-            padding: 1rem;
-            text-align: center;
-        }
-        
-        .quick-stat-value {
-            font-size: 1.75rem;
-            font-weight: 700;
-            margin-bottom: 0.25rem;
-        }
-        
-        .quick-stat-label {
-            font-size: 0.85rem;
-            color: var(--text-muted);
         }
     </style>
 </head>
@@ -463,61 +451,59 @@ $currentPage = 'warehouse_dashboard';
         </div>
 
         <!-- Быстрые действия -->
-        <div class="warehouse-actions">
-            <a href="receipt.php" class="action-card">
-                <div class="action-icon receipt">
-                    <i class="fas fa-truck-loading"></i>
-                </div>
-                <div class="action-title">Поступление</div>
-                <div class="action-desc">Оприходовать материалы</div>
+        <div class="quick-actions-bar">
+            <a href="receipt.php" class="btn-action primary">
+                <i class="fas fa-truck-loading"></i>
+                Поступление
             </a>
             
-            <a href="consumption.php" class="action-card">
-                <div class="action-icon consumption">
-                    <i class="fas fa-dolly"></i>
-                </div>
-                <div class="action-title">Расход</div>
-                <div class="action-desc">Списание материалов</div>
+            <a href="consumption.php" class="btn-action">
+                <i class="fas fa-dolly"></i>
+                Расход
             </a>
             
-            <a href="#inventory" class="action-card" onclick="document.getElementById('inventory-section').scrollIntoView({behavior: 'smooth'})">
-                <div class="action-icon inventory">
-                    <i class="fas fa-boxes"></i>
-                </div>
-                <div class="action-title">Инвентаризация</div>
-                <div class="action-desc">Просмотр остатков</div>
+            <a href="#inventory" class="btn-action" onclick="document.getElementById('inventory-section').scrollIntoView({behavior: 'smooth'})">
+                <i class="fas fa-boxes"></i>
+                Остатки
             </a>
             
-            <a href="#history" class="action-card" onclick="document.getElementById('history-section').scrollIntoView({behavior: 'smooth'})">
-                <div class="action-icon history">
-                    <i class="fas fa-history"></i>
-                </div>
-                <div class="action-title">История</div>
-                <div class="action-desc">Движения на складе</div>
+            <a href="#history" class="btn-action" onclick="document.getElementById('history-section').scrollIntoView({behavior: 'smooth'})">
+                <i class="fas fa-history"></i>
+                История
+            </a>
+            
+            <a href="#incoming" class="btn-action" onclick="document.getElementById('incoming-orders-section').scrollIntoView({behavior: 'smooth'})">
+                <i class="fas fa-shipping-fast"></i>
+                Поставки
+            </a>
+            
+            <a href="#shipment" class="btn-action" onclick="document.getElementById('ready-shipment-section').scrollIntoView({behavior: 'smooth'})">
+                <i class="fas fa-truck"></i>
+                Отгрузка
             </a>
         </div>
 
         <!-- Быстрая статистика -->
-        <div class="quick-stats-row">
-            <div class="quick-stat-item">
-                <div class="quick-stat-value"><?= $materialStats['total'] ?></div>
-                <div class="quick-stat-label">Всего позиций</div>
+        <div class="stats-compact-row">
+            <div class="stat-compact-item">
+                <div class="stat-compact-value"><?= $materialStats['total'] ?></div>
+                <div class="stat-compact-label">Всего позиций</div>
             </div>
-            <div class="quick-stat-item">
-                <div class="quick-stat-value" style="color: var(--success-color);"><?= $materialStats['normal'] ?></div>
-                <div class="quick-stat-label">Норма</div>
+            <div class="stat-compact-item">
+                <div class="stat-compact-value" style="color: var(--success-color);"><?= $materialStats['normal'] ?></div>
+                <div class="stat-compact-label">Норма</div>
             </div>
-            <div class="quick-stat-item">
-                <div class="quick-stat-value" style="color: var(--warning-color);"><?= $materialStats['low_stock'] ?></div>
-                <div class="quick-stat-label">Низкий запас</div>
+            <div class="stat-compact-item">
+                <div class="stat-compact-value" style="color: var(--warning-color);"><?= $materialStats['low_stock'] ?></div>
+                <div class="stat-compact-label">Низкий запас</div>
             </div>
-            <div class="quick-stat-item">
-                <div class="quick-stat-value" style="color: var(--danger-color);"><?= $materialStats['out_of_stock'] ?></div>
-                <div class="quick-stat-label">Нет на складе</div>
+            <div class="stat-compact-item">
+                <div class="stat-compact-value" style="color: var(--danger-color);"><?= $materialStats['out_of_stock'] ?></div>
+                <div class="stat-compact-label">Нет на складе</div>
             </div>
-            <div class="quick-stat-item">
-                <div class="quick-stat-value" style="color: var(--info-color);"><?= $materialStats['overstock'] ?></div>
-                <div class="quick-stat-label">Избыток</div>
+            <div class="stat-compact-item">
+                <div class="stat-compact-value" style="color: var(--info-color);"><?= $materialStats['overstock'] ?></div>
+                <div class="stat-compact-label">Избыток</div>
             </div>
         </div>
 
