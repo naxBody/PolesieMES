@@ -97,6 +97,35 @@
                     </li>
                     <?php endif; ?>
                     
+                    <?php if (hasRole(['admin', 'manager', 'warehouse_keeper'])): ?>
+                    <!-- Отгрузка -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle <?= ($currentModule ?? '') == 'shipment' ? 'active' : '' ?>" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-truck-loading me-1"></i>
+                            <span class="d-none d-lg-inline">Отгрузка</span>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="<?= APP_URL ?>/modules/shipment/index.php"><i class="fas fa-list me-2"></i>Все отгрузки</a></li>
+                            <li><a class="dropdown-item" href="<?= APP_URL ?>/modules/shipment/ship.php"><i class="fas fa-shipping-fast me-2"></i>Отгрузить</a></li>
+                            <li><a class="dropdown-item" href="<?= APP_URL ?>/modules/shipment/complete.php"><i class="fas fa-check-double me-2"></i>Завершить отгрузку</a></li>
+                        </ul>
+                    </li>
+                    <?php endif; ?>
+                    
+                    <?php if (hasRole(['admin', 'manager', 'technologist'])): ?>
+                    <!-- Документы -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle <?= ($currentModule ?? '') == 'documents' ? 'active' : '' ?>" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-file-alt me-1"></i>
+                            <span class="d-none d-lg-inline">Документы</span>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="<?= APP_URL ?>/modules/documents/index.php"><i class="fas fa-folder me-2"></i>Все документы</a></li>
+                            <li><a class="dropdown-item" href="<?= APP_URL ?>/modules/gost_docs/index.php"><i class="fas fa-book me-2"></i>ГОСТы</a></li>
+                        </ul>
+                    </li>
+                    <?php endif; ?>
+                    
                     <?php if (hasRole(['admin', 'manager'])): ?>
                     <!-- Отчеты -->
                     <li class="nav-item">
