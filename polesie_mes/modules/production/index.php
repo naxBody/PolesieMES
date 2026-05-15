@@ -150,7 +150,7 @@ $pageTitle = 'Контроль производства | ' . APP_NAME;
             <?php if (hasRole(['admin', 'manager', 'technologist', 'operator'])): ?>
             <li><a href="<?= APP_URL ?>/modules/production/index.php" class="nav-link active"><i class="fas fa-cogs"></i> Производство</a></li>
             <?php endif; ?>
-            <?php if (hasRole(['admin', 'manager', 'warehouse_manager'])): ?>
+            <?php if (hasRole(['admin', 'manager', 'warehouse_keeper'])): ?>
             <li><a href="<?= APP_URL ?>/modules/warehouse/index.php" class="nav-link"><i class="fas fa-warehouse"></i> Склад</a></li>
             <?php endif; ?>
             <?php if (hasRole(['admin', 'manager', 'technologist'])): ?>

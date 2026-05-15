@@ -8,8 +8,8 @@ require_once __DIR__ . '/../../includes/auth_functions.php';
 require_once __DIR__ . '/../../includes/helpers.php';
 
 requireAuth();
-if (!hasRole(['admin', 'manager', 'warehouse_manager', 'storekeeper'])) {
-    redirectWithMessage(APP_URL . '/modules/warehouse/index.php', 'Доступ запрещён', 'error');
+if (!hasRole(['admin', 'manager', 'warehouse_keeper'])) {
+    redirectWithMessage(APP_URL . '/modules/warehouse/warehouse_dashboard.php', 'Доступ запрещён', 'error');
 }
 
 $db = getDB();
@@ -79,10 +79,13 @@ $pageTitle = 'Расход | Склад | ' . APP_NAME;
     <nav class="navbar">
         <a href="<?= APP_URL ?>" class="nav-brand"><div class="brand-logo"><svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div><span class="brand-name">PolesieMES</span></a>
         <ul class="nav-menu">
-            <li><a href="<?= APP_URL ?>/modules/dashboard/index.php" class="nav-link"><i class="fas fa-chart-line"></i> Главная</a></li>
-            <li><a href="<?= APP_URL ?>/modules/warehouse/index.php" class="nav-link active"><i class="fas fa-warehouse"></i> Склад</a></li>
+            <li><a href="<?= APP_URL ?>/modules/warehouse/warehouse_dashboard.php" class="nav-link"><i class="fas fa-warehouse"></i> Склад</a></li>
+            <li><a href="consumption.php" class="nav-link active"><i class="fas fa-dolly"></i> Расход</a></li>
         </ul>
-        <div class="user-menu"><span><?= e($_SESSION['full_name']) ?></span><a href="<?= APP_URL ?>/modules/auth/logout.php" class="btn-logout">Выход</a></div>
+        <div class="user-menu">
+            <span><?= e($_SESSION['full_name']) ?> (<?= e(getRoleName($_SESSION['role'])) ?>)</span>
+            <a href="<?= APP_URL ?>/modules/auth/logout.php" class="btn-logout">Выход</a>
+        </div>
     </nav>
 
     <div class="main-content">
