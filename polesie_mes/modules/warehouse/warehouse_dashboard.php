@@ -152,6 +152,53 @@ if ($materialStats['overstock'] > 0) {
     ];
 }
 
+// 7. Ожидаемые поставки (заказы поставщикам)
+$stmt = $db->query("
+    SELECT po.*, p.name as supplier_name,
+           CASE po.status
+               WHEN 'draft' THEN 'Черновик'
+               WHEN 'sent' THEN 'Отправлен'
+               WHEN 'confirmed' THEN 'Подтвержден'
+               WHEN 'partial' THEN 'Частично получен'
+               WHEN 'received' THEN 'Получен'
+               WHEN 'cancelled' THEN 'Отменен'
+               ELSE po.status
+           END as status_name,
+           CASE po.priority
+               WHEN 'low' THEN 'Низкий'
+               WHEN 'normal' THEN 'Обычный'
+               WHEN 'high' THEN 'Высокий'
+               WHEN 'urgent' THEN 'Срочный'
+               ELSE po.priority
+           END as priority_name,
+           s.first_name as created_by_first,
+           s.last_name as created_by_last
+    FROM purchase_orders po
+    LEFT JOIN partners p ON po.supplier_id = p.id
+    LEFT JOIN staff s ON po.created_by = s.id
+    WHERE po.status IN ('draft', 'sent', 'confirmed', 'partial')
+    ORDER BY po.expected_delivery ASC
+");
+$incomingOrders = $stmt->fetchAll();
+
+// 8. Поставки сегодня/на этой неделе
+$stmt = $db->query("
+    SELECT po.*, p.name as supplier_name,
+           CASE 
+               WHEN po.expected_delivery = CURDATE() THEN 'today'
+               WHEN po.expected_delivery BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY) THEN 'week'
+               ELSE 'later'
+           END as delivery_time
+    FROM purchase_orders po
+    LEFT JOIN partners p ON po.supplier_id = p.id
+    WHERE po.status IN ('confirmed', 'partial', 'sent')
+      AND po.expected_delivery IS NOT NULL
+      AND po.expected_delivery >= CURDATE()
+    ORDER BY po.expected_delivery ASC
+    LIMIT 10
+");
+$upcomingDeliveries = $stmt->fetchAll();
+
 $pageTitle = 'Склад | PolesieMES';
 $currentPage = 'warehouse_dashboard';
 ?>
@@ -635,6 +682,136 @@ $currentPage = 'warehouse_dashboard';
                 </div>
             </div>
         </div>
+
+        <!-- Ожидаемые поставки -->
+        <?php if (!empty($incomingOrders)): ?>
+        <div class="card" id="incoming-section">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-truck-moving"></i> Ожидаемые поставки
+                </div>
+                <span class="badge bg-info"><?= count($incomingOrders) ?> заказов</span>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>№ заказа</th>
+                                <th>Поставщик</th>
+                                <th>Статус</th>
+                                <th>Приоритет</th>
+                                <th>Ожидается</th>
+                                <th>Создан</th>
+                                <th>Примечание</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($incomingOrders as $order): ?>
+                            <tr>
+                                <td><strong><?= e($order['order_number']) ?></strong></td>
+                                <td><?= e($order['supplier_name']) ?></td>
+                                <td>
+                                    <span class="badge bg-<?=
+                                        $order['status'] == 'confirmed' ? 'success' :
+                                        ($order['status'] == 'partial' ? 'warning' :
+                                        ($order['status'] == 'sent' ? 'info' : 'secondary'))
+                                    ?>">
+                                        <?= e($order['status_name']) ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-<?=
+                                        $order['priority'] == 'urgent' ? 'danger' :
+                                        ($order['priority'] == 'high' ? 'warning' : 'secondary')
+                                    ?>">
+                                        <?= e($order['priority_name']) ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <?php 
+                                    $deliveryDate = strtotime($order['expected_delivery']);
+                                    $today = time();
+                                    $diffDays = floor(($deliveryDate - $today) / 86400);
+                                    ?>
+                                    <strong><?= date('d.m.Y', $deliveryDate) ?></strong>
+                                    <?php if ($diffDays == 0): ?>
+                                        <span class="badge bg-danger">Сегодня!</span>
+                                    <?php elseif ($diffDays == 1): ?>
+                                        <span class="badge bg-warning">Завтра</span>
+                                    <?php elseif ($diffDays > 0 && $diffDays <= 7): ?>
+                                        <span class="badge bg-info">Через <?= $diffDays ?> дн.</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td><?= date('d.m.Y', strtotime($order['order_date'])) ?></td>
+                                <td><?= e($order['notes'] ?? '-') ?></td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
+
+        <!-- Ближайшие доставки (сегодня и на неделе) -->
+        <?php if (!empty($upcomingDeliveries)): ?>
+        <div class="card" id="deliveries-section">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-calendar-check"></i> Ближайшие доставки
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Дата</th>
+                                <th>Заказ</th>
+                                <th>Поставщик</th>
+                                <th>Статус</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($upcomingDeliveries as $delivery): ?>
+                            <tr class="<?= $delivery['delivery_time'] == 'today' ? 'table-warning' : '' ?>">
+                                <td>
+                                    <strong><?= date('d.m.Y', strtotime($delivery['expected_delivery'])) ?></strong>
+                                    <?php if ($delivery['delivery_time'] == 'today'): ?>
+                                        <br><span class="badge bg-danger">СЕГОДНЯ</span>
+                                    <?php elseif ($delivery['delivery_time'] == 'week'): ?>
+                                        <br><small class="text-muted">на этой неделе</small>
+                                    <?php endif; ?>
+                                </td>
+                                <td><?= e($delivery['order_number']) ?></td>
+                                <td><?= e($delivery['supplier_name']) ?></td>
+                                <td>
+                                    <span class="badge bg-<?=
+                                        $delivery['status'] == 'confirmed' ? 'success' :
+                                        ($delivery['status'] == 'partial' ? 'warning' : 'info')
+                                    ?>">
+                                        <?= e($delivery['status_name']) ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <?php if ($delivery['delivery_time'] == 'today' || $delivery['status'] == 'partial'): ?>
+                                    <a href="receipt.php?order_id=<?= $delivery['id'] ?>" class="btn-action btn-sm">
+                                        <i class="fas fa-download"></i> Принять
+                                    </a>
+                                    <?php else: ?>
+                                    <span class="text-muted">Ожидание</span>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
     </div>
 
     <!-- Мобильное меню -->

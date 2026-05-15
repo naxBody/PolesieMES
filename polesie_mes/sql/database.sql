@@ -168,6 +168,32 @@ CREATE TABLE movements (
     INDEX idx_item_id (item_id)
 );
 
+-- 7a. ЗАКАЗЫ ПОСТАВЩИКАМ (ожидаемые поставки для склада)
+CREATE TABLE purchase_orders (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    order_number VARCHAR(50) UNIQUE NOT NULL,
+    supplier_id INT NOT NULL,
+    order_date DATE NOT NULL,
+    expected_delivery DATE,
+    actual_delivery DATE,
+    status ENUM('draft', 'sent', 'confirmed', 'partial', 'received', 'cancelled') DEFAULT 'draft',
+    priority ENUM('low', 'normal', 'high', 'urgent') DEFAULT 'normal',
+    items_json JSON,
+    total_amount DECIMAL(15,2),
+    currency VARCHAR(3) DEFAULT 'BYN',
+    notes TEXT,
+    created_by INT,
+    received_by INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (supplier_id) REFERENCES partners(id),
+    FOREIGN KEY (created_by) REFERENCES staff(id),
+    FOREIGN KEY (received_by) REFERENCES staff(id),
+    INDEX idx_order_number (order_number),
+    INDEX idx_status (status),
+    INDEX idx_expected_delivery (expected_delivery)
+);
+
 -- ==================== ЖУРНАЛЫ И ЛОГИРОВАНИЕ (2 таблицы) ====================
 
 -- 8. ЖУРНАЛ СОБЫТИЙ (activity_log + maintenance_logs)
@@ -491,6 +517,14 @@ INSERT INTO system_settings (setting_key, setting_value, setting_type, module, d
 ('auto_numbering', 'true', 'boolean', 'general', 'Авто-нумерация заказов', 1),
 ('report_retention_days', '365', 'number', 'reports', 'Срок хранения отчетов (дни)', 1);
 
+-- Ожидаемые поставки (заказы поставщикам)
+INSERT INTO purchase_orders (order_number, supplier_id, order_date, expected_delivery, status, priority, notes, created_by) VALUES
+('PO-2024-001', 11, '2024-03-01', '2024-03-15', 'confirmed', 'normal', 'Поставка металлопроката', 2),
+('PO-2024-002', 12, '2024-03-05', '2024-03-18', 'sent', 'high', 'Медная проволока для обмоток', 2),
+('PO-2024-003', 13, '2024-03-08', '2024-03-20', 'confirmed', 'normal', 'Лакокрасочные материалы', 2),
+('PO-2024-004', 11, '2024-03-10', '2024-03-25', 'draft', 'low', 'Дополнительный заказ стали', 2),
+('PO-2024-005', 12, '2024-03-12', '2024-03-22', 'partial', 'urgent', 'Срочная поставка меди', 2);
+
 -- Индексы для производительности
 CREATE INDEX idx_orders_customer ON orders(customer_id);
 CREATE INDEX idx_orders_status ON orders(status);
@@ -504,3 +538,5 @@ CREATE INDEX idx_items_type ON items(item_type);
 CREATE INDEX idx_items_category ON items(category_id);
 CREATE INDEX idx_staff_role ON staff(role);
 CREATE INDEX idx_partners_type ON partners(partner_type);
+CREATE INDEX idx_purchase_orders_supplier ON purchase_orders(supplier_id);
+CREATE INDEX idx_purchase_orders_status ON purchase_orders(status);
