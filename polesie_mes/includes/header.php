@@ -43,7 +43,9 @@
                         </a>
                     </li>
                     
-                    <?php if (hasRole(['admin', 'manager'])): ?>
+                    <?php $isAdmin = ($_SESSION['role'] ?? '') === ROLE_ADMIN; ?>
+                    
+                    <?php if ($isAdmin || hasRole(['manager'])): ?>
                     <!-- Заказы - только админ и менеджеры -->
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle <?= ($currentModule ?? '') == 'orders' ? 'active' : '' ?>" href="#" role="button" data-bs-toggle="dropdown">
@@ -57,7 +59,7 @@
                     </li>
                     <?php endif; ?>
                     
-                    <?php if (hasRole(['admin', 'manager', 'operator', 'warehouse_keeper'])): ?>
+                    <?php if ($isAdmin || hasRole(['manager', 'operator', 'warehouse_keeper'])): ?>
                     <!-- Производство - все кроме quality_inspector -->
                     <li class="nav-item">
                         <a class="nav-link <?= ($currentPage ?? '') == 'production' ? 'active' : '' ?>" href="<?= APP_URL ?>/modules/production/index.php">
@@ -67,7 +69,7 @@
                     </li>
                     <?php endif; ?>
                     
-                    <?php if (hasRole(['admin', 'manager', 'quality_inspector'])): ?>
+                    <?php if ($isAdmin || hasRole(['manager', 'quality_inspector'])): ?>
                     <!-- Контроль качества -->
                     <li class="nav-item">
                         <a class="nav-link <?= ($currentPage ?? '') == 'quality' ? 'active' : '' ?>" href="<?= APP_URL ?>/modules/quality/index.php">
@@ -77,7 +79,7 @@
                     </li>
                     <?php endif; ?>
                     
-                    <?php if (hasRole(['admin', 'manager', 'warehouse_keeper'])): ?>
+                    <?php if ($isAdmin || hasRole(['manager', 'warehouse_keeper'])): ?>
                     <!-- Склад -->
                     <li class="nav-item">
                         <a class="nav-link <?= ($currentPage ?? '') == 'warehouse' ? 'active' : '' ?>" href="<?= APP_URL ?>/modules/warehouse/index.php">
@@ -87,7 +89,7 @@
                     </li>
                     <?php endif; ?>
                     
-                    <?php if (hasRole(['admin', 'manager', 'operator', 'warehouse_keeper'])): ?>
+                    <?php if ($isAdmin || hasRole(['manager', 'operator', 'warehouse_keeper'])): ?>
                     <!-- Оборудование -->
                     <li class="nav-item">
                         <a class="nav-link <?= ($currentPage ?? '') == 'equipment' ? 'active' : '' ?>" href="<?= APP_URL ?>/modules/equipment/index.php">
@@ -97,7 +99,7 @@
                     </li>
                     <?php endif; ?>
                     
-                    <?php if (hasRole(['admin', 'manager', 'warehouse_keeper'])): ?>
+                    <?php if ($isAdmin || hasRole(['manager', 'warehouse_keeper'])): ?>
                     <!-- Отгрузка -->
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle <?= ($currentModule ?? '') == 'shipment' ? 'active' : '' ?>" href="#" role="button" data-bs-toggle="dropdown">
@@ -112,7 +114,7 @@
                     </li>
                     <?php endif; ?>
                     
-                    <?php if (hasRole(['admin', 'manager', 'technologist'])): ?>
+                    <?php if ($isAdmin || hasRole(['manager', 'technologist'])): ?>
                     <!-- Документы -->
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle <?= ($currentModule ?? '') == 'documents' ? 'active' : '' ?>" href="#" role="button" data-bs-toggle="dropdown">
@@ -126,7 +128,7 @@
                     </li>
                     <?php endif; ?>
                     
-                    <?php if (hasRole(['admin', 'manager'])): ?>
+                    <?php if ($isAdmin || hasRole(['manager'])): ?>
                     <!-- Отчеты -->
                     <li class="nav-item">
                         <a class="nav-link <?= ($currentPage ?? '') == 'reports' ? 'active' : '' ?>" href="<?= APP_URL ?>/modules/reports/index.php">
@@ -136,7 +138,7 @@
                     </li>
                     <?php endif; ?>
                     
-                    <?php if (hasRole('admin')): ?>
+                    <?php if ($isAdmin): ?>
                     <!-- Администрирование -->
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
