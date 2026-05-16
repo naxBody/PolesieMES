@@ -36,14 +36,17 @@
             
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
+                    <?php 
+                    // Проверка роли администратора
+                    $isAdmin = ($_SESSION['role'] ?? '') === ROLE_ADMIN; 
+                    ?>
+                    
                     <li class="nav-item">
                         <a class="nav-link <?= ($currentPage ?? '') == 'dashboard' ? 'active' : '' ?>" href="<?= APP_URL ?>/modules/dashboard/index.php">
                             <i class="fas fa-tachometer-alt me-1"></i>
                             <span class="d-none d-lg-inline">Панель управления</span>
                         </a>
                     </li>
-                    
-                    <?php $isAdmin = ($_SESSION['role'] ?? '') === ROLE_ADMIN; ?>
                     
                     <?php if ($isAdmin || hasRole(['manager'])): ?>
                     <!-- Заказы - только админ и менеджеры -->
