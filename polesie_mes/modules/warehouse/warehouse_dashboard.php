@@ -74,6 +74,25 @@ $stmt = $db->query("
 ");
 $criticalMaterials = $stmt->fetchAll();
 
+// 4. Все материалы на складе
+$stmt = $db->query("
+    SELECT i.*, 
+           c.name as category_name,
+           u.name as unit_name,
+           CASE 
+               WHEN i.current_stock <= 0 THEN 'critical'
+               WHEN i.current_stock < i.min_stock THEN 'low'
+               WHEN i.current_stock > i.min_stock * 2 THEN 'overstock'
+               ELSE 'normal'
+           END as stock_status
+    FROM items i
+    LEFT JOIN dictionaries c ON i.category_id = c.id AND c.dict_type = 'category'
+    LEFT JOIN dictionaries u ON i.unit_id = u.id AND u.dict_type = 'unit'
+    WHERE i.item_type = 'material'
+    ORDER BY i.name
+");
+$allMaterials = $stmt->fetchAll();
+
 $pageTitle = 'Склад | PolesieMES';
 $currentPage = 'warehouse_dashboard';
 ?>
@@ -433,9 +452,9 @@ $currentPage = 'warehouse_dashboard';
                 <span>Поступление<br><small style="font-size: 0.75rem; font-weight: 400; opacity: 0.8;">Принять товары от поставщика</small></span>
             </a>
             
-            <a href="#incoming" class="btn-action-card supply" onclick="document.getElementById('incoming-orders-section').scrollIntoView({behavior: 'smooth'})">
+            <a href="purchase_orders/index.php" class="btn-action-card supply">
                 <i class="fas fa-shipping-fast"></i>
-                <span>Поставки<br><small style="font-size: 0.75rem; font-weight: 400; opacity: 0.8;">Ожидаемые поставки</small></span>
+                <span>Поставки<br><small style="font-size: 0.75rem; font-weight: 400; opacity: 0.8;">Заказы поставщикам</small></span>
             </a>
             
             <a href="consumption.php" class="btn-action-card consumption">
@@ -443,7 +462,7 @@ $currentPage = 'warehouse_dashboard';
                 <span>Расход<br><small style="font-size: 0.75rem; font-weight: 400; opacity: 0.8;">Списание материалов</small></span>
             </a>
             
-            <a href="#shipment" class="btn-action-card shipment" onclick="document.getElementById('ready-shipment-section').scrollIntoView({behavior: 'smooth'})">
+            <a href="orders/index.php" class="btn-action-card shipment">
                 <i class="fas fa-truck"></i>
                 <span>Отгрузка<br><small style="font-size: 0.75rem; font-weight: 400; opacity: 0.8;">Отгрузка клиентам</small></span>
             </a>
@@ -924,8 +943,14 @@ $currentPage = 'warehouse_dashboard';
         <a href="receipt.php" class="mobile-nav-link">
             <i class="fas fa-truck-loading"></i> Поступление
         </a>
+        <a href="purchase_orders/index.php" class="mobile-nav-link">
+            <i class="fas fa-shipping-fast"></i> Поставки
+        </a>
         <a href="consumption.php" class="mobile-nav-link">
             <i class="fas fa-dolly"></i> Расход
+        </a>
+        <a href="orders/index.php" class="mobile-nav-link">
+            <i class="fas fa-truck"></i> Отгрузка
         </a>
         <a href="<?= APP_URL ?>/modules/auth/logout.php" class="mobile-nav-link">
             <i class="fas fa-sign-out-alt"></i> Выход
