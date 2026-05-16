@@ -30,38 +30,19 @@ $user = getCurrentUser();
 // ПОЛУЧЕНИЕ ДАННЫХ ДЛЯ СКЛАДА
 // ==========================================
 
-// 1. Статистика по материалам
+// 1. Статистика по материалам (для компактного отображения)
 $stmt = $db->query("
     SELECT 
-        COUNT(*) as total,
+        COUNT(*) as total_items,
         SUM(CASE WHEN current_stock <= 0 THEN 1 ELSE 0 END) as out_of_stock,
         SUM(CASE WHEN current_stock < min_stock AND current_stock > 0 THEN 1 ELSE 0 END) as low_stock,
-        SUM(CASE WHEN current_stock >= min_stock AND current_stock <= (min_stock * 2) THEN 1 ELSE 0 END) as normal,
-        SUM(CASE WHEN current_stock > (min_stock * 2) THEN 1 ELSE 0 END) as overstock
+        SUM(current_stock) as total_stock
     FROM items
     WHERE item_type = 'material'
 ");
 $materialStats = $stmt->fetch();
 
-// 2. Материалы требующие пополнения (критичные и низкие)
-$stmt = $db->query("
-    SELECT i.*, d.name as category_name, u.name as unit_name, 
-           (i.min_stock - i.current_stock) as shortage,
-           CASE 
-               WHEN i.current_stock <= 0 THEN 'critical'
-               WHEN i.current_stock < i.min_stock THEN 'low'
-               ELSE 'normal'
-           END as stock_status
-    FROM items i
-    LEFT JOIN dictionaries d ON i.category_id = d.id AND d.dict_type = 'category'
-    LEFT JOIN dictionaries u ON i.unit_id = u.id AND u.dict_type = 'unit'
-    WHERE i.item_type = 'material' AND i.current_stock < i.min_stock
-    ORDER BY shortage DESC
-    LIMIT 15
-");
-$reorderMaterials = $stmt->fetchAll();
-
-// 3. Последние движения на складе (только складские операции)
+// 2. Последние движения на складе
 $stmt = $db->query("
     SELECT mvt.*, i.name as item_name, i.item_code,
            s.first_name, s.last_name,
@@ -78,174 +59,20 @@ $stmt = $db->query("
     LEFT JOIN staff s ON mvt.employee_id = s.id
     WHERE mvt.movement_type IN ('receipt', 'consumption', 'return', 'adjustment', 'shipment')
     ORDER BY mvt.movement_date DESC
-    LIMIT 20
+    LIMIT 10
 ");
 $recentTransactions = $stmt->fetchAll();
 
-// 4. Готовая продукция на складе
+// 3. Материалы требующие внимания (критичные)
 $stmt = $db->query("
-    SELECT i.*, d.name as category_name, u.name as unit_name
+    SELECT i.name, i.item_code, i.current_stock, i.min_stock, u.name as unit_name
     FROM items i
-    LEFT JOIN dictionaries d ON i.category_id = d.id AND d.dict_type = 'category'
     LEFT JOIN dictionaries u ON i.unit_id = u.id AND u.dict_type = 'unit'
-    WHERE i.item_type = 'product' AND i.current_stock > 0
-    ORDER BY i.name ASC
-    LIMIT 10
+    WHERE i.item_type = 'material' AND i.current_stock <= i.min_stock
+    ORDER BY i.current_stock ASC
+    LIMIT 5
 ");
-$finishedGoods = $stmt->fetchAll();
-
-// 5. Все материалы с остатками
-$stmt = $db->query("
-    SELECT i.*, 
-           d.name as category_name,
-           u.name as unit_name,
-           CASE 
-               WHEN i.current_stock <= 0 THEN 'critical'
-               WHEN i.current_stock < i.min_stock THEN 'low'
-               WHEN i.current_stock > (i.min_stock * 2) THEN 'overstock'
-               ELSE 'normal'
-           END as stock_status
-    FROM items i
-    LEFT JOIN dictionaries d ON i.category_id = d.id AND d.dict_type = 'category'
-    LEFT JOIN dictionaries u ON i.unit_id = u.id AND u.dict_type = 'unit'
-    WHERE i.item_type = 'material'
-    ORDER BY 
-        CASE 
-            WHEN i.current_stock <= 0 THEN 1
-            WHEN i.current_stock < i.min_stock THEN 2
-            ELSE 3
-        END,
-        i.name ASC
-");
-$allMaterials = $stmt->fetchAll();
-
-// 6. Проблемы склада
-$warehouseIssues = [];
-
-if ($materialStats['out_of_stock'] > 0) {
-    $warehouseIssues[] = [
-        'type' => 'critical',
-        'title' => 'Нет на складе',
-        'count' => $materialStats['out_of_stock'],
-        'message' => 'Материалы отсутствуют полностью',
-        'recommendation' => 'Срочно оформить заказ поставщикам'
-    ];
-}
-
-if ($materialStats['low_stock'] > 0) {
-    $warehouseIssues[] = [
-        'type' => 'warning',
-        'title' => 'Низкий запас',
-        'count' => $materialStats['low_stock'],
-        'message' => 'Материалы ниже минимального уровня',
-        'recommendation' => 'Запланировать пополнение в ближайшее время'
-    ];
-}
-
-if ($materialStats['overstock'] > 0) {
-    $warehouseIssues[] = [
-        'type' => 'info',
-        'title' => 'Избыток',
-        'count' => $materialStats['overstock'],
-        'message' => 'Материалы выше максимального уровня',
-        'recommendation' => 'Пересмотреть нормативы или использовать в производстве'
-    ];
-}
-
-// 7. Ожидаемые поставки (заказы поставщикам) с детализацией
-$stmt = $db->query("
-    SELECT po.*, p.name as supplier_name,
-           CASE po.status
-               WHEN 'draft' THEN 'Черновик'
-               WHEN 'sent' THEN 'Отправлен'
-               WHEN 'confirmed' THEN 'Подтвержден'
-               WHEN 'partial' THEN 'Частично получен'
-               WHEN 'received' THEN 'Получен'
-               WHEN 'cancelled' THEN 'Отменен'
-               ELSE po.status
-           END as status_name,
-           CASE po.priority
-               WHEN 'low' THEN 'Низкий'
-               WHEN 'normal' THEN 'Обычный'
-               WHEN 'high' THEN 'Высокий'
-               WHEN 'urgent' THEN 'Срочный'
-               ELSE po.priority
-           END as priority_name,
-           s.first_name as created_by_first,
-           s.last_name as created_by_last,
-           JSON_LENGTH(po.items_json) as items_count
-    FROM purchase_orders po
-    LEFT JOIN partners p ON po.supplier_id = p.id
-    LEFT JOIN staff s ON po.created_by = s.id
-    WHERE po.status IN ('draft', 'sent', 'confirmed', 'partial')
-    ORDER BY po.expected_delivery ASC
-");
-$incomingOrders = $stmt->fetchAll();
-
-// 8. Поставки сегодня/на этой неделе
-$stmt = $db->query("
-    SELECT po.*, p.name as supplier_name,
-           CASE 
-               WHEN po.expected_delivery = CURDATE() THEN 'today'
-               WHEN po.expected_delivery BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY) THEN 'week'
-               ELSE 'later'
-           END as delivery_time
-    FROM purchase_orders po
-    LEFT JOIN partners p ON po.supplier_id = p.id
-    WHERE po.status IN ('confirmed', 'partial', 'sent')
-      AND po.expected_delivery IS NOT NULL
-      AND po.expected_delivery >= CURDATE()
-    ORDER BY po.expected_delivery ASC
-    LIMIT 10
-");
-$upcomingDeliveries = $stmt->fetchAll();
-
-// 9. Заказы клиентов требующие отгрузки (готовая продукция)
-$stmt = $db->query("
-    SELECT o.*, c.name as customer_name,
-           CASE o.status
-               WHEN 'new' THEN 'Новый'
-               WHEN 'confirmed' THEN 'Подтвержден'
-               WHEN 'in_production' THEN 'В производстве'
-               WHEN 'quality_check' THEN 'Контроль качества'
-               WHEN 'ready' THEN 'Готов к отгрузке'
-               WHEN 'shipped' THEN 'Отгружен'
-               WHEN 'completed' THEN 'Завершен'
-               WHEN 'cancelled' THEN 'Отменен'
-               ELSE o.status
-           END as status_name,
-           s.first_name as manager_first,
-           s.last_name as manager_last
-    FROM orders o
-    LEFT JOIN partners c ON o.customer_id = c.id
-    LEFT JOIN staff s ON o.manager_id = s.id
-    WHERE o.status IN ('ready', 'shipped')
-    ORDER BY o.delivery_date ASC
-    LIMIT 10
-");
-$readyForShipment = $stmt->fetchAll();
-
-// 10. Производственные задания требующие материалы
-$stmt = $db->query("
-    SELECT pt.*, o.order_number, i.name as product_name,
-           st.first_name as assigned_first, st.last_name as assigned_last,
-           CASE pt.status
-               WHEN 'planned' THEN 'Запланировано'
-               WHEN 'in_progress' THEN 'В работе'
-               WHEN 'paused' THEN 'Приостановлено'
-               WHEN 'completed' THEN 'Завершено'
-               WHEN 'rejected' THEN 'Отклонено'
-               ELSE pt.status
-           END as status_name
-    FROM production_tasks pt
-    LEFT JOIN orders o ON pt.order_id = o.id
-    LEFT JOIN items i ON pt.product_id = i.id
-    LEFT JOIN staff st ON pt.assigned_to = st.id
-    WHERE pt.status IN ('planned', 'in_progress')
-    ORDER BY pt.planned_start ASC
-    LIMIT 10
-");
-$productionTasks = $stmt->fetchAll();
+$criticalMaterials = $stmt->fetchAll();
 
 $pageTitle = 'Склад | PolesieMES';
 $currentPage = 'warehouse_dashboard';
@@ -637,69 +464,69 @@ $currentPage = 'warehouse_dashboard';
             <div class="stat-inline-item">
                 <i class="fas fa-box" style="color: var(--text-muted);"></i>
                 <div>
-                    <div class="stat-inline-value"><?= $materialStats['total'] ?></div>
+                    <div class="stat-inline-value"><?= $materialStats['total_items'] ?? 0 ?></div>
                     <div class="stat-inline-label">Всего позиций</div>
                 </div>
             </div>
             <div class="stat-inline-item">
                 <i class="fas fa-check-circle" style="color: var(--success-color);"></i>
                 <div>
-                    <div class="stat-inline-value" style="color: var(--success-color);"><?= $materialStats['normal'] ?></div>
-                    <div class="stat-inline-label">Норма</div>
+                    <div class="stat-inline-value" style="color: var(--success-color);"><?= number_format($materialStats['total_stock'] ?? 0, 0) ?></div>
+                    <div class="stat-inline-label">Общий остаток</div>
                 </div>
             </div>
             <div class="stat-inline-item">
                 <i class="fas fa-exclamation-triangle" style="color: var(--warning-color);"></i>
                 <div>
-                    <div class="stat-inline-value" style="color: var(--warning-color);"><?= $materialStats['low_stock'] ?></div>
-                    <div class="stat-inline-label">Низкий запас</div>
+                    <div class="stat-inline-value" style="color: var(--warning-color);"><?= $materialStats['low_stock'] ?? 0 ?></div>
+                    <div class="stat-inline-label">Требуют внимания</div>
                 </div>
             </div>
             <div class="stat-inline-item">
                 <i class="fas fa-times-circle" style="color: var(--danger-color);"></i>
                 <div>
-                    <div class="stat-inline-value" style="color: var(--danger-color);"><?= $materialStats['out_of_stock'] ?></div>
+                    <div class="stat-inline-value" style="color: var(--danger-color);"><?= $materialStats['out_of_stock'] ?? 0 ?></div>
                     <div class="stat-inline-label">Нет на складе</div>
                 </div>
             </div>
-            <div class="stat-inline-item">
-                <i class="fas fa-info-circle" style="color: var(--info-color);"></i>
-                <div>
-                    <div class="stat-inline-value" style="color: var(--info-color);"><?= $materialStats['overstock'] ?></div>
-                    <div class="stat-inline-label">Избыток</div>
-                </div>
-            </div>
         </div>
 
-        <!-- Проблемы и рекомендации -->
-        <?php if (!empty($warehouseIssues)): ?>
-        <div class="issues-section">
-            <h2 class="section-title"><i class="fas fa-exclamation-triangle"></i> Проблемы и рекомендации</h2>
-            <div class="issues-grid">
-                <?php foreach ($warehouseIssues as $issue): ?>
-                <div class="issue-card <?= $issue['type'] ?>">
-                    <div class="issue-icon <?= $issue['type'] ?>">
-                        <i class="fas fa-<?= $issue['type'] == 'critical' ? 'exclamation-circle' : ($issue['type'] == 'warning' ? 'exclamation-triangle' : 'info-circle') ?>"></i>
-                    </div>
-                    <div class="issue-content" style="flex: 1;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                            <h4><?= $issue['title'] ?></h4>
-                            <span class="issue-count"><?= $issue['count'] ?></span>
-                        </div>
-                        <p><?= $issue['message'] ?></p>
-                        <div class="issue-recommendation">
-                            <i class="fas fa-lightbulb"></i> <?= $issue['recommendation'] ?>
-                        </div>
-                    </div>
+        <!-- Материалы требующие внимания -->
+        <?php if (!empty($criticalMaterials)): ?>
+        <div class="card" id="attention-section">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-exclamation-triangle" style="color: var(--warning-color);"></i> Требуют внимания
                 </div>
-                <?php endforeach; ?>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Наименование</th>
+                                <th>Артикул</th>
+                                <th>В наличии</th>
+                                <th>Мин. запас</th>
+                                <th>Ед. изм.</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($criticalMaterials as $material): ?>
+                            <tr>
+                                <td><?= e($material['name']) ?></td>
+                                <td><code><?= e($material['item_code']) ?></code></td>
+                                <td><strong style="color: var(--danger-color);"><?= number_format($material['current_stock'], 2) ?></strong></td>
+                                <td><?= number_format($material['min_stock'], 2) ?></td>
+                                <td><?= e($material['unit_name'] ?? '-') ?></td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
         <?php endif; ?>
-
-        <!-- Материалы требующие пополнения -->
-        <?php if (!empty($reorderMaterials)): ?>
-        <div class="card" id="attention-section">
             <div class="card-header">
                 <div class="card-title">
                     <i class="fas fa-triangle-exclamation"></i> Требуют пополнения

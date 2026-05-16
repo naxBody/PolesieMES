@@ -542,4 +542,8 @@ CREATE INDEX idx_purchase_orders_supplier ON purchase_orders(supplier_id);
 CREATE INDEX idx_purchase_orders_status ON purchase_orders(status);
 
 -- Добавление поля kpp в таблицу partners (если не существует)
+<<<<<<< HEAD
 ALTER TABLE partners ADD COLUMN IF NOT EXISTS kpp VARCHAR(20) AFTER inn;
+=======
+ALTER TABLE partners ADD COLUMN IF NOT EXISTS kpp VARCHAR(20) AFTER inn;
+>>>>>>> 21889b5a1c40a169a53ff81ee8eab3d539f41bf3
