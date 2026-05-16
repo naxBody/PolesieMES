@@ -51,6 +51,7 @@ CREATE TABLE partners (
     partner_type ENUM('customer', 'supplier', 'both') DEFAULT 'customer',
     name VARCHAR(200) NOT NULL,
     inn VARCHAR(20),
+    kpp VARCHAR(20),
     address TEXT,
     phone VARCHAR(20),
     email VARCHAR(100),
