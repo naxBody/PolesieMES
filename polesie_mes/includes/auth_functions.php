@@ -4,6 +4,11 @@
  * Обновленная версия для работы с таблицей staff
  */
 
+// Подключение конфигурации если еще не подключена
+if (!defined('ROLE_ADMIN')) {
+    require_once __DIR__ . '/../config/config.php';
+}
+
 // Запуск сессии только если она еще не запущена
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -109,7 +114,7 @@ function hasRole($roles) {
     }
     
     // Администратор имеет доступ ко всему
-    if ($_SESSION['role'] === ROLE_ADMIN) {
+    if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin') {
         return true;
     }
     
