@@ -31,7 +31,7 @@ $stmt = $db->query("SELECT id, name, item_code, current_stock, min_stock FROM it
 $materials = $stmt->fetchAll();
 
 // Поставщики
-$stmt = $db->query("SELECT id, name, inn, kpp, address FROM partners WHERE partner_type IN ('supplier', 'both') ORDER BY name");
+$stmt = $db->query("SELECT id, name, inn, address FROM partners WHERE partner_type IN ('supplier', 'both') ORDER BY name");
 $suppliers = $stmt->fetchAll();
 
 // Единицы измерения
@@ -46,7 +46,7 @@ if (isset($_GET['order_id']) && !empty($_GET['order_id'])) {
     
     // Получаем информацию о заказе поставщику
     $stmt = $db->prepare("
-        SELECT po.*, p.name as supplier_name, p.inn, p.kpp, p.address,
+        SELECT po.*, p.name as supplier_name, p.inn, p.address,
                CASE po.status
                    WHEN 'draft' THEN 'Черновик'
                    WHEN 'sent' THEN 'Отправлен'
