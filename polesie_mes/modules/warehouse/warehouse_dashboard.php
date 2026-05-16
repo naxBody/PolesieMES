@@ -271,80 +271,202 @@ $currentPage = 'warehouse_dashboard';
     <style>
         /* Стили для дашборда склада - обновленный дизайн */
         
-        /* Панель быстрых действий - горизонтальная с кнопками */
+        /* Панель быстрых действий - горизонтальная с выделенными кнопками */
         .quick-actions-bar {
-            display: flex;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 1rem;
             margin-bottom: 2rem;
-            flex-wrap: wrap;
-            align-items: center;
+            align-items: stretch;
         }
         
-        .btn-action {
-            display: inline-flex;
+        .btn-action-card {
+            display: flex;
+            flex-direction: column;
             align-items: center;
+            justify-content: center;
             gap: 0.75rem;
-            padding: 0.875rem 1.5rem;
+            padding: 1.5rem 1rem;
             background: var(--glass-bg);
             backdrop-filter: var(--backdrop-blur);
-            border: 1px solid var(--glass-border);
-            border-radius: 12px;
+            border: 2px solid var(--glass-border);
+            border-radius: 16px;
             color: var(--text-primary);
             font-weight: 600;
-            font-size: 0.95rem;
+            font-size: 1rem;
             text-decoration: none;
             transition: all 0.3s ease;
             cursor: pointer;
+            min-height: 140px;
+            position: relative;
+            overflow: hidden;
         }
         
-        .btn-action:hover {
-            background: rgba(255, 255, 255, 0.08);
-            border-color: var(--primary-glow);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 20px rgba(255, 107, 107, 0.2);
+        .btn-action-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent);
+            opacity: 0;
+            transition: opacity 0.3s ease;
         }
         
-        .btn-action i {
-            font-size: 1.25rem;
-            width: 24px;
+        .btn-action-card:hover::before {
+            opacity: 1;
+        }
+        
+        .btn-action-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+        }
+        
+        .btn-action-card i {
+            font-size: 2.5rem;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            z-index: 1;
+        }
+        
+        .btn-action-card span {
+            z-index: 1;
             text-align: center;
         }
         
-        .btn-action.primary {
-            background: var(--gradient-primary);
-            border: none;
-            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+        /* Выделенные стили для основных кнопок */
+        .btn-action-card.receipt {
+            border-color: rgba(48, 209, 88, 0.3);
+            background: linear-gradient(135deg, rgba(48, 209, 88, 0.1), rgba(36, 169, 69, 0.05));
         }
         
-        .btn-action.primary:hover {
-            box-shadow: 0 6px 25px rgba(255, 107, 107, 0.5);
+        .btn-action-card.receipt i {
+            background: linear-gradient(135deg, #30d158, #24a945);
+            color: white;
+            box-shadow: 0 4px 15px rgba(48, 209, 88, 0.4);
         }
         
-        /* Статистика в виде компактных карточек */
-        .stats-compact-row {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 0.75rem;
+        .btn-action-card.receipt:hover {
+            border-color: rgba(48, 209, 88, 0.6);
+            box-shadow: 0 8px 30px rgba(48, 209, 88, 0.3);
+        }
+        
+        .btn-action-card.supply {
+            border-color: rgba(90, 200, 250, 0.3);
+            background: linear-gradient(135deg, rgba(90, 200, 250, 0.1), rgba(10, 132, 255, 0.05));
+        }
+        
+        .btn-action-card.supply i {
+            background: linear-gradient(135deg, #5ac8fa, #0a84ff);
+            color: white;
+            box-shadow: 0 4px 15px rgba(90, 200, 250, 0.4);
+        }
+        
+        .btn-action-card.supply:hover {
+            border-color: rgba(90, 200, 250, 0.6);
+            box-shadow: 0 8px 30px rgba(90, 200, 250, 0.3);
+        }
+        
+        .btn-action-card.consumption {
+            border-color: rgba(255, 214, 10, 0.3);
+            background: linear-gradient(135deg, rgba(255, 214, 10, 0.1), rgba(255, 159, 10, 0.05));
+        }
+        
+        .btn-action-card.consumption i {
+            background: linear-gradient(135deg, #ffd60a, #ff9f0a);
+            color: #000;
+            box-shadow: 0 4px 15px rgba(255, 214, 10, 0.4);
+        }
+        
+        .btn-action-card.consumption:hover {
+            border-color: rgba(255, 214, 10, 0.6);
+            box-shadow: 0 8px 30px rgba(255, 214, 10, 0.3);
+        }
+        
+        .btn-action-card.shipment {
+            border-color: rgba(255, 69, 58, 0.3);
+            background: linear-gradient(135deg, rgba(255, 69, 58, 0.1), rgba(255, 59, 48, 0.05));
+        }
+        
+        .btn-action-card.shipment i {
+            background: linear-gradient(135deg, #ff453a, #ff3b30);
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 69, 58, 0.4);
+        }
+        
+        .btn-action-card.shipment:hover {
+            border-color: rgba(255, 69, 58, 0.6);
+            box-shadow: 0 8px 30px rgba(255, 69, 58, 0.3);
+        }
+        
+        .btn-action-card.inventory {
+            border-color: rgba(175, 82, 222, 0.3);
+            background: linear-gradient(135deg, rgba(175, 82, 222, 0.1), rgba(191, 90, 242, 0.05));
+        }
+        
+        .btn-action-card.inventory i {
+            background: linear-gradient(135deg, #af52de, #bf5af2);
+            color: white;
+            box-shadow: 0 4px 15px rgba(175, 82, 222, 0.4);
+        }
+        
+        .btn-action-card.inventory:hover {
+            border-color: rgba(175, 82, 222, 0.6);
+            box-shadow: 0 8px 30px rgba(175, 82, 222, 0.3);
+        }
+        
+        .btn-action-card.history {
+            border-color: rgba(142, 142, 147, 0.3);
+            background: linear-gradient(135deg, rgba(142, 142, 147, 0.1), rgba(99, 99, 102, 0.05));
+        }
+        
+        .btn-action-card.history i {
+            background: linear-gradient(135deg, #8e8e93, #636366);
+            color: white;
+            box-shadow: 0 4px 15px rgba(142, 142, 147, 0.4);
+        }
+        
+        .btn-action-card.history:hover {
+            border-color: rgba(142, 142, 147, 0.6);
+            box-shadow: 0 8px 30px rgba(142, 142, 147, 0.3);
+        }
+        
+        /* Компактная статистика в строку */
+        .stats-inline-row {
+            display: flex;
+            gap: 1.5rem;
             margin-bottom: 2rem;
-        }
-        
-        .stat-compact-item {
+            flex-wrap: wrap;
+            align-items: center;
+            padding: 1rem 1.5rem;
             background: var(--glass-bg);
             backdrop-filter: var(--backdrop-blur);
             border: 1px solid var(--glass-border);
-            border-radius: 12px;
-            padding: 1rem;
-            text-align: center;
+            border-radius: 16px;
         }
         
-        .stat-compact-value {
+        .stat-inline-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem 1rem;
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+        }
+        
+        .stat-inline-value {
             font-size: 1.5rem;
             font-weight: 700;
-            margin-bottom: 0.25rem;
         }
         
-        .stat-compact-label {
-            font-size: 0.8rem;
+        .stat-inline-label {
+            font-size: 0.85rem;
             color: var(--text-muted);
         }
         
@@ -387,6 +509,33 @@ $currentPage = 'warehouse_dashboard';
             border-radius: 20px;
             font-size: 0.75rem;
             font-weight: 600;
+        }
+        
+        /* Секции с заголовками */
+        .dashboard-section {
+            margin-bottom: 2rem;
+        }
+        
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--glass-border);
+        }
+        
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .section-title i {
+            color: var(--primary-glow);
         }
     </style>
 </head>
@@ -450,60 +599,75 @@ $currentPage = 'warehouse_dashboard';
             </div>
         </div>
 
-        <!-- Быстрые действия -->
+        <!-- Быстрые действия - выделенные карточки -->
         <div class="quick-actions-bar">
-            <a href="receipt.php" class="btn-action primary">
+            <a href="receipt.php" class="btn-action-card receipt">
                 <i class="fas fa-truck-loading"></i>
-                Поступление
+                <span>Поступление<br><small style="font-size: 0.75rem; font-weight: 400; opacity: 0.8;">Принять товары от поставщика</small></span>
             </a>
             
-            <a href="consumption.php" class="btn-action">
-                <i class="fas fa-dolly"></i>
-                Расход
-            </a>
-            
-            <a href="#inventory" class="btn-action" onclick="document.getElementById('inventory-section').scrollIntoView({behavior: 'smooth'})">
-                <i class="fas fa-boxes"></i>
-                Остатки
-            </a>
-            
-            <a href="#history" class="btn-action" onclick="document.getElementById('history-section').scrollIntoView({behavior: 'smooth'})">
-                <i class="fas fa-history"></i>
-                История
-            </a>
-            
-            <a href="#incoming" class="btn-action" onclick="document.getElementById('incoming-orders-section').scrollIntoView({behavior: 'smooth'})">
+            <a href="#incoming" class="btn-action-card supply" onclick="document.getElementById('incoming-orders-section').scrollIntoView({behavior: 'smooth'})">
                 <i class="fas fa-shipping-fast"></i>
-                Поставки
+                <span>Поставки<br><small style="font-size: 0.75rem; font-weight: 400; opacity: 0.8;">Ожидаемые поставки</small></span>
             </a>
             
-            <a href="#shipment" class="btn-action" onclick="document.getElementById('ready-shipment-section').scrollIntoView({behavior: 'smooth'})">
+            <a href="consumption.php" class="btn-action-card consumption">
+                <i class="fas fa-dolly"></i>
+                <span>Расход<br><small style="font-size: 0.75rem; font-weight: 400; opacity: 0.8;">Списание материалов</small></span>
+            </a>
+            
+            <a href="#shipment" class="btn-action-card shipment" onclick="document.getElementById('ready-shipment-section').scrollIntoView({behavior: 'smooth'})">
                 <i class="fas fa-truck"></i>
-                Отгрузка
+                <span>Отгрузка<br><small style="font-size: 0.75rem; font-weight: 400; opacity: 0.8;">Отгрузка клиентам</small></span>
+            </a>
+            
+            <a href="#inventory" class="btn-action-card inventory" onclick="document.getElementById('inventory-section').scrollIntoView({behavior: 'smooth'})">
+                <i class="fas fa-boxes"></i>
+                <span>Остатки<br><small style="font-size: 0.75rem; font-weight: 400; opacity: 0.8;">Все материалы</small></span>
+            </a>
+            
+            <a href="#history" class="btn-action-card history" onclick="document.getElementById('history-section').scrollIntoView({behavior: 'smooth'})">
+                <i class="fas fa-history"></i>
+                <span>История<br><small style="font-size: 0.75rem; font-weight: 400; opacity: 0.8;">Движения на складе</small></span>
             </a>
         </div>
 
-        <!-- Быстрая статистика -->
-        <div class="stats-compact-row">
-            <div class="stat-compact-item">
-                <div class="stat-compact-value"><?= $materialStats['total'] ?></div>
-                <div class="stat-compact-label">Всего позиций</div>
+        <!-- Быстрая статистика в строку -->
+        <div class="stats-inline-row">
+            <div class="stat-inline-item">
+                <i class="fas fa-box" style="color: var(--text-muted);"></i>
+                <div>
+                    <div class="stat-inline-value"><?= $materialStats['total'] ?></div>
+                    <div class="stat-inline-label">Всего позиций</div>
+                </div>
             </div>
-            <div class="stat-compact-item">
-                <div class="stat-compact-value" style="color: var(--success-color);"><?= $materialStats['normal'] ?></div>
-                <div class="stat-compact-label">Норма</div>
+            <div class="stat-inline-item">
+                <i class="fas fa-check-circle" style="color: var(--success-color);"></i>
+                <div>
+                    <div class="stat-inline-value" style="color: var(--success-color);"><?= $materialStats['normal'] ?></div>
+                    <div class="stat-inline-label">Норма</div>
+                </div>
             </div>
-            <div class="stat-compact-item">
-                <div class="stat-compact-value" style="color: var(--warning-color);"><?= $materialStats['low_stock'] ?></div>
-                <div class="stat-compact-label">Низкий запас</div>
+            <div class="stat-inline-item">
+                <i class="fas fa-exclamation-triangle" style="color: var(--warning-color);"></i>
+                <div>
+                    <div class="stat-inline-value" style="color: var(--warning-color);"><?= $materialStats['low_stock'] ?></div>
+                    <div class="stat-inline-label">Низкий запас</div>
+                </div>
             </div>
-            <div class="stat-compact-item">
-                <div class="stat-compact-value" style="color: var(--danger-color);"><?= $materialStats['out_of_stock'] ?></div>
-                <div class="stat-compact-label">Нет на складе</div>
+            <div class="stat-inline-item">
+                <i class="fas fa-times-circle" style="color: var(--danger-color);"></i>
+                <div>
+                    <div class="stat-inline-value" style="color: var(--danger-color);"><?= $materialStats['out_of_stock'] ?></div>
+                    <div class="stat-inline-label">Нет на складе</div>
+                </div>
             </div>
-            <div class="stat-compact-item">
-                <div class="stat-compact-value" style="color: var(--info-color);"><?= $materialStats['overstock'] ?></div>
-                <div class="stat-compact-label">Избыток</div>
+            <div class="stat-inline-item">
+                <i class="fas fa-info-circle" style="color: var(--info-color);"></i>
+                <div>
+                    <div class="stat-inline-value" style="color: var(--info-color);"><?= $materialStats['overstock'] ?></div>
+                    <div class="stat-inline-label">Избыток</div>
+                </div>
             </div>
         </div>
 
