@@ -14,7 +14,8 @@ require_once __DIR__ . '/../../includes/helpers.php';
 requireAuth();
 
 // Перенаправление работников склада на специализированный дашборд
-if (hasRole('warehouse_keeper')) {
+// Администраторы НЕ перенаправляются, они остаются на главном дашборде
+if (hasRole('warehouse_keeper') && ($_SESSION['role'] ?? '') !== ROLE_ADMIN) {
     header('Location: ' . APP_URL . '/modules/warehouse/warehouse_dashboard.php');
     exit;
 }
