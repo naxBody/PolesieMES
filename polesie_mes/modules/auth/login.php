@@ -33,10 +33,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $role = $_SESSION['role'];
             
             // Перенаправление в зависимости от роли
-            if ($role === 'warehouse_keeper') {
+            if ($role === 'warehouse_keeper' && $role !== 'admin') {
                 // Работник склада - только складской дашборд
                 $redirect = '/modules/warehouse/warehouse_dashboard.php';
-            } elseif ($role === 'operator') {
+            } elseif ($role === 'operator' && $role !== 'admin') {
                 // Оператор - производство
                 $redirect = '/modules/production/index.php';
             } else {

@@ -15,7 +15,7 @@ requireAuth();
 
 // Перенаправление работников склада на специализированный дашборд
 // Администраторы НЕ перенаправляются, они остаются на главном дашборде
-if (hasRole('warehouse_keeper') && ($_SESSION['role'] ?? '') !== ROLE_ADMIN) {
+if (isset($_SESSION['role']) && $_SESSION['role'] === 'warehouse_keeper' && $_SESSION['role'] !== 'admin') {
     header('Location: ' . APP_URL . '/modules/warehouse/warehouse_dashboard.php');
     exit;
 }

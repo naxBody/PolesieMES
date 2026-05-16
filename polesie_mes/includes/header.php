@@ -38,7 +38,8 @@
                 <ul class="navbar-nav me-auto">
                     <?php 
                     // Проверка роли администратора
-                    $isAdmin = ($_SESSION['role'] ?? '') === ROLE_ADMIN; 
+                    $currentRole = $_SESSION['role'] ?? '';
+                    $isAdmin = ($currentRole === 'admin'); 
                     ?>
                     
                     <li class="nav-item">
