@@ -540,3 +540,6 @@ CREATE INDEX idx_staff_role ON staff(role);
 CREATE INDEX idx_partners_type ON partners(partner_type);
 CREATE INDEX idx_purchase_orders_supplier ON purchase_orders(supplier_id);
 CREATE INDEX idx_purchase_orders_status ON purchase_orders(status);
+
+-- Добавление поля kpp в таблицу partners (если не существует)
+ALTER TABLE partners ADD COLUMN IF NOT EXISTS kpp VARCHAR(20) AFTER inn;
