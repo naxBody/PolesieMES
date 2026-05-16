@@ -527,47 +527,6 @@ $currentPage = 'warehouse_dashboard';
             </div>
         </div>
         <?php endif; ?>
-            <div class="card-header">
-                <div class="card-title">
-                    <i class="fas fa-triangle-exclamation"></i> Требуют пополнения
-                </div>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Материал</th>
-                                <th>Артикул</th>
-                                <th>Категория</th>
-                                <th>Текущий остаток</th>
-                                <th>Мин. запас</th>
-                                <th>Недостает</th>
-                                <th>Статус</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($reorderMaterials as $material): ?>
-                            <tr>
-                                <td><strong><?= e($material['name']) ?></strong></td>
-                                <td><code><?= e($material['item_code']) ?></code></td>
-                                <td><?= e($material['category_name'] ?? '-') ?></td>
-                                <td><?= number_format($material['current_stock'], 2) ?> <?= e($material['unit_name']) ?></td>
-                                <td><?= number_format($material['min_stock'], 2) ?> <?= e($material['unit_name']) ?></td>
-                                <td style="color: var(--danger-color);">-<?= number_format($material['shortage'], 2) ?> <?= e($material['unit_name']) ?></td>
-                                <td>
-                                    <span class="badge-stock-<?= $material['stock_status'] ?>">
-                                        <?= $material['stock_status'] == 'critical' ? 'Критический' : 'Низкий' ?>
-                                    </span>
-                                </td>
-                            </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-        <?php endif; ?>
 
         <!-- Все материалы -->
         <div class="card" id="inventory-section">
