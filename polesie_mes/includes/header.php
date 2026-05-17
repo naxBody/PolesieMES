@@ -86,7 +86,7 @@
                     <?php if ($isAdmin || hasRole(['manager', 'warehouse_keeper'])): ?>
                     <!-- Склад -->
                     <li class="nav-item">
-                        <a class="nav-link <?= ($currentPage ?? '') == 'warehouse' ? 'active' : '' ?>" href="<?= APP_URL ?>/modules/warehouse/index.php">
+                        <a class="nav-link <?= ($currentPage ?? '') == 'warehouse' ? 'active' : '' ?>" href="<?= APP_URL ?>/modules/warehouse/warehouse_dashboard.php">
                             <i class="fas fa-warehouse me-1"></i>
                             <span class="d-none d-lg-inline">Склад</span>
                         </a>

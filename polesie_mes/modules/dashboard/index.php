@@ -225,7 +225,7 @@ if ($outOfStockCount > 0) {
         'count' => $outOfStockCount,
         'description' => 'Материалы полностью закончились',
         'recommendation' => 'Срочно оформить заказ поставщикам',
-        'link' => APP_URL . '/modules/warehouse/index.php'
+        'link' => APP_URL . '/modules/warehouse/warehouse_dashboard.php'
     ];
 }
 if ($lowStockCount > 0) {
@@ -235,7 +235,7 @@ if ($lowStockCount > 0) {
         'count' => $lowStockCount,
         'description' => 'Материалы ниже минимального уровня',
         'recommendation' => 'Запланировать пополнение запасов',
-        'link' => APP_URL . '/modules/warehouse/index.php'
+        'link' => APP_URL . '/modules/warehouse/warehouse_dashboard.php'
     ];
 }
 
@@ -2157,7 +2157,7 @@ $currentPage = 'dashboard';
                                 </li>
                                 <?php endif; ?>
                             </ul>
-                            <a href="<?= APP_URL ?>/modules/warehouse/index.php" class="module-link-btn">
+                            <a href="<?= APP_URL ?>/modules/warehouse/warehouse_dashboard.php" class="module-link-btn">
                                 Перейти <i class="fas fa-arrow-right"></i>
                             </a>
                         </div>
