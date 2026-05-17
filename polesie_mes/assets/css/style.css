@@ -496,15 +496,15 @@ body {
 
 .empty-state i {
     font-size: 4rem;
-    color: #dee2e6;
+    color: var(--text-muted);
     margin-bottom: 1rem;
 }
 
 .empty-state h5 {
-    color: #6c757d;
+    color: var(--text-secondary);
     margin-bottom: 0.5rem;
 }
 
 .empty-state p {
-    color: #adb5bd;
+    color: var(--text-secondary);
 }

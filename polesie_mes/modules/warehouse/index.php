@@ -267,6 +267,8 @@ $pageTitle = 'Управление складом | ' . APP_NAME;
             <div style="display: flex; gap: 0.5rem;">
                 <a href="receipt.php" class="btn-primary-custom"><i class="fas fa-truck-loading"></i> Поступление</a>
                 <a href="consumption.php" class="btn btn-warning" style="padding: 0.6rem 1.2rem; border-radius: 8px; text-decoration: none; color: white;"><i class="fas fa-dolly"></i> Расход</a>
+                <a href="inventory.php" class="btn btn-info" style="padding: 0.6rem 1.2rem; border-radius: 8px; text-decoration: none; color: white;"><i class="fas fa-boxes"></i> Остатки</a>
+                <a href="history.php" class="btn btn-secondary" style="padding: 0.6rem 1.2rem; border-radius: 8px; text-decoration: none; color: white;"><i class="fas fa-history"></i> История</a>
             </div>
             <?php endif; ?>
         </div>
