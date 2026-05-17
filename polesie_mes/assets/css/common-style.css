@@ -20,8 +20,8 @@
     
     /* Текст */
     --text-primary: #ffffff;
-    --text-secondary: rgba(255, 255, 255, 0.7);
-    --text-muted: rgba(255, 255, 255, 0.4);
+    --text-secondary: rgba(255, 255, 255, 0.8);
+    --text-muted: rgba(255, 255, 255, 0.6);
     
     /* Градиенты */
     --gradient-primary: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
