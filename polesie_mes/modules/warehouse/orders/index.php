@@ -218,7 +218,7 @@ $pageTitle = 'Отгрузка | PolesieMES';
         
         .stock-available {
             font-size: 0.85rem;
-            color: var(--text-muted);
+            color: var(--text-secondary);
         }
         
         /* Modal Styles - Orange Theme */
@@ -261,7 +261,7 @@ $pageTitle = 'Отгрузка | PolesieMES';
         
         /* Form Styles */
         .form-label {
-            color: var(--text-secondary);
+            color: var(--text-primary);
             font-weight: 500;
             margin-bottom: 0.5rem;
             font-size: 0.9rem;
@@ -284,7 +284,7 @@ $pageTitle = 'Отгрузка | PolesieMES';
         }
         
         .form-control::placeholder {
-            color: var(--text-muted);
+            color: var(--text-secondary);
         }
         
         .table {
@@ -292,7 +292,7 @@ $pageTitle = 'Отгрузка | PolesieMES';
         }
         
         .table thead th {
-            color: var(--text-secondary);
+            color: var(--text-primary);
             border-bottom-color: var(--glass-border);
         }
         
@@ -303,18 +303,18 @@ $pageTitle = 'Отгрузка | PolesieMES';
         .empty-state {
             text-align: center;
             padding: 3rem;
-            color: var(--text-secondary);
+            color: var(--text-primary);
         }
         
         .empty-state i {
             font-size: 4rem;
-            color: var(--text-muted);
+            color: var(--text-secondary);
             margin-bottom: 1rem;
         }
         
         .empty-state p {
             font-size: 1.1rem;
-            color: var(--text-secondary);
+            color: var(--text-primary);
         }
         
         .alert {
@@ -331,7 +331,7 @@ $pageTitle = 'Отгрузка | PolesieMES';
         }
 
         .text-muted {
-            color: var(--text-muted) !important;
+            color: var(--text-secondary) !important;
         }
         
         .card {
@@ -504,7 +504,7 @@ $pageTitle = 'Отгрузка | PolesieMES';
                                     <span class="status-badge status-shipped">Отгружен</span>
                                 <?php endif; ?>
                             </h5>
-                            <div style="color: var(--text-secondary); font-size: 0.9rem;">
+                            <div style="color: var(--text-primary); font-size: 0.9rem; opacity: 0.8;">
                                 <i class="far fa-calendar"></i> Дата заказа: <?= formatDate($order['order_date']) ?>
                                 <?php if ($order['delivery_date']): ?>
                                 | <i class="far fa-clock"></i> Доставка: <?= formatDate($order['delivery_date']) ?>
