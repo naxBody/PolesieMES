@@ -467,12 +467,12 @@ $currentPage = 'warehouse_dashboard';
                 <span>Отгрузка<br><small style="font-size: 0.75rem; font-weight: 400; opacity: 0.8;">Отгрузка клиентам</small></span>
             </a>
             
-            <a href="#" class="btn-action-card inventory" onclick="openModal('inventoryModal'); return false;">
+            <a href="inventory.php" class="btn-action-card inventory">
                 <i class="fas fa-boxes"></i>
                 <span>Остатки<br><small style="font-size: 0.75rem; font-weight: 400; opacity: 0.8;">Все материалы</small></span>
             </a>
             
-            <a href="#" class="btn-action-card history" onclick="openModal('historyModal'); return false;">
+            <a href="history.php" class="btn-action-card history">
                 <i class="fas fa-history"></i>
                 <span>История<br><small style="font-size: 0.75rem; font-weight: 400; opacity: 0.8;">Движения на складе</small></span>
             </a>
@@ -935,114 +935,6 @@ $currentPage = 'warehouse_dashboard';
         <?php endif; ?>
     </div>
 
-    <!-- Modal: Остатки материалов -->
-    <div class="modal fade" id="inventoryModal" tabindex="-1">
-        <div class="modal-dialog modal-xl">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title"><i class="fas fa-boxes"></i> Остатки материалов на складе</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="table-responsive">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>Название</th>
-                                    <th>Артикул</th>
-                                    <th>Категория</th>
-                                    <th>Остаток</th>
-                                    <th>Ед. изм.</th>
-                                    <th>Мин. запас</th>
-                                    <th>Статус</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($allMaterials as $material): ?>
-                                <tr>
-                                    <td><?= e($material['name']) ?></td>
-                                    <td><code><?= e($material['item_code']) ?></code></td>
-                                    <td><?= e($material['category_name'] ?? '-') ?></td>
-                                    <td><strong><?= number_format($material['current_stock'], 2) ?></strong></td>
-                                    <td><?= e($material['unit_name'] ?? '-') ?></td>
-                                    <td><?= number_format($material['min_stock'], 2) ?></td>
-                                    <td>
-                                        <span class="badge-stock-<?= $material['stock_status'] ?>">
-                                            <?php
-                                            switch($material['stock_status']) {
-                                                case 'critical': echo 'Нет на складе'; break;
-                                                case 'low': echo 'Низкий запас'; break;
-                                                case 'overstock': echo 'Избыток'; break;
-                                                default: echo 'Норма';
-                                            }
-                                            ?>
-                                        </span>
-                                    </td>
-                                </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal: История движений -->
-    <div class="modal fade" id="historyModal" tabindex="-1">
-        <div class="modal-dialog modal-xl">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title"><i class="fas fa-history"></i> История операций на складе</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="table-responsive">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>Дата</th>
-                                    <th>Операция</th>
-                                    <th>Материал</th>
-                                    <th>Количество</th>
-                                    <th>Кладовщик</th>
-                                    <th>Примечание</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($recentTransactions as $transaction): ?>
-                                <tr>
-                                    <td><?= formatDateTime($transaction['movement_date']) ?></td>
-                                    <td>
-                                        <span class="badge bg-<?= 
-                                            $transaction['movement_type'] == 'receipt' ? 'success' : 
-                                            ($transaction['movement_type'] == 'consumption' ? 'warning' : 'info')
-                                        ?>">
-                                            <?= e($transaction['operation_name']) ?>
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <strong><?= e($transaction['item_name']) ?></strong><br>
-                                        <small class="text-muted"><?= e($transaction['item_code']) ?></small>
-                                    </td>
-                                    <td><?= number_format($transaction['quantity'], 2) ?></td>
-                                    <td><?= e(trim($transaction['last_name'] . ' ' . $transaction['first_name'])) ?></td>
-                                    <td><?= e($transaction['notes'] ?? '-') ?></td>
-                                </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- Мобильное меню -->
     <div class="mobile-menu" id="mobileMenu">
@@ -1069,12 +961,6 @@ $currentPage = 'warehouse_dashboard';
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="<?= APP_URL ?>/assets/js/main.js"></script>
     <script>
-        // Функция для открытия модальных окон
-        function openModal(modalId) {
-            const modal = new bootstrap.Modal(document.getElementById(modalId));
-            modal.show();
-        }
-
         // Плавная прокрутка
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function (e) {

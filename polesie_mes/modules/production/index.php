@@ -151,7 +151,7 @@ $pageTitle = 'Контроль производства | ' . APP_NAME;
             <li><a href="<?= APP_URL ?>/modules/production/index.php" class="nav-link active"><i class="fas fa-cogs"></i> Производство</a></li>
             <?php endif; ?>
             <?php if (hasRole(['admin', 'manager', 'warehouse_keeper'])): ?>
-            <li><a href="<?= APP_URL ?>/modules/warehouse/index.php" class="nav-link"><i class="fas fa-warehouse"></i> Склад</a></li>
+            <li><a href="<?= APP_URL ?>/modules/warehouse/warehouse_dashboard.php" class="nav-link"><i class="fas fa-warehouse"></i> Склад</a></li>
             <?php endif; ?>
             <?php if (hasRole(['admin', 'manager', 'operator', 'warehouse_keeper'])): ?>
             <li><a href="<?= APP_URL ?>/modules/equipment/index.php" class="nav-link"><i class="fas fa-tools"></i> Оборудование</a></li>
