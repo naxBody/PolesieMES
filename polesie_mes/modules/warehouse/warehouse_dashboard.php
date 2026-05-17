@@ -75,23 +75,27 @@ $stmt = $db->query("
 $criticalMaterials = $stmt->fetchAll();
 
 // 4. Ближайшие поставки (заказы поставщикам в статусе "в пути" или "ожидается")
-// Примечание: таблица purchase_order_items может отсутствовать, поэтому используем только purchase_orders
 $stmt = $db->query("
-    SELECT po.id, po.order_number, po.supplier_name, po.expected_delivery_date, po.status
+    SELECT po.id, po.order_number, p.name as supplier_name, po.expected_delivery as expected_delivery_date, po.status
     FROM purchase_orders po
-    WHERE po.status IN ('pending', 'partial', 'in_transit')
-    ORDER BY po.expected_delivery_date ASC
+    LEFT JOIN partners p ON po.supplier_id = p.id
+    WHERE po.status IN ('sent', 'confirmed', 'partial')
+    ORDER BY po.expected_delivery ASC
     LIMIT 5
 ");
 $upcomingDeliveries = $stmt->fetchAll();
 
-// 5. Последние отгрузки
-// Примечание: таблица shipment_items может отсутствовать, поэтому используем только shipments
+// 5. Последние отгрузки (используем movements типа shipment)
 $stmt = $db->query("
-    SELECT s.id, s.shipment_number, s.customer_name, s.shipment_date, s.status
-    FROM shipments s
-    WHERE s.status IN ('pending', 'preparing')
-    ORDER BY s.shipment_date DESC
+    SELECT mvt.id, mvt.reference_type, mvt.reference_id, mvt.movement_date as shipment_date, 
+           p.name as customer_name, mvt.notes,
+           i.name as item_name, mvt.quantity, u.name as unit_name
+    FROM movements mvt
+    LEFT JOIN items i ON mvt.item_id = i.id
+    LEFT JOIN partners p ON mvt.partner_id = p.id
+    LEFT JOIN dictionaries u ON i.unit_id = u.id AND u.dict_type = 'unit'
+    WHERE mvt.movement_type = 'shipment'
+    ORDER BY mvt.movement_date DESC
     LIMIT 5
 ");
 $pendingShipments = $stmt->fetchAll();
@@ -605,18 +609,17 @@ $currentPage = 'warehouse_dashboard';
                                 <th>Поставщик</th>
                                 <th>Ожидаемая дата</th>
                                 <th>Статус</th>
-                                <th>Позиций</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php foreach ($upcomingDeliveries as $delivery): ?>
                             <tr>
                                 <td><strong><?= e($delivery['order_number']) ?></strong></td>
-                                <td><?= e($delivery['supplier_name']) ?></td>
-                                <td><?= date('d.m.Y', strtotime($delivery['expected_delivery_date'])) ?></td>
+                                <td><?= e($delivery['supplier_name'] ?? 'Не указан') ?></td>
+                                <td><?= $delivery['expected_delivery_date'] ? date('d.m.Y', strtotime($delivery['expected_delivery_date'])) : '-' ?></td>
                                 <td>
-                                    <span class="badge-stock badge-<?= $delivery['status'] == 'in_transit' ? 'normal' : 'warning' ?>">
-                                        <?= $delivery['status'] == 'in_transit' ? 'В пути' : ($delivery['status'] == 'partial' ? 'Частично' : 'Ожидается') ?>
+                                    <span class="badge-stock badge-<?= $delivery['status'] == 'confirmed' ? 'normal' : 'warning' ?>">
+                                        <?= $delivery['status'] == 'confirmed' ? 'Подтверждено' : ($delivery['status'] == 'partial' ? 'Частично' : 'В ожидании') ?>
                                     </span>
                                 </td>
                             </tr>
@@ -658,23 +661,21 @@ $currentPage = 'warehouse_dashboard';
                     <table class="table">
                         <thead>
                             <tr>
-                                <th>№ отгрузки</th>
+                                <th>Материал</th>
                                 <th>Клиент</th>
+                                <th>Количество</th>
                                 <th>Дата отгрузки</th>
-                                <th>Статус</th>
+                                <th>Примечание</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php foreach ($pendingShipments as $shipment): ?>
                             <tr>
-                                <td><strong><?= e($shipment['shipment_number']) ?></strong></td>
-                                <td><?= e($shipment['customer_name']) ?></td>
-                                <td><?= date('d.m.Y', strtotime($shipment['shipment_date'])) ?></td>
-                                <td>
-                                    <span class="badge-stock badge-<?= $shipment['status'] == 'preparing' ? 'warning' : 'normal' ?>">
-                                        <?= $shipment['status'] == 'preparing' ? 'Подготовка' : 'Готова' ?>
-                                    </span>
-                                </td>
+                                <td><?= e($shipment['item_name']) ?></td>
+                                <td><?= e($shipment['customer_name'] ?? 'Не указан') ?></td>
+                                <td><?= number_format($shipment['quantity'], 2) ?> <?= e($shipment['unit_name'] ?? 'шт.') ?></td>
+                                <td><?= date('d.m.Y H:i', strtotime($shipment['shipment_date'])) ?></td>
+                                <td><?= e(substr($shipment['notes'] ?? '', 0, 50)) ?></td>
                             </tr>
                             <?php endforeach; ?>
                         </tbody>
