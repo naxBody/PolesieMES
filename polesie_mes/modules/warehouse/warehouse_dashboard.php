@@ -75,24 +75,21 @@ $stmt = $db->query("
 $criticalMaterials = $stmt->fetchAll();
 
 // 4. Ближайшие поставки (заказы поставщикам в статусе "в пути" или "ожидается")
+// Примечание: таблица purchase_order_items может отсутствовать, поэтому используем только purchase_orders
 $stmt = $db->query("
-    SELECT po.id, po.order_number, po.supplier_name, po.expected_delivery_date, po.status,
-           COUNT(poi.id) as items_count
+    SELECT po.id, po.order_number, po.supplier_name, po.expected_delivery_date, po.status
     FROM purchase_orders po
-    LEFT JOIN purchase_order_items poi ON po.id = poi.order_id
     WHERE po.status IN ('pending', 'partial', 'in_transit')
-    GROUP BY po.id
     ORDER BY po.expected_delivery_date ASC
     LIMIT 5
 ");
 $upcomingDeliveries = $stmt->fetchAll();
 
 // 5. Последние отгрузки
+// Примечание: таблица shipment_items может отсутствовать, поэтому используем только shipments
 $stmt = $db->query("
-    SELECT s.id, s.shipment_number, s.customer_name, s.shipment_date, s.status,
-           COUNT(si.id) as items_count
+    SELECT s.id, s.shipment_number, s.customer_name, s.shipment_date, s.status
     FROM shipments s
-    LEFT JOIN shipment_items si ON s.id = si.shipment_id
     WHERE s.status IN ('pending', 'preparing')
     ORDER BY s.shipment_date DESC
     LIMIT 5
@@ -622,7 +619,6 @@ $currentPage = 'warehouse_dashboard';
                                         <?= $delivery['status'] == 'in_transit' ? 'В пути' : ($delivery['status'] == 'partial' ? 'Частично' : 'Ожидается') ?>
                                     </span>
                                 </td>
-                                <td><?= $delivery['items_count'] ?></td>
                             </tr>
                             <?php endforeach; ?>
                         </tbody>
@@ -666,7 +662,6 @@ $currentPage = 'warehouse_dashboard';
                                 <th>Клиент</th>
                                 <th>Дата отгрузки</th>
                                 <th>Статус</th>
-                                <th>Позиций</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -680,7 +675,6 @@ $currentPage = 'warehouse_dashboard';
                                         <?= $shipment['status'] == 'preparing' ? 'Подготовка' : 'Готова' ?>
                                     </span>
                                 </td>
-                                <td><?= $shipment['items_count'] ?></td>
                             </tr>
                             <?php endforeach; ?>
                         </tbody>
@@ -785,84 +779,15 @@ $currentPage = 'warehouse_dashboard';
             </div>
         </div>
 
-        <!-- Ожидаемые поставки -->
-        <?php if (!empty($incomingOrders)): ?>
-        <div class="card" id="incoming-section">
+        <!-- Последние движения на складе -->
+        <div class="card">
             <div class="card-header">
                 <div class="card-title">
-                    <i class="fas fa-truck-moving"></i> Ожидаемые поставки
+                    <i class="fas fa-history" style="color: var(--info-color);"></i> Последние движения
                 </div>
-                <span class="badge bg-info"><?= count($incomingOrders) ?> заказов</span>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>№ заказа</th>
-                                <th>Поставщик</th>
-                                <th>Статус</th>
-                                <th>Приоритет</th>
-                                <th>Ожидается</th>
-                                <th>Создан</th>
-                                <th>Примечание</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($incomingOrders as $order): ?>
-                            <tr>
-                                <td><strong><?= e($order['order_number']) ?></strong></td>
-                                <td><?= e($order['supplier_name']) ?></td>
-                                <td>
-                                    <span class="badge bg-<?=
-                                        $order['status'] == 'confirmed' ? 'success' :
-                                        ($order['status'] == 'partial' ? 'warning' :
-                                        ($order['status'] == 'sent' ? 'info' : 'secondary'))
-                                    ?>">
-                                        <?= e($order['status_name']) ?>
-                                    </span>
-                                </td>
-                                <td>
-                                    <span class="badge bg-<?=
-                                        $order['priority'] == 'urgent' ? 'danger' :
-                                        ($order['priority'] == 'high' ? 'warning' : 'secondary')
-                                    ?>">
-                                        <?= e($order['priority_name']) ?>
-                                    </span>
-                                </td>
-                                <td>
-                                    <?php 
-                                    $deliveryDate = strtotime($order['expected_delivery']);
-                                    $today = time();
-                                    $diffDays = floor(($deliveryDate - $today) / 86400);
-                                    ?>
-                                    <strong><?= date('d.m.Y', $deliveryDate) ?></strong>
-                                    <?php if ($diffDays == 0): ?>
-                                        <span class="badge bg-danger">Сегодня!</span>
-                                    <?php elseif ($diffDays == 1): ?>
-                                        <span class="badge bg-warning">Завтра</span>
-                                    <?php elseif ($diffDays > 0 && $diffDays <= 7): ?>
-                                        <span class="badge bg-info">Через <?= $diffDays ?> дн.</span>
-                                    <?php endif; ?>
-                                </td>
-                                <td><?= date('d.m.Y', strtotime($order['order_date'])) ?></td>
-                                <td><?= e($order['notes'] ?? '-') ?></td>
-                            </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-        <?php endif; ?>
-
-        <!-- Ближайшие доставки (сегодня и на неделе) -->
-        <?php if (!empty($upcomingDeliveries)): ?>
-        <div class="card" id="deliveries-section">
-            <div class="card-header">
-                <div class="card-title">
-                    <i class="fas fa-calendar-check"></i> Ближайшие доставки
-                </div>
+                <a href="history.php" class="btn-action">
+                    <i class="fas fa-arrow-right"></i>
+                </a>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
@@ -870,42 +795,30 @@ $currentPage = 'warehouse_dashboard';
                         <thead>
                             <tr>
                                 <th>Дата</th>
-                                <th>Заказ</th>
-                                <th>Поставщик</th>
-                                <th>Статус</th>
-                                <th>Действия</th>
+                                <th>Операция</th>
+                                <th>Материал</th>
+                                <th>Артикул</th>
+                                <th>Кол-во</th>
+                                <th>Сотрудник</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($upcomingDeliveries as $delivery): ?>
-                            <tr class="<?= $delivery['delivery_time'] == 'today' ? 'table-warning' : '' ?>">
+                            <?php foreach ($recentTransactions as $transaction): ?>
+                            <tr>
+                                <td><?= date('d.m.Y H:i', strtotime($transaction['movement_date'])) ?></td>
                                 <td>
-                                    <strong><?= date('d.m.Y', strtotime($delivery['expected_delivery'])) ?></strong>
-                                    <?php if ($delivery['delivery_time'] == 'today'): ?>
-                                        <br><span class="badge bg-danger">СЕГОДНЯ</span>
-                                    <?php elseif ($delivery['delivery_time'] == 'week'): ?>
-                                        <br><small class="text-muted">на этой неделе</small>
-                                    <?php endif; ?>
-                                </td>
-                                <td><?= e($delivery['order_number']) ?></td>
-                                <td><?= e($delivery['supplier_name']) ?></td>
-                                <td>
-                                    <span class="badge bg-<?=
-                                        $delivery['status'] == 'confirmed' ? 'success' :
-                                        ($delivery['status'] == 'partial' ? 'warning' : 'info')
+                                    <span class="badge-stock badge-<?= 
+                                        $transaction['movement_type'] == 'receipt' ? 'normal' : 
+                                        ($transaction['movement_type'] == 'consumption' ? 'warning' : 
+                                        ($transaction['movement_type'] == 'shipment' ? 'critical' : 'low')) 
                                     ?>">
-                                        <?= e($delivery['status_name']) ?>
+                                        <?= e($transaction['operation_name']) ?>
                                     </span>
                                 </td>
-                                <td>
-                                    <?php if ($delivery['delivery_time'] == 'today' || $delivery['status'] == 'partial'): ?>
-                                    <a href="receipt.php?order_id=<?= $delivery['id'] ?>" class="btn-action btn-sm">
-                                        <i class="fas fa-download"></i> Принять
-                                    </a>
-                                    <?php else: ?>
-                                    <span class="text-muted">Ожидание</span>
-                                    <?php endif; ?>
-                                </td>
+                                <td><?= e($transaction['item_name'] ?? '-') ?></td>
+                                <td><code><?= e($transaction['item_code'] ?? '-') ?></code></td>
+                                <td><strong><?= number_format($transaction['quantity'], 2) ?></strong></td>
+                                <td><?= e($transaction['first_name'] . ' ' . $transaction['last_name']) ?></td>
                             </tr>
                             <?php endforeach; ?>
                         </tbody>
@@ -913,127 +826,8 @@ $currentPage = 'warehouse_dashboard';
                 </div>
             </div>
         </div>
-        <?php endif; ?>
 
-        <!-- Заказы готовые к отгрузке -->
-        <?php if (!empty($readyForShipment)): ?>
-        <div class="card" id="shipment-section">
-            <div class="card-header">
-                <div class="card-title">
-                    <i class="fas fa-shipping-fast"></i> Готовы к отгрузке
-                </div>
-                <span class="badge bg-success"><?= count($readyForShipment) ?> заказов</span>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>№ заказа</th>
-                                <th>Клиент</th>
-                                <th>Статус</th>
-                                <th>Дата отгрузки</th>
-                                <th>Менеджер</th>
-                                <th>Действия</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($readyForShipment as $order): ?>
-                            <tr>
-                                <td><strong><?= e($order['order_number']) ?></strong></td>
-                                <td><?= e($order['customer_name']) ?></td>
-                                <td>
-                                    <span class="badge bg-<?=
-                                        $order['status'] == 'ready' ? 'success' : 'info'
-                                    ?>">
-                                        <?= e($order['status_name']) ?>
-                                    </span>
-                                </td>
-                                <td>
-                                    <?php 
-                                    $shipDate = strtotime($order['delivery_date']);
-                                    $today = time();
-                                    $diffDays = floor(($shipDate - $today) / 86400);
-                                    ?>
-                                    <strong><?= date('d.m.Y', $shipDate) ?></strong>
-                                    <?php if ($diffDays == 0): ?>
-                                        <span class="badge bg-danger">Сегодня!</span>
-                                    <?php elseif ($diffDays == 1): ?>
-                                        <span class="badge bg-warning">Завтра</span>
-                                    <?php elseif ($diffDays > 0 && $diffDays <= 7): ?>
-                                        <span class="badge bg-info">Через <?= $diffDays ?> дн.</span>
-                                    <?php endif; ?>
-                                </td>
-                                <td><?= e(trim($order['manager_last'] . ' ' . $order['manager_first'])) ?></td>
-                                <td>
-                                    <a href="<?= APP_URL ?>/modules/shipment/ship.php?order_id=<?= $order['id'] ?>" class="btn-action btn-sm">
-                                        <i class="fas fa-truck-loading"></i> Отгрузить
-                                    </a>
-                                </td>
-                            </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-        <?php endif; ?>
-
-        <!-- Производственные задания -->
-        <?php if (!empty($productionTasks)): ?>
-        <div class="card" id="production-section">
-            <div class="card-header">
-                <div class="card-title">
-                    <i class="fas fa-cogs"></i> Активные производственные задания
-                </div>
-                <span class="badge bg-primary"><?= count($productionTasks) ?> заданий</span>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>№ задания</th>
-                                <th>Заказ</th>
-                                <th>Продукция</th>
-                                <th>Этап</th>
-                                <th>Статус</th>
-                                <th>План начало</th>
-                                <th>Ответственный</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($productionTasks as $task): ?>
-                            <tr>
-                                <td><strong><?= e($task['task_number']) ?></strong></td>
-                                <td><?= e($task['order_number'] ?? '-') ?></td>
-                                <td><?= e($task['product_name'] ?? '-') ?></td>
-                                <td><?= e($task['stage_name'] ?? '-') ?></td>
-                                <td>
-                                    <span class="badge bg-<?=
-                                        $task['status'] == 'in_progress' ? 'warning' : 'secondary'
-                                    ?>">
-                                        <?= e($task['status_name']) ?>
-                                    </span>
-                                </td>
-                                <td>
-                                    <?php if ($task['planned_start']): ?>
-                                    <?= date('d.m.Y H:i', strtotime($task['planned_start'])) ?>
-                                    <?php else: ?>
-                                    -
-                                    <?php endif; ?>
-                                </td>
-                                <td><?= e(trim($task['assigned_last'] . ' ' . $task['assigned_first']) ?? '-') ?></td>
-                            </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-        <?php endif; ?>
-    </div>
-
+    </div> <!-- Конец main-content -->
 
     <!-- Мобильное меню -->
     <div class="mobile-menu" id="mobileMenu">
@@ -1051,6 +845,12 @@ $currentPage = 'warehouse_dashboard';
         </a>
         <a href="<?= APP_URL ?>/modules/shipment/index.php" class="mobile-nav-link">
             <i class="fas fa-truck"></i> Отгрузка
+        </a>
+        <a href="inventory.php" class="mobile-nav-link">
+            <i class="fas fa-boxes"></i> Остатки
+        </a>
+        <a href="history.php" class="mobile-nav-link">
+            <i class="fas fa-history"></i> История
         </a>
         <a href="<?= APP_URL ?>/modules/auth/logout.php" class="mobile-nav-link">
             <i class="fas fa-sign-out-alt"></i> Выход
