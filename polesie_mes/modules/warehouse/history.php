@@ -355,28 +355,47 @@ $pageTitle = 'История движений | PolesieMES';
 
         <!-- Filters -->
         <div class="history-card">
-            <div class="filter-tabs">
-                <a href="?type=all&search=<?= e($search) ?>&date_from=<?= e($date_from) ?>&date_to=<?= e($date_to) ?>" class="filter-tab <?= $filter_type === 'all' ? 'active' : '' ?>">Все</a>
-                <a href="?type=receipt&search=<?= e($search) ?>&date_from=<?= e($date_from) ?>&date_to=<?= e($date_to) ?>" class="filter-tab <?= $filter_type === 'receipt' ? 'active' : '' ?>">Поступление</a>
-                <a href="?type=consumption&search=<?= e($search) ?>&date_from=<?= e($date_from) ?>&date_to=<?= e($date_to) ?>" class="filter-tab <?= $filter_type === 'consumption' ? 'active' : '' ?>">Расход</a>
-                <a href="?type=return&search=<?= e($search) ?>&date_from=<?= e($date_from) ?>&date_to=<?= e($date_to) ?>" class="filter-tab <?= $filter_type === 'return' ? 'active' : '' ?>">Возврат</a>
-                <a href="?type=adjustment&search=<?= e($search) ?>&date_from=<?= e($date_from) ?>&date_to=<?= e($date_to) ?>" class="filter-tab <?= $filter_type === 'adjustment' ? 'active' : '' ?>">Корректировка</a>
-                <a href="?type=shipment&search=<?= e($search) ?>&date_from=<?= e($date_from) ?>&date_to=<?= e($date_to) ?>" class="filter-tab <?= $filter_type === 'shipment' ? 'active' : '' ?>">Отгрузка</a>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+                <div class="filter-tabs" style="margin-bottom: 0;">
+                    <a href="?type=all&search=<?= e($search) ?>&date_from=<?= e($date_from) ?>&date_to=<?= e($date_to) ?>&employee_id=<?= $employee_id ?>&category_id=<?= $category_id ?>" class="filter-tab <?= $filter_type === 'all' ? 'active' : '' ?>">Все</a>
+                    <a href="?type=receipt&search=<?= e($search) ?>&date_from=<?= e($date_from) ?>&date_to=<?= e($date_to) ?>&employee_id=<?= $employee_id ?>&category_id=<?= $category_id ?>" class="filter-tab <?= $filter_type === 'receipt' ? 'active' : '' ?>">Поступление</a>
+                    <a href="?type=consumption&search=<?= e($search) ?>&date_from=<?= e($date_from) ?>&date_to=<?= e($date_to) ?>&employee_id=<?= $employee_id ?>&category_id=<?= $category_id ?>" class="filter-tab <?= $filter_type === 'consumption' ? 'active' : '' ?>">Расход</a>
+                    <a href="?type=return&search=<?= e($search) ?>&date_from=<?= e($date_from) ?>&date_to=<?= e($date_to) ?>&employee_id=<?= $employee_id ?>&category_id=<?= $category_id ?>" class="filter-tab <?= $filter_type === 'return' ? 'active' : '' ?>">Возврат</a>
+                    <a href="?type=adjustment&search=<?= e($search) ?>&date_from=<?= e($date_from) ?>&date_to=<?= e($date_to) ?>&employee_id=<?= $employee_id ?>&category_id=<?= $category_id ?>" class="filter-tab <?= $filter_type === 'adjustment' ? 'active' : '' ?>">Корректировка</a>
+                    <a href="?type=shipment&search=<?= e($search) ?>&date_from=<?= e($date_from) ?>&date_to=<?= e($date_to) ?>&employee_id=<?= $employee_id ?>&category_id=<?= $category_id ?>" class="filter-tab <?= $filter_type === 'shipment' ? 'active' : '' ?>">Отгрузка</a>
+                </div>
+                <a href="?export=csv&type=<?= $filter_type ?>&search=<?= e($search) ?>&date_from=<?= e($date_from) ?>&date_to=<?= e($date_to) ?>&employee_id=<?= $employee_id ?>&category_id=<?= $category_id ?>" class="btn-primary-custom" style="padding: 0.6rem 1.2rem;"><i class="fas fa-file-csv"></i> Экспорт CSV</a>
             </div>
             
-            <div class="search-container">
-                <i class="fas fa-search search-icon"></i>
-                <input type="text" class="search-input" placeholder="Поиск по названию или артикулу..." 
-                       value="<?= e($search) ?>" onchange="window.location.href='?type=<?= $filter_type ?>&search='+this.value+'&date_from=<?= $date_from ?>&date_to=<?= $date_to ?>'">
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
+                <div class="search-container" style="margin-bottom: 0; flex: 1; min-width: 250px;">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" class="search-input" placeholder="Поиск по названию или артикулу..." 
+                           value="<?= e($search) ?>" onchange="applyFilters()" style="width: 100%;">
+                </div>
+                
+                <select class="search-input" style="width: auto; min-width: 180px;" onchange="applyFilters()">
+                    <option value="">Все сотрудники</option>
+                    <?php foreach ($employees as $emp): ?>
+                    <option value="<?= $emp['id'] ?>" <?= $employee_id == $emp['id'] ? 'selected' : '' ?>><?= e($emp['last_name'] . ' ' . $emp['first_name']) ?></option>
+                    <?php endforeach; ?>
+                </select>
+                
+                <select class="search-input" style="width: auto; min-width: 180px;" onchange="applyFilters()">
+                    <option value="">Все категории</option>
+                    <?php foreach ($categories as $cat): ?>
+                    <option value="<?= $cat['id'] ?>" <?= $category_id == $cat['id'] ? 'selected' : '' ?>><?= e($cat['name']) ?></option>
+                    <?php endforeach; ?>
+                </select>
             </div>
             
-            <div class="date-filters">
+            <div class="date-filters" style="margin-top: 1.5rem;">
                 <label style="color: var(--text-secondary);">Период:</label>
                 <input type="date" class="date-input" value="<?= e($date_from) ?>" onchange="applyDateFilter()">
                 <span style="color: var(--text-secondary);">—</span>
                 <input type="date" class="date-input" value="<?= e($date_to) ?>" onchange="applyDateFilter()">
                 <?php if (!empty($date_from) || !empty($date_to)): ?>
-                <a href="?type=<?= $filter_type ?>&search=<?= e($search) ?>" class="filter-tab" style="padding: 0.5rem 1rem;"><i class="fas fa-times"></i></a>
+                <a href="?type=<?= $filter_type ?>&search=<?= e($search) ?>&employee_id=<?= $employee_id ?>&category_id=<?= $category_id ?>" class="filter-tab" style="padding: 0.5rem 1rem;"><i class="fas fa-times"></i> Сбросить даты</a>
                 <?php endif; ?>
             </div>
         </div>
@@ -444,13 +463,36 @@ $pageTitle = 'История движений | PolesieMES';
             navMenu.classList.toggle('active');
         }
         
+        function applyFilters() {
+            const searchInput = document.querySelector('.search-input[type="text"]');
+            const employeeSelect = document.querySelectorAll('.search-input')[1];
+            const categorySelect = document.querySelectorAll('.search-input')[2];
+            const dateFrom = document.querySelectorAll('.date-input')[0].value;
+            const dateTo = document.querySelectorAll('.date-input')[1].value;
+            const search = searchInput.value;
+            const employeeId = employeeSelect.value;
+            const categoryId = categorySelect.value;
+            const type = '<?= $filter_type ?>';
+            
+            let url = `?type=${type}&search=${encodeURIComponent(search)}&employee_id=${employeeId}&category_id=${categoryId}`;
+            if (dateFrom) url += `&date_from=${dateFrom}`;
+            if (dateTo) url += `&date_to=${dateTo}`;
+            
+            window.location.href = url;
+        }
+        
         function applyDateFilter() {
             const dateFrom = document.querySelectorAll('.date-input')[0].value;
             const dateTo = document.querySelectorAll('.date-input')[1].value;
-            const search = document.querySelector('.search-input').value;
+            const searchInput = document.querySelector('.search-input[type="text"]');
+            const employeeSelect = document.querySelectorAll('.search-input')[1];
+            const categorySelect = document.querySelectorAll('.search-input')[2];
+            const search = searchInput.value;
+            const employeeId = employeeSelect.value;
+            const categoryId = categorySelect.value;
             const type = '<?= $filter_type ?>';
             
-            let url = `?type=${type}&search=${encodeURIComponent(search)}`;
+            let url = `?type=${type}&search=${encodeURIComponent(search)}&employee_id=${employeeId}&category_id=${categoryId}`;
             if (dateFrom) url += `&date_from=${dateFrom}`;
             if (dateTo) url += `&date_to=${dateTo}`;
             

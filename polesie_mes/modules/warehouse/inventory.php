@@ -2,6 +2,7 @@
 /**
  * Склад - Остатки материалов
  * PolesieMES - Система управления производством ОАО "Полесьеэлектромаш"
+ * Полнофункциональная страница с фильтрами, поиском, экспортом и пагинацией
  */
 require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/../../config/database.php';
@@ -16,42 +17,17 @@ if (!hasRole(['admin', 'manager', 'warehouse_keeper'])) {
 $db = getDB();
 $user = getCurrentUser();
 
-// Получение всех материалов с остатками
-$stmt = $db->query("
-    SELECT i.*, 
-           c.name as category_name,
-           u.name as unit_name,
-           CASE 
-               WHEN i.current_stock <= 0 THEN 'critical'
-               WHEN i.current_stock < i.min_stock THEN 'low'
-               WHEN i.current_stock > i.min_stock * 2 THEN 'overstock'
-               ELSE 'normal'
-           END as stock_status
-    FROM items i
-    LEFT JOIN dictionaries c ON i.category_id = c.id AND c.dict_type = 'category'
-    LEFT JOIN dictionaries u ON i.unit_id = u.id AND u.dict_type = 'unit'
-    WHERE i.item_type = 'material'
-    ORDER BY i.name
-");
-$allMaterials = $stmt->fetchAll();
-
-// Статистика
-$stmt = $db->query("
-    SELECT 
-        COUNT(*) as total_items,
-        SUM(CASE WHEN current_stock <= 0 THEN 1 ELSE 0 END) as out_of_stock,
-        SUM(CASE WHEN current_stock < min_stock AND current_stock > 0 THEN 1 ELSE 0 END) as low_stock,
-        SUM(CASE WHEN current_stock >= min_stock AND current_stock <= min_stock * 2 THEN 1 ELSE 0 END) as normal,
-        SUM(CASE WHEN current_stock > min_stock * 2 THEN 1 ELSE 0 END) as overstock,
-        SUM(current_stock) as total_stock
-    FROM items
-    WHERE item_type = 'material'
-");
-$materialStats = $stmt->fetch();
-
-// Фильтрация
+// ==========================================
+// ФИЛЬТРАЦИЯ И ПОИСК
+// ==========================================
 $filter = $_GET['filter'] ?? 'all';
 $search = trim($_GET['search'] ?? '');
+$category_id = $_GET['category_id'] ?? '';
+$sort = $_GET['sort'] ?? 'name';
+$sort_order = $_GET['sort_order'] ?? 'ASC';
+$items_per_page = 25;
+$page = max(1, (int)($_GET['page'] ?? 1));
+$offset = ($page - 1) * $items_per_page;
 
 $whereConditions = ["i.item_type = 'material'"];
 $params = [];
@@ -71,8 +47,20 @@ if (!empty($search)) {
     $params['search'] = "%{$search}%";
 }
 
+if (!empty($category_id)) {
+    $whereConditions[] = "i.category_id = :category_id";
+    $params['category_id'] = $category_id;
+}
+
 $whereClause = implode(' AND ', $whereConditions);
 
+// Подсчет общего количества записей для пагинации
+$countStmt = $db->prepare("SELECT COUNT(*) as total FROM items i WHERE {$whereClause}");
+$countStmt->execute($params);
+$totalRecords = $countStmt->fetch()['total'];
+$totalPages = ceil($totalRecords / $items_per_page);
+
+// Получение всех материалов с остатками и пагинацией
 $stmt = $db->prepare("
     SELECT i.*, 
            c.name as category_name,
@@ -87,10 +75,110 @@ $stmt = $db->prepare("
     LEFT JOIN dictionaries c ON i.category_id = c.id AND c.dict_type = 'category'
     LEFT JOIN dictionaries u ON i.unit_id = u.id AND u.dict_type = 'unit'
     WHERE {$whereClause}
-    ORDER BY i.name
+    ORDER BY i.{$sort} {$sort_order}
+    LIMIT :limit OFFSET :offset
 ");
-$stmt->execute($params);
+$stmt->bindValue(':limit', $items_per_page, PDO::PARAM_INT);
+$stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+foreach ($params as $key => $value) {
+    $stmt->bindValue(":$key", $value);
+}
+$stmt->execute();
 $filteredMaterials = $stmt->fetchAll();
+
+// Получение всех материалов без пагинации для статистики
+$stmt_all = $db->prepare("
+    SELECT i.*, 
+           c.name as category_name,
+           u.name as unit_name,
+           CASE 
+               WHEN i.current_stock <= 0 THEN 'critical'
+               WHEN i.current_stock < i.min_stock THEN 'low'
+               WHEN i.current_stock > i.min_stock * 2 THEN 'overstock'
+               ELSE 'normal'
+           END as stock_status
+    FROM items i
+    LEFT JOIN dictionaries c ON i.category_id = c.id AND c.dict_type = 'category'
+    LEFT JOIN dictionaries u ON i.unit_id = u.id AND u.dict_type = 'unit'
+    WHERE i.item_type = 'material'
+");
+$stmt_all->execute();
+$allMaterials = $stmt_all->fetchAll();
+
+// ==========================================
+// СТАТИСТИКА
+// ==========================================
+$stmt = $db->query("
+    SELECT 
+        COUNT(*) as total_items,
+        SUM(CASE WHEN current_stock <= 0 THEN 1 ELSE 0 END) as out_of_stock,
+        SUM(CASE WHEN current_stock < min_stock AND current_stock > 0 THEN 1 ELSE 0 END) as low_stock,
+        SUM(CASE WHEN current_stock >= min_stock AND current_stock <= min_stock * 2 THEN 1 ELSE 0 END) as normal,
+        SUM(CASE WHEN current_stock > min_stock * 2 THEN 1 ELSE 0 END) as overstock,
+        SUM(current_stock) as total_stock
+    FROM items
+    WHERE item_type = 'material'
+");
+$materialStats = $stmt->fetch();
+
+// Категории для фильтра
+$stmt = $db->query("SELECT id, name FROM dictionaries WHERE dict_type = 'category' ORDER BY name");
+$categories = $stmt->fetchAll();
+
+// Экспорт в CSV
+if (isset($_GET['export']) && $_GET['export'] === 'csv') {
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename="ostatatki_' . date('Y-m-d') . '.csv"');
+    
+    $output = fopen('php://output', 'w');
+    fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF)); // BOM для UTF-8
+    
+    fputcsv($output, ['Название', 'Артикул', 'Категория', 'Текущий остаток', 'Мин. запас', 'Макс. запас', 'Ед. изм.', 'Статус']);
+    
+    $stmt_export = $db->prepare("
+        SELECT i.*, 
+               c.name as category_name,
+               u.name as unit_name,
+               CASE 
+                   WHEN i.current_stock <= 0 THEN 'critical'
+                   WHEN i.current_stock < i.min_stock THEN 'low'
+                   WHEN i.current_stock > i.min_stock * 2 THEN 'overstock'
+                   ELSE 'normal'
+               END as stock_status
+        FROM items i
+        LEFT JOIN dictionaries c ON i.category_id = c.id AND c.dict_type = 'category'
+        LEFT JOIN dictionaries u ON i.unit_id = u.id AND u.dict_type = 'unit'
+        WHERE {$whereClause}
+        ORDER BY i.{$sort} {$sort_order}
+    ");
+    foreach ($params as $key => $value) {
+        $stmt_export->bindValue(":$key", $value);
+    }
+    $stmt_export->execute();
+    $exportMaterials = $stmt_export->fetchAll();
+    
+    $statusNames = [
+        'critical' => 'Нет на складе',
+        'low' => 'Низкий запас',
+        'normal' => 'Норма',
+        'overstock' => 'Избыток'
+    ];
+    
+    foreach ($exportMaterials as $material) {
+        fputcsv($output, [
+            $material['name'],
+            $material['item_code'],
+            $material['category_name'] ?? '-',
+            number_format($material['current_stock'], 2, ',', ' '),
+            number_format($material['min_stock'], 2, ',', ' '),
+            number_format($material['max_stock'] ?? 0, 2, ',', ' '),
+            $material['unit_name'] ?? '-',
+            $statusNames[$material['stock_status']] ?? $material['stock_status']
+        ]);
+    }
+    fclose($output);
+    exit;
+}
 
 $pageTitle = 'Остатки материалов | PolesieMES';
 ?>
@@ -273,18 +361,38 @@ $pageTitle = 'Остатки материалов | PolesieMES';
 
         <!-- Filters -->
         <div class="inventory-card">
-            <div class="filter-tabs">
-                <a href="?filter=all&search=<?= e($search) ?>" class="filter-tab <?= $filter === 'all' ? 'active' : '' ?>">Все</a>
-                <a href="?filter=critical&search=<?= e($search) ?>" class="filter-tab <?= $filter === 'critical' ? 'active' : '' ?>">Нет на складе</a>
-                <a href="?filter=low&search=<?= e($search) ?>" class="filter-tab <?= $filter === 'low' ? 'active' : '' ?>">Низкий запас</a>
-                <a href="?filter=normal&search=<?= e($search) ?>" class="filter-tab <?= $filter === 'normal' ? 'active' : '' ?>">Норма</a>
-                <a href="?filter=overstock&search=<?= e($search) ?>" class="filter-tab <?= $filter === 'overstock' ? 'active' : '' ?>">Избыток</a>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+                <div class="filter-tabs" style="margin-bottom: 0;">
+                    <a href="?filter=all&search=<?= e($search) ?>&category_id=<?= $category_id ?>&sort=<?= $sort ?>&sort_order=<?= $sort_order ?>" class="filter-tab <?= $filter === 'all' ? 'active' : '' ?>">Все</a>
+                    <a href="?filter=critical&search=<?= e($search) ?>&category_id=<?= $category_id ?>&sort=<?= $sort ?>&sort_order=<?= $sort_order ?>" class="filter-tab <?= $filter === 'critical' ? 'active' : '' ?>">Нет на складе</a>
+                    <a href="?filter=low&search=<?= e($search) ?>&category_id=<?= $category_id ?>&sort=<?= $sort ?>&sort_order=<?= $sort_order ?>" class="filter-tab <?= $filter === 'low' ? 'active' : '' ?>">Низкий запас</a>
+                    <a href="?filter=normal&search=<?= e($search) ?>&category_id=<?= $category_id ?>&sort=<?= $sort ?>&sort_order=<?= $sort_order ?>" class="filter-tab <?= $filter === 'normal' ? 'active' : '' ?>">Норма</a>
+                    <a href="?filter=overstock&search=<?= e($search) ?>&category_id=<?= $category_id ?>&sort=<?= $sort ?>&sort_order=<?= $sort_order ?>" class="filter-tab <?= $filter === 'overstock' ? 'active' : '' ?>">Избыток</a>
+                </div>
+                <a href="?export=csv&filter=<?= $filter ?>&search=<?= e($search) ?>&category_id=<?= $category_id ?>&sort=<?= $sort ?>&sort_order=<?= $sort_order ?>" class="btn-primary-custom" style="padding: 0.6rem 1.2rem;"><i class="fas fa-file-csv"></i> Экспорт CSV</a>
             </div>
             
-            <div class="search-container">
-                <i class="fas fa-search search-icon"></i>
-                <input type="text" class="search-input" placeholder="Поиск по названию или артикулу..." 
-                       value="<?= e($search) ?>" onchange="window.location.href='?filter=<?= $filter ?>&search='+this.value">
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
+                <div class="search-container" style="margin-bottom: 0; flex: 1; min-width: 250px;">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" class="search-input" placeholder="Поиск по названию или артикулу..." 
+                           value="<?= e($search) ?>" onchange="applyFilters()" style="width: 100%;">
+                </div>
+                
+                <select class="search-input" style="width: auto; min-width: 200px;" onchange="applyFilters()">
+                    <option value="">Все категории</option>
+                    <?php foreach ($categories as $cat): ?>
+                    <option value="<?= $cat['id'] ?>" <?= $category_id == $cat['id'] ? 'selected' : '' ?>><?= e($cat['name']) ?></option>
+                    <?php endforeach; ?>
+                </select>
+                
+                <select class="search-input" style="width: auto;" onchange="changeSort(this.value)">
+                    <option value="name_ASC" <?= $sort === 'name' && $sort_order === 'ASC' ? 'selected' : '' ?>>По названию (А-Я)</option>
+                    <option value="name_DESC" <?= $sort === 'name' && $sort_order === 'DESC' ? 'selected' : '' ?>>По названию (Я-А)</option>
+                    <option value="current_stock_ASC" <?= $sort === 'current_stock' && $sort_order === 'ASC' ? 'selected' : '' ?>>По остатку (возрастание)</option>
+                    <option value="current_stock_DESC" <?= $sort === 'current_stock' && $sort_order === 'DESC' ? 'selected' : '' ?>>По остатку (убывание)</option>
+                    <option value="item_code_ASC" <?= $sort === 'item_code' && $sort_order === 'ASC' ? 'selected' : '' ?>>По артикулу</option>
+                </select>
             </div>
         </div>
 
@@ -305,10 +413,10 @@ $pageTitle = 'Остатки материалов | PolesieMES';
                 <table class="table-custom">
                     <thead>
                         <tr>
-                            <th>Название</th>
+                            <th><a href="#" onclick="changeSort('name')" style="color: inherit; text-decoration: none;">Название <i class="fas fa-sort"></i></a></th>
                             <th>Артикул</th>
                             <th>Категория</th>
-                            <th>Текущий остаток</th>
+                            <th><a href="#" onclick="changeSort('current_stock')" style="color: inherit; text-decoration: none;">Текущий остаток <i class="fas fa-sort"></i></a></th>
                             <th>Мин. запас</th>
                             <th>Ед. изм.</th>
                             <th>Статус</th>
@@ -320,8 +428,8 @@ $pageTitle = 'Остатки материалов | PolesieMES';
                             <td><strong><?= e($material['name']) ?></strong></td>
                             <td><?= e($material['item_code']) ?></td>
                             <td><?= e($material['category_name'] ?? '-') ?></td>
-                            <td><?= number_format($material['current_stock'], 2) ?></td>
-                            <td><?= number_format($material['min_stock'], 2) ?></td>
+                            <td><?= number_format($material['current_stock'], 2, ',', ' ') ?></td>
+                            <td><?= number_format($material['min_stock'], 2, ',', ' ') ?></td>
                             <td><?= e($material['unit_name'] ?? '-') ?></td>
                             <td>
                                 <span class="stock-badge stock-<?= $material['stock_status'] ?>">
@@ -341,6 +449,32 @@ $pageTitle = 'Остатки материалов | PolesieMES';
                     </tbody>
                 </table>
             </div>
+            
+            <!-- Pagination -->
+            <?php if ($totalPages > 1): ?>
+            <div style="display: flex; justify-content: center; align-items: center; gap: 0.5rem; margin-top: 1.5rem; flex-wrap: wrap;">
+                <?php if ($page > 1): ?>
+                <a href="?page=1&filter=<?= $filter ?>&search=<?= e($search) ?>&category_id=<?= $category_id ?>&sort=<?= $sort ?>&sort_order=<?= $sort_order ?>" class="filter-tab"><i class="fas fa-angle-double-left"></i></a>
+                <a href="?page=<?= $page - 1 ?>&filter=<?= $filter ?>&search=<?= e($search) ?>&category_id=<?= $category_id ?>&sort=<?= $sort ?>&sort_order=<?= $sort_order ?>" class="filter-tab"><i class="fas fa-angle-left"></i></a>
+                <?php endif; ?>
+                
+                <?php
+                $startPage = max(1, $page - 2);
+                $endPage = min($totalPages, $page + 2);
+                for ($i = $startPage; $i <= $endPage; $i++):
+                ?>
+                <a href="?page=<?= $i ?>&filter=<?= $filter ?>&search=<?= e($search) ?>&category_id=<?= $category_id ?>&sort=<?= $sort ?>&sort_order=<?= $sort_order ?>" class="filter-tab <?= $i === $page ? 'active' : '' ?>"><?= $i ?></a>
+                <?php endfor; ?>
+                
+                <?php if ($page < $totalPages): ?>
+                <a href="?page=<?= $page + 1 ?>&filter=<?= $filter ?>&search=<?= e($search) ?>&category_id=<?= $category_id ?>&sort=<?= $sort ?>&sort_order=<?= $sort_order ?>" class="filter-tab"><i class="fas fa-angle-right"></i></a>
+                <a href="?page=<?= $totalPages ?>&filter=<?= $filter ?>&search=<?= e($search) ?>&category_id=<?= $category_id ?>&sort=<?= $sort ?>&sort_order=<?= $sort_order ?>" class="filter-tab"><i class="fas fa-angle-double-right"></i></a>
+                <?php endif; ?>
+            </div>
+            <p style="text-align: center; color: var(--text-secondary); margin-top: 0.5rem; font-size: 0.9rem;">
+                Страница <?= $page ?> из <?= $totalPages ?>
+            </p>
+            <?php endif; ?>
             <?php endif; ?>
         </div>
     </div>
@@ -351,6 +485,29 @@ $pageTitle = 'Остатки материалов | PolesieMES';
         function toggleMobileMenu() {
             const navMenu = document.querySelector('.nav-menu');
             navMenu.classList.toggle('active');
+        }
+        
+        function applyFilters() {
+            const searchInput = document.querySelector('.search-input[type="text"]');
+            const categorySelect = document.querySelectorAll('.search-input')[1];
+            const search = searchInput.value;
+            const categoryId = categorySelect.value;
+            const filter = '<?= $filter ?>';
+            const sort = '<?= $sort ?>';
+            const sortOrder = '<?= $sort_order ?>';
+            
+            let url = `?filter=${filter}&search=${encodeURIComponent(search)}&category_id=${categoryId}&sort=${sort}&sort_order=${sortOrder}`;
+            window.location.href = url;
+        }
+        
+        function changeSort(value) {
+            const [sort, sortOrder] = value.split('_');
+            const search = document.querySelector('.search-input[type="text"]').value;
+            const categoryId = document.querySelectorAll('.search-input')[1].value;
+            const filter = '<?= $filter ?>';
+            
+            let url = `?filter=${filter}&search=${encodeURIComponent(search)}&category_id=${categoryId}&sort=${sort}&sort_order=${sortOrder}`;
+            window.location.href = url;
         }
     </script>
 </body>
