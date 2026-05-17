@@ -830,34 +830,6 @@ $currentPage = 'warehouse_dashboard';
 
     </div> <!-- Конец main-content -->
 
-    <!-- Мобильное меню -->
-    <div class="mobile-menu" id="mobileMenu">
-        <a href="<?= APP_URL ?>/modules/warehouse/warehouse_dashboard.php" class="mobile-nav-link active">
-            <i class="fas fa-warehouse"></i> Склад
-        </a>
-        <a href="receipt.php" class="mobile-nav-link">
-            <i class="fas fa-truck-loading"></i> Поступление
-        </a>
-        <a href="purchase_orders/index.php" class="mobile-nav-link">
-            <i class="fas fa-shipping-fast"></i> Поставки
-        </a>
-        <a href="consumption.php" class="mobile-nav-link">
-            <i class="fas fa-dolly"></i> Расход
-        </a>
-        <a href="<?= APP_URL ?>/modules/shipment/index.php" class="mobile-nav-link">
-            <i class="fas fa-truck"></i> Отгрузка
-        </a>
-        <a href="inventory.php" class="mobile-nav-link">
-            <i class="fas fa-boxes"></i> Остатки
-        </a>
-        <a href="history.php" class="mobile-nav-link">
-            <i class="fas fa-history"></i> История
-        </a>
-        <a href="<?= APP_URL ?>/modules/auth/logout.php" class="mobile-nav-link">
-            <i class="fas fa-sign-out-alt"></i> Выход
-        </a>
-    </div>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="<?= APP_URL ?>/assets/js/main.js"></script>
     <script>
