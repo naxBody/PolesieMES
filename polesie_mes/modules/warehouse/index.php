@@ -1,9 +1,9 @@
 <?php
 /**
- * Модуль управления складом - Главная страница
+ * Модуль управления складом - Главная страница (Dashboard)
  * PolesieMES - Система управления производством ОАО "Полесьеэлектромаш"
  * 
- * Контроль материалов, комплектующих, готовой продукции
+ * Современный интерфейс с карточками, оповещениями и визуализацией данных
  */
 
 require_once __DIR__ . '/../../config/config.php';
@@ -49,14 +49,14 @@ $stmt = $db->query("
 ");
 $materialStats = $stmt->fetch();
 
-// Материалы требующие пополнения
+// Материалы требующие пополнения (топ-5 для алертов)
 $stmt = $db->query("
     SELECT i.*, d.name as category_name, (i.min_stock - i.current_stock) as shortage
     FROM items i
     LEFT JOIN dictionaries d ON i.category_id = d.id AND d.dict_type = 'category'
     WHERE i.item_type = 'material' AND i.current_stock < i.min_stock
     ORDER BY shortage DESC
-    LIMIT 10
+    LIMIT 5
 ");
 $reorderMaterials = $stmt->fetchAll();
 
@@ -69,7 +69,7 @@ $stmt = $db->query("
     LEFT JOIN staff s ON mvt.employee_id = s.id
     WHERE mvt.movement_type IN ('receipt', 'consumption', 'return', 'adjustment')
     ORDER BY mvt.movement_date DESC
-    LIMIT 10
+    LIMIT 8
 ");
 $recentTransactions = $stmt->fetchAll();
 
@@ -81,7 +81,7 @@ $stmt = $db->query("
     LEFT JOIN dictionaries d ON i.category_id = d.id AND d.dict_type = 'category'
     WHERE i.item_type = 'product' AND i.current_stock > 0
     ORDER BY i.name ASC
-    LIMIT 10
+    LIMIT 8
 ");
 $finishedGoods = $stmt->fetchAll();
 
@@ -140,6 +140,95 @@ $pageTitle = 'Управление складом | ' . APP_NAME;
     <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/common-style.css">
     <style>
         /* Дополнительные стили для конкретной страницы */
+        
+        /* Alert Cards - Карточки оповещений */
+        .alert-card {
+            background: var(--bg-card);
+            backdrop-filter: var(--backdrop-blur);
+            border-radius: 16px;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .alert-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+        }
+        
+        .alert-card.critical {
+            border-color: rgba(255, 69, 58, 0.4);
+            background: linear-gradient(135deg, rgba(255, 69, 58, 0.1), transparent);
+        }
+        
+        .alert-card.warning {
+            border-color: rgba(255, 214, 10, 0.4);
+            background: linear-gradient(135deg, rgba(255, 214, 10, 0.1), transparent);
+        }
+        
+        .alert-card.info {
+            border-color: rgba(90, 200, 250, 0.4);
+            background: linear-gradient(135deg, rgba(90, 200, 250, 0.1), transparent);
+        }
+        
+        .alert-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+        
+        .alert-card.critical .alert-icon {
+            background: rgba(255, 69, 58, 0.2);
+            color: var(--danger-color);
+        }
+        
+        .alert-card.warning .alert-icon {
+            background: rgba(255, 214, 10, 0.2);
+            color: var(--warning-color);
+        }
+        
+        .alert-card.info .alert-icon {
+            background: rgba(90, 200, 250, 0.2);
+            color: var(--info-color);
+        }
+        
+        .alert-content h4 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        
+        .alert-content p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 0.75rem;
+        }
+        
+        .alert-recommendation {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            padding: 0.5rem 0.75rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+        }
+        
+        .alert-recommendation i {
+            color: var(--primary-gradient-start);
+        }
+        
+        /* Custom Buttons */
         .btn-warning-custom {
             background: linear-gradient(135deg, #ffd60a, #ff9f0a);
             border: none;
@@ -201,6 +290,170 @@ $pageTitle = 'Управление складом | ' . APP_NAME;
             transform: translateY(-2px);
             box-shadow: 0 4px 15px rgba(142, 142, 147, 0.4);
             color: white;
+        }
+        
+        /* Transaction List */
+        .transaction-list {
+            list-style: none;
+        }
+        
+        .transaction-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            margin-bottom: 0.75rem;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+        
+        .transaction-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: var(--border);
+            transform: translateX(5px);
+        }
+        
+        .transaction-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+        
+        .transaction-icon.receipt {
+            background: rgba(48, 209, 88, 0.2);
+            color: var(--success-color);
+        }
+        
+        .transaction-icon.consumption {
+            background: rgba(255, 69, 58, 0.2);
+            color: var(--danger-color);
+        }
+        
+        .transaction-icon.return {
+            background: rgba(255, 214, 10, 0.2);
+            color: var(--warning-color);
+        }
+        
+        .transaction-icon.adjustment {
+            background: rgba(90, 200, 250, 0.2);
+            color: var(--info-color);
+        }
+        
+        .transaction-details {
+            flex: 1;
+        }
+        
+        .transaction-details h5 {
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+        
+        .transaction-details p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        
+        .transaction-amount {
+            font-weight: 700;
+            font-size: 1rem;
+        }
+        
+        .transaction-amount.positive {
+            color: var(--success-color);
+        }
+        
+        .transaction-amount.negative {
+            color: var(--danger-color);
+        }
+        
+        .transaction-time {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-align: right;
+        }
+        
+        /* Products Grid */
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1rem;
+        }
+        
+        .product-card {
+            background: var(--bg-card);
+            backdrop-filter: var(--backdrop-blur);
+            border-radius: 16px;
+            padding: 1.25rem;
+            border: 1px solid var(--border);
+            transition: all 0.3s ease;
+        }
+        
+        .product-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+            border-color: var(--border-glow);
+        }
+        
+        .product-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .product-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, rgba(255, 107, 107, 0.2), rgba(255, 142, 83, 0.2));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: var(--primary-gradient-start);
+            flex-shrink: 0;
+        }
+        
+        .product-info h5 {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+        
+        .product-info p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        
+        .product-stats {
+            display: flex;
+            justify-content: space-between;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+        
+        .product-stat {
+            text-align: center;
+        }
+        
+        .product-stat-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary-gradient-start);
+        }
+        
+        .product-stat-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
         }
     </style>
 </head>
@@ -421,12 +674,14 @@ $pageTitle = 'Управление складом | ' . APP_NAME;
                                     </span>
                                 </td>
                                 <td>
-                                    <a href="edit.php?id=<?= $material['id'] ?>" class="btn-action">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                    <a href="order.php?id=<?= $material['id'] ?>" class="btn-action">
-                                        <i class="fas fa-cart-plus"></i>
-                                    </a>
+                                    <div style="display: flex; gap: 0.5rem;">
+                                        <a href="edit.php?id=<?= $material['id'] ?>" class="btn-primary-custom" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
+                                            <i class="fas fa-edit"></i> Редактировать
+                                        </a>
+                                        <a href="order.php?id=<?= $material['id'] ?>" class="btn-warning-custom" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
+                                            <i class="fas fa-cart-plus"></i> Заказать
+                                        </a>
+                                    </div>
                                 </td>
                             </tr>
                             <?php endforeach; ?>
@@ -444,8 +699,8 @@ $pageTitle = 'Управление складом | ' . APP_NAME;
                     <i class="fas fa-boxes"></i> Все материалы
                 </div>
                 <div>
-                    <button class="btn-action" onclick="location.reload()">
-                        <i class="fas fa-sync"></i>
+                    <button class="btn-secondary-custom" onclick="location.reload()" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
+                        <i class="fas fa-sync"></i> Обновить
                     </button>
                 </div>
             </div>
@@ -492,12 +747,14 @@ $pageTitle = 'Управление складом | ' . APP_NAME;
                                     </span>
                                 </td>
                                 <td>
-                                    <a href="view.php?id=<?= $material['id'] ?>" class="btn-action">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
-                                    <a href="edit.php?id=<?= $material['id'] ?>" class="btn-action">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
+                                    <div style="display: flex; gap: 0.5rem;">
+                                        <a href="view.php?id=<?= $material['id'] ?>" class="btn-info-custom" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
+                                            <i class="fas fa-eye"></i> Просмотр
+                                        </a>
+                                        <a href="edit.php?id=<?= $material['id'] ?>" class="btn-primary-custom" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
+                                            <i class="fas fa-edit"></i> Редактировать
+                                        </a>
+                                    </div>
                                 </td>
                             </tr>
                             <?php endforeach; ?>
