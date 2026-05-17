@@ -217,43 +217,251 @@ $pageTitle = 'Заказы поставщикам | PolesieMES';
         .priority-high { background: #ff9f0a; color: black; }
         .priority-urgent { background: #ff453a; color: white; }
         
-        .order-card {
-            background: var(--glass-bg);
+        /* Modal Styles - Orange Theme */
+        .modal-content {
+            background: var(--bg-card);
             backdrop-filter: var(--backdrop-blur);
             border: 1px solid var(--glass-border);
             border-radius: 16px;
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .modal-header {
+            border-bottom: 1px solid var(--glass-border);
+            background: linear-gradient(135deg, rgba(255, 107, 107, 0.1), rgba(255, 142, 83, 0.05));
+            border-radius: 16px 16px 0 0;
             padding: 1.5rem;
+        }
+        
+        .modal-title {
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 1.25rem;
+        }
+        
+        .modal-body {
+            padding: 2rem;
+            color: var(--text-primary);
+        }
+        
+        .modal-footer {
+            border-top: 1px solid var(--glass-border);
+            padding: 1.5rem 2rem;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 0 0 16px 16px;
+        }
+        
+        .btn-close {
+            filter: invert(1);
+        }
+        
+        /* Form Styles */
+        .form-label {
+            color: var(--text-secondary);
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+        
+        .form-control, .form-select {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            border-radius: 10px;
+            padding: 0.75rem 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            background: rgba(30, 30, 45, 0.7);
+            border-color: var(--primary-gradient-start);
+            box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.2);
+            color: var(--text-primary);
+        }
+        
+        .form-control::placeholder {
+            color: var(--text-muted);
+        }
+        
+        /* Item Row Styles */
+        .item-row-container {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 1.25rem;
             margin-bottom: 1rem;
             transition: all 0.3s ease;
         }
         
-        .order-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+        .item-row-container:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 107, 107, 0.3);
         }
         
-        .items-table {
-            width: 100%;
-            margin-top: 1rem;
-            font-size: 0.9rem;
+        .item-row-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1.2fr 1.2fr 0.5fr;
+            gap: 1rem;
+            align-items: end;
         }
         
-        .items-table th {
-            font-weight: 600;
-            padding: 0.5rem;
-            border-bottom: 1px solid var(--glass-border);
-        }
-        
-        .items-table td {
-            padding: 0.5rem;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-        }
-        
-        .add-item-row {
+        .item-info-display {
             display: flex;
-            gap: 0.5rem;
-            margin-bottom: 0.5rem;
             align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+        }
+        
+        .item-code-badge {
+            background: rgba(255, 107, 107, 0.2);
+            color: var(--primary-gradient-start);
+            padding: 0.25rem 0.5rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .stock-info {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        
+        /* Add Item Button */
+        .add-item-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(135deg, rgba(255, 107, 107, 0.2), rgba(255, 142, 83, 0.1));
+            border: 1px solid rgba(255, 107, 107, 0.3);
+            border-radius: 10px;
+            color: var(--primary-gradient-start);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            justify-content: center;
+            margin-top: 0.5rem;
+        }
+        
+        .add-item-btn:hover {
+            background: linear-gradient(135deg, rgba(255, 107, 107, 0.3), rgba(255, 142, 83, 0.2));
+            border-color: rgba(255, 107, 107, 0.5);
+            transform: translateY(-2px);
+        }
+        
+        /* Remove Button */
+        .remove-item-btn {
+            background: rgba(255, 69, 58, 0.2);
+            border: 1px solid rgba(255, 69, 58, 0.3);
+            color: var(--danger-color);
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .remove-item-btn:hover {
+            background: rgba(255, 69, 58, 0.3);
+            border-color: rgba(255, 69, 58, 0.5);
+            transform: scale(1.05);
+        }
+        
+        /* Total Summary */
+        .total-summary-section {
+            background: linear-gradient(135deg, rgba(255, 107, 107, 0.1), rgba(255, 142, 83, 0.05));
+            border: 1px solid rgba(255, 107, 107, 0.3);
+            border-radius: 12px;
+            padding: 1.25rem 1.5rem;
+            margin-top: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .total-label {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        
+        .total-amount {
+            font-size: 1.75rem;
+            font-weight: 700;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        /* Section Divider */
+        .section-divider {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin: 1.5rem 0;
+            color: var(--text-secondary);
+        }
+        
+        .section-divider::before,
+        .section-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--glass-border);
+        }
+        
+        .section-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, rgba(255, 107, 107, 0.2), rgba(255, 142, 83, 0.1));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary-gradient-start);
+        }
+        
+        /* Required Field Indicator */
+        .required-field::after {
+            content: ' *';
+            color: var(--danger-color);
+        }
+        
+        /* Input Group */
+        .input-group-custom {
+            position: relative;
+        }
+        
+        .input-group-custom .input-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            pointer-events: none;
+        }
+        
+        .input-group-custom .form-control {
+            padding-left: 2.75rem;
+        }
+        
+        /* Items count badge */
+        .items-count-badge {
+            background: var(--gradient-primary);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
         }
     </style>
 </head>
@@ -391,7 +599,7 @@ $pageTitle = 'Заказы поставщикам | PolesieMES';
                                         ?>
                                     </span>
                                 </td>
-                                <td><strong><?= number_format($order['total_amount'], 2) ?> BYN</strong></td>
+                                <td><strong><?= number_format((float)($order['total_amount'] ?? 0), 2, '.', '') ?> BYN</strong></td>
                                 <td>
                                     <div class="btn-group btn-group-sm">
                                         <?php if ($order['status'] === 'draft'): ?>
@@ -439,75 +647,93 @@ $pageTitle = 'Заказы поставщикам | PolesieMES';
 
     <!-- Модальное окно создания заказа -->
     <div class="modal fade" id="createOrderModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
+        <div class="modal-dialog modal-xl">
             <div class="modal-content">
-                <form method="POST">
+                <form method="POST" id="createOrderForm">
                     <input type="hidden" name="action" value="create_order">
                     <div class="modal-header">
-                        <h5 class="modal-title"><i class="fas fa-plus"></i> Новый заказ поставщику</h5>
+                        <h5 class="modal-title"><i class="fas fa-plus-circle"></i> Новый заказ поставщику</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
+                        <!-- Основная информация -->
+                        <div class="section-divider">
+                            <div class="section-icon"><i class="fas fa-info-circle"></i></div>
+                            <span>Основная информация</span>
+                        </div>
+                        
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Поставщик *</label>
-                                <select name="supplier_id" class="form-select" required>
-                                    <option value="">Выберите поставщика</option>
-                                    <?php foreach ($suppliers as $supplier): ?>
-                                    <option value="<?= $supplier['id'] ?>"><?= e($supplier['name']) ?></option>
-                                    <?php endforeach; ?>
-                                </select>
+                                <label class="form-label required-field">Поставщик</label>
+                                <div class="input-group-custom">
+                                    <i class="fas fa-truck input-icon"></i>
+                                    <select name="supplier_id" class="form-select" required>
+                                        <option value="">Выберите поставщика</option>
+                                        <?php foreach ($suppliers as $supplier): ?>
+                                        <option value="<?= $supplier['id'] ?>"><?= e($supplier['name']) ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
                             </div>
-                            <div class="col-md-6 mb-3">
+                            
+                            <div class="col-md-3 mb-3">
                                 <label class="form-label">Дата заказа</label>
-                                <input type="date" name="order_date" class="form-control" value="<?= date('Y-m-d') ?>">
+                                <div class="input-group-custom">
+                                    <i class="fas fa-calendar input-icon"></i>
+                                    <input type="date" name="order_date" class="form-control" value="<?= date('Y-m-d') ?>">
+                                </div>
                             </div>
-                            <div class="col-md-6 mb-3">
+                            
+                            <div class="col-md-3 mb-3">
                                 <label class="form-label">Ожидаемая доставка</label>
-                                <input type="date" name="expected_delivery" class="form-control">
+                                <div class="input-group-custom">
+                                    <i class="fas fa-clock input-icon"></i>
+                                    <input type="date" name="expected_delivery" class="form-control">
+                                </div>
                             </div>
-                            <div class="col-md-6 mb-3">
+                            
+                            <div class="col-md-4 mb-3">
                                 <label class="form-label">Приоритет</label>
                                 <select name="priority" class="form-select">
-                                    <option value="low">Низкий</option>
-                                    <option value="normal" selected>Обычный</option>
-                                    <option value="high">Высокий</option>
-                                    <option value="urgent">Срочный</option>
+                                    <option value="low">🔽 Низкий</option>
+                                    <option value="normal" selected>➡️ Обычный</option>
+                                    <option value="high">⬆️ Высокий</option>
+                                    <option value="urgent">🔥 Срочный</option>
                                 </select>
                             </div>
                         </div>
                         
-                        <hr>
+                        <!-- Товары заказа -->
+                        <div class="section-divider">
+                            <div class="section-icon"><i class="fas fa-boxes"></i></div>
+                            <span>Товары заказа <span id="itemsCountBadge" class="items-count-badge">0</span></span>
+                        </div>
                         
-                        <h6>Товары заказа</h6>
                         <div id="itemsContainer">
-                            <div class="add-item-row">
-                                <select name="items[0][item_id]" class="form-select item-select" required>
-                                    <option value="">Выберите материал</option>
-                                    <?php foreach ($materials as $material): ?>
-                                    <option value="<?= $material['id'] ?>" 
-                                            data-unit="<?= e($material['unit_name']) ?>"
-                                            data-code="<?= e($material['item_code']) ?>">
-                                        <?= e($material['name']) ?> (<?= e($material['item_code']) ?>)
-                                    </option>
-                                    <?php endforeach; ?>
-                                </select>
-                                <input type="number" name="items[0][quantity]" class="form-control" placeholder="Кол-во" min="1" required style="width: 100px;">
-                                <input type="number" name="items[0][price]" class="form-control" placeholder="Цена" min="0" step="0.01" required style="width: 120px;">
-                                <button type="button" class="btn btn-success btn-sm" onclick="addItemRow()">
-                                    <i class="fas fa-plus"></i>
-                                </button>
-                            </div>
+                            <!-- Items will be added here dynamically -->
                         </div>
                         
-                        <div class="mb-3 mt-3">
-                            <label class="form-label">Примечание</label>
-                            <textarea name="notes" class="form-control" rows="2"></textarea>
+                        <button type="button" class="add-item-btn" onclick="addItemRow()">
+                            <i class="fas fa-plus-circle"></i> Добавить товар
+                        </button>
+                        
+                        <!-- Итоговая сумма -->
+                        <div class="total-summary-section">
+                            <span class="total-label"><i class="fas fa-calculator"></i> Итого:</span>
+                            <span class="total-amount" id="totalAmountDisplay">0.00 BYN</span>
+                        </div>
+                        
+                        <!-- Примечание -->
+                        <div class="mb-3 mt-4">
+                            <label class="form-label"><i class="fas fa-comment-alt"></i> Примечание</label>
+                            <textarea name="notes" class="form-control" rows="2" placeholder="Дополнительная информация по заказу..."></textarea>
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                        <button type="submit" class="btn btn-primary">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times"></i> Отмена
+                        </button>
+                        <button type="submit" class="btn btn-primary" style="background: var(--gradient-primary); border: none;">
                             <i class="fas fa-save"></i> Создать заказ
                         </button>
                     </div>
@@ -534,49 +760,138 @@ $pageTitle = 'Заказы поставщикам | PolesieMES';
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        let itemIndex = 1;
+        let itemIndex = 0;
+        const materialsData = <?= json_encode($materials) ?>;
         
         function showCreateModal() {
             const modal = new bootstrap.Modal(document.getElementById('createOrderModal'));
             modal.show();
+            // Add first item row when modal opens
+            if (itemIndex === 0) {
+                addItemRow();
+            }
         }
         
         function addItemRow() {
             const container = document.getElementById('itemsContainer');
             const newRow = document.createElement('div');
-            newRow.className = 'add-item-row';
+            newRow.className = 'item-row-container';
+            newRow.dataset.index = itemIndex;
+            
+            let materialOptions = '<option value="">Выберите материал</option>';
+            materialsData.forEach(mat => {
+                materialOptions += `<option value="${mat.id}" 
+                    data-code="${mat.item_code}" 
+                    data-unit="${mat.unit_name || 'шт'}"
+                    data-stock="${mat.current_stock || 0}">${mat.name} (${mat.item_code})</option>`;
+            });
+            
             newRow.innerHTML = `
-                <select name="items[${itemIndex}][item_id]" class="form-select item-select" required>
-                    <option value="">Выберите материал</option>
-                    <?php foreach ($materials as $material): ?>
-                    <option value="<?= $material['id'] ?>"><?= e($material['name']) ?> (<?= e($material['item_code']) ?>)</option>
-                    <?php endforeach; ?>
-                </select>
-                <input type="number" name="items[${itemIndex}][quantity]" class="form-control" placeholder="Кол-во" min="1" required style="width: 100px;">
-                <input type="number" name="items[${itemIndex}][price]" class="form-control" placeholder="Цена" min="0" step="0.01" required style="width: 120px;">
-                <button type="button" class="btn btn-danger btn-sm" onclick="this.parentElement.remove()">
-                    <i class="fas fa-trash"></i>
-                </button>
+                <div class="item-row-grid">
+                    <div>
+                        <label class="form-label" style="font-size: 0.8rem;">Материал</label>
+                        <select name="items[${itemIndex}][item_id]" class="form-select item-select" required onchange="updateItemInfo(this)">
+                            ${materialOptions}
+                        </select>
+                        <div class="item-info-display" style="display: none; margin-top: 0.5rem;">
+                            <span class="item-code-badge"></span>
+                            <span class="stock-info">Остаток: <strong></strong></span>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label" style="font-size: 0.8rem;">Кол-во</label>
+                        <input type="number" name="items[${itemIndex}][quantity]" class="form-control" placeholder="0" min="1" step="0.01" required oninput="calculateTotal()">
+                    </div>
+                    <div>
+                        <label class="form-label" style="font-size: 0.8rem;">Цена (BYN)</label>
+                        <input type="number" name="items[${itemIndex}][price]" class="form-control" placeholder="0.00" min="0" step="0.01" required oninput="calculateTotal()">
+                    </div>
+                    <div>
+                        <label class="form-label" style="font-size: 0.8rem;">Сумма</label>
+                        <div class="form-control" style="background: rgba(255, 107, 107, 0.1); border-color: rgba(255, 107, 107, 0.3); font-weight: 600;" readonly>
+                            <span class="row-total">0.00</span> BYN
+                        </div>
+                    </div>
+                    <div>
+                        <button type="button" class="remove-item-btn" onclick="removeItemRow(this)" title="Удалить строку">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </div>
             `;
             container.appendChild(newRow);
             itemIndex++;
+            updateItemsCount();
+        }
+        
+        function removeItemRow(button) {
+            const row = button.closest('.item-row-container');
+            row.remove();
+            updateItemsCount();
+            calculateTotal();
+        }
+        
+        function updateItemInfo(select) {
+            const row = select.closest('.item-row-container');
+            const infoDisplay = row.querySelector('.item-info-display');
+            const codeBadge = row.querySelector('.item-code-badge');
+            const stockInfo = row.querySelector('.stock-info strong');
+            
+            const selectedOption = select.options[select.selectedIndex];
+            if (selectedOption.value) {
+                infoDisplay.style.display = 'flex';
+                codeBadge.textContent = selectedOption.dataset.code;
+                stockInfo.textContent = selectedOption.dataset.stock + ' ' + (selectedOption.dataset.unit || 'шт');
+            } else {
+                infoDisplay.style.display = 'none';
+            }
+        }
+        
+        function calculateTotal() {
+            let total = 0;
+            document.querySelectorAll('.item-row-container').forEach(row => {
+                const quantityInput = row.querySelector('input[name*="[quantity]"]');
+                const priceInput = row.querySelector('input[name*="[price]"]');
+                const totalSpan = row.querySelector('.row-total');
+                
+                const quantity = parseFloat(quantityInput.value) || 0;
+                const price = parseFloat(priceInput.value) || 0;
+                const rowTotal = quantity * price;
+                
+                if (totalSpan) {
+                    totalSpan.textContent = rowTotal.toFixed(2);
+                }
+                total += rowTotal;
+            });
+            
+            document.getElementById('totalAmountDisplay').textContent = total.toFixed(2) + ' BYN';
+        }
+        
+        function updateItemsCount() {
+            const count = document.querySelectorAll('.item-row-container').length;
+            document.getElementById('itemsCountBadge').textContent = count;
         }
         
         function viewItems(itemsJson) {
             const items = JSON.parse(itemsJson);
-            let html = '<table class="items-table"><thead><tr><th>Материал</th><th>Кол-во</th><th>Цена</th><th>Сумма</th></tr></thead><tbody>';
+            let html = '<div class="table-responsive"><table class="table"><thead><tr><th>Материал</th><th>Артикул</th><th>Кол-во</th><th>Цена</th><th>Сумма</th></tr></thead><tbody>';
             
+            let total = 0;
             items.forEach(item => {
                 const sum = (item.quantity || 0) * (item.price || 0);
+                total += sum;
                 html += `<tr>
                     <td>${item.item_name || 'Материал #' + item.item_id}</td>
+                    <td><span class="item-code-badge">${item.item_code || '-'}</span></td>
                     <td>${item.quantity}</td>
-                    <td>${item.price} BYN</td>
+                    <td>${parseFloat(item.price).toFixed(2)} BYN</td>
                     <td><strong>${sum.toFixed(2)} BYN</strong></td>
                 </tr>`;
             });
             
-            html += '</tbody></table>';
+            html += '</tbody></table></div>';
+            html += `<div class="total-summary-section"><span class="total-label">Итого:</span><span class="total-amount">${total.toFixed(2)} BYN</span></div>`;
+            
             document.getElementById('viewItemsContent').innerHTML = html;
             
             const modal = new bootstrap.Modal(document.getElementById('viewItemsModal'));
@@ -586,6 +901,30 @@ $pageTitle = 'Заказы поставщикам | PolesieMES';
         function editOrder(orderId) {
             alert('Функция редактирования будет добавлена в следующей версии');
         }
+        
+        // Initialize form validation
+        document.getElementById('createOrderForm').addEventListener('submit', function(e) {
+            const supplierSelect = this.querySelector('select[name="supplier_id"]');
+            const itemSelects = this.querySelectorAll('.item-select');
+            let hasItems = false;
+            
+            itemSelects.forEach(select => {
+                if (select.value) hasItems = true;
+            });
+            
+            if (!supplierSelect.value) {
+                e.preventDefault();
+                supplierSelect.focus();
+                alert('Выберите поставщика');
+                return false;
+            }
+            
+            if (!hasItems) {
+                e.preventDefault();
+                alert('Добавьте хотя бы один товар');
+                return false;
+            }
+        });
     </script>
 </body>
 </html>
