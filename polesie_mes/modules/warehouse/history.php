@@ -2,6 +2,7 @@
 /**
  * Склад - История движений
  * PolesieMES - Система управления производством ОАО "Полесьеэлектромаш"
+ * Полнофункциональная страница с фильтрами, поиском, экспортом и пагинацией
  */
 require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/../../config/database.php';
@@ -16,11 +17,18 @@ if (!hasRole(['admin', 'manager', 'warehouse_keeper'])) {
 $db = getDB();
 $user = getCurrentUser();
 
-// Фильтрация
+// ==========================================
+// ФИЛЬТРАЦИЯ И ПОИСК
+// ==========================================
 $filter_type = $_GET['type'] ?? 'all';
 $search = trim($_GET['search'] ?? '');
 $date_from = $_GET['date_from'] ?? '';
 $date_to = $_GET['date_to'] ?? '';
+$employee_id = $_GET['employee_id'] ?? '';
+$category_id = $_GET['category_id'] ?? '';
+$items_per_page = 25;
+$page = max(1, (int)($_GET['page'] ?? 1));
+$offset = ($page - 1) * $items_per_page;
 
 $whereConditions = ["mvt.movement_type IN ('receipt', 'consumption', 'return', 'adjustment', 'shipment')"];
 $params = [];
@@ -45,9 +53,27 @@ if (!empty($date_to)) {
     $params['date_to'] = $date_to . ' 23:59:59';
 }
 
+if (!empty($employee_id)) {
+    $whereConditions[] = "mvt.employee_id = :employee_id";
+    $params['employee_id'] = $employee_id;
+}
+
+if (!empty($category_id)) {
+    $whereConditions[] = "i.category_id = :category_id";
+    $params['category_id'] = $category_id;
+}
+
 $whereClause = implode(' AND ', $whereConditions);
 
-// Получение истории движений
+// Подсчет общего количества записей для пагинации
+$countStmt = $db->prepare("SELECT COUNT(*) as total FROM movements mvt 
+    LEFT JOIN items i ON mvt.item_id = i.id 
+    WHERE {$whereClause}");
+$countStmt->execute($params);
+$totalRecords = $countStmt->fetch()['total'];
+$totalPages = ceil($totalRecords / $items_per_page);
+
+// Получение истории движений с пагинацией
 $stmt = $db->prepare("
     SELECT mvt.*, 
            i.name as item_name, 
@@ -65,11 +91,11 @@ $stmt = $db->prepare("
                ELSE mvt.movement_type
            END as operation_name,
            CASE mvt.movement_type
-               WHEN 'receipt' THEN 'success'
-               WHEN 'consumption' THEN 'warning'
-               WHEN 'return' THEN 'info'
-               WHEN 'adjustment' THEN 'secondary'
-               WHEN 'shipment' THEN 'primary'
+               WHEN 'receipt' THEN 'receipt'
+               WHEN 'consumption' THEN 'consumption'
+               WHEN 'return' THEN 'return'
+               WHEN 'adjustment' THEN 'adjustment'
+               WHEN 'shipment' THEN 'shipment'
                ELSE 'secondary'
            END as operation_type_class
     FROM movements mvt
@@ -79,17 +105,25 @@ $stmt = $db->prepare("
     LEFT JOIN staff s ON mvt.employee_id = s.id
     WHERE {$whereClause}
     ORDER BY mvt.movement_date DESC
-    LIMIT 100
+    LIMIT :limit OFFSET :offset
 ");
-$stmt->execute($params);
+$stmt->bindValue(':limit', $items_per_page, PDO::PARAM_INT);
+$stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+foreach ($params as $key => $value) {
+    $stmt->bindValue(":$key", $value);
+}
+$stmt->execute();
 $movements = $stmt->fetchAll();
 
+// ==========================================
+// СТАТИСТИКА
+// ==========================================
 // Статистика по типам операций
 $stmt = $db->query("
     SELECT 
         movement_type,
         COUNT(*) as count,
-        SUM(quantity) as total_quantity
+        COALESCE(SUM(quantity), 0) as total_quantity
     FROM movements
     WHERE movement_type IN ('receipt', 'consumption', 'return', 'adjustment', 'shipment')
     GROUP BY movement_type
@@ -103,12 +137,23 @@ while ($row = $stmt->fetch()) {
 $stmt = $db->query("
     SELECT 
         COUNT(*) as total_operations,
-        SUM(CASE WHEN movement_type = 'receipt' THEN quantity ELSE 0 END) as total_receipt,
-        SUM(CASE WHEN movement_type = 'consumption' THEN quantity ELSE 0 END) as total_consumption
+        COALESCE(SUM(CASE WHEN movement_type = 'receipt' THEN quantity ELSE 0 END), 0) as total_receipt,
+        COALESCE(SUM(CASE WHEN movement_type = 'consumption' THEN quantity ELSE 0 END), 0) as total_consumption
     FROM movements
     WHERE movement_type IN ('receipt', 'consumption', 'return', 'adjustment', 'shipment')
 ");
 $totalStats = $stmt->fetch();
+
+// Сотрудники для фильтра
+$stmt = $db->query("SELECT DISTINCT s.id, s.first_name, s.last_name 
+    FROM movements mvt 
+    JOIN staff s ON mvt.employee_id = s.id 
+    ORDER BY s.last_name");
+$employees = $stmt->fetchAll();
+
+// Категории для фильтра
+$stmt = $db->query("SELECT id, name FROM dictionaries WHERE dict_type = 'category' ORDER BY name");
+$categories = $stmt->fetchAll();
 
 $pageTitle = 'История движений | PolesieMES';
 ?>
