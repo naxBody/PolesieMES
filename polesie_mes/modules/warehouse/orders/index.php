@@ -189,6 +189,7 @@ $pageTitle = 'Отгрузка | PolesieMES';
             border-radius: 12px;
             padding: 1rem;
             margin-bottom: 1rem;
+            color: var(--text-primary);
         }
         
         .items-to-ship {
@@ -203,6 +204,7 @@ $pageTitle = 'Отгрузка | PolesieMES';
             background: rgba(255,255,255,0.03);
             border-radius: 8px;
             margin-bottom: 0.5rem;
+            color: var(--text-primary);
         }
         
         .item-row label {
@@ -211,11 +213,201 @@ $pageTitle = 'Отгрузка | PolesieMES';
             gap: 0.5rem;
             cursor: pointer;
             flex: 1;
+            color: var(--text-primary);
         }
         
         .stock-available {
             font-size: 0.85rem;
             color: var(--text-muted);
+        }
+        
+        /* Modal Styles - Orange Theme */
+        .modal-content {
+            background: var(--bg-card);
+            backdrop-filter: var(--backdrop-blur);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .modal-header {
+            border-bottom: 1px solid var(--glass-border);
+            background: linear-gradient(135deg, rgba(255, 107, 107, 0.1), rgba(255, 142, 83, 0.05));
+            border-radius: 16px 16px 0 0;
+            padding: 1.5rem;
+        }
+        
+        .modal-title {
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 1.25rem;
+        }
+        
+        .modal-body {
+            padding: 2rem;
+            color: var(--text-primary);
+        }
+        
+        .modal-footer {
+            border-top: 1px solid var(--glass-border);
+            padding: 1.5rem 2rem;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 0 0 16px 16px;
+        }
+        
+        .btn-close {
+            filter: invert(1);
+        }
+        
+        /* Form Styles */
+        .form-label {
+            color: var(--text-secondary);
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+        
+        .form-control, .form-select {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            border-radius: 10px;
+            padding: 0.75rem 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            background: rgba(30, 30, 45, 0.7);
+            border-color: var(--primary-gradient-start);
+            box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.2);
+            color: var(--text-primary);
+        }
+        
+        .form-control::placeholder {
+            color: var(--text-muted);
+        }
+        
+        .table {
+            color: var(--text-primary);
+        }
+        
+        .table thead th {
+            color: var(--text-secondary);
+            border-bottom-color: var(--glass-border);
+        }
+        
+        .table tbody td {
+            border-bottom-color: var(--glass-border);
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-secondary);
+        }
+        
+        .empty-state i {
+            font-size: 4rem;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+        }
+        
+        .empty-state p {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+        }
+        
+        .alert {
+            border-radius: 12px;
+            border: none;
+            padding: 1rem 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .alert-success {
+            background: rgba(48, 209, 88, 0.15);
+            color: #30d158;
+            border: 1px solid rgba(48, 209, 88, 0.3);
+        }
+
+        .text-muted {
+            color: var(--text-muted) !important;
+        }
+        
+        .card {
+            background: var(--glass-bg);
+            backdrop-filter: var(--backdrop-blur);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            margin-bottom: 1.5rem;
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, rgba(255, 107, 107, 0.1), rgba(255, 142, 83, 0.05));
+            border-bottom: 1px solid var(--glass-border);
+            padding: 1.25rem 1.5rem;
+            border-radius: 16px 16px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .card-title {
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .card-body {
+            padding: 1.5rem;
+            color: var(--text-primary);
+        }
+        
+        .badge {
+            padding: 0.35rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .bg-secondary {
+            background: rgba(142, 142, 147, 0.3) !important;
+            color: var(--text-primary);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #30d158, #24a945) !important;
+            border: none;
+            color: white;
+            padding: 0.6rem 1.25rem;
+            border-radius: 10px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-success:hover {
+            background: linear-gradient(135deg, #24a945, #1e8b38) !important;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(48, 209, 88, 0.4);
+        }
+        
+        .btn-warning {
+            background: linear-gradient(135deg, #ffd60a, #ff9f0a) !important;
+            border: none;
+            color: #000;
+            padding: 0.6rem 1.25rem;
+            border-radius: 10px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-warning:hover {
+            background: linear-gradient(135deg, #ff9f0a, #ff8f00) !important;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(255, 214, 10, 0.4);
         }
     </style>
 </head>
@@ -312,7 +504,7 @@ $pageTitle = 'Отгрузка | PolesieMES';
                                     <span class="status-badge status-shipped">Отгружен</span>
                                 <?php endif; ?>
                             </h5>
-                            <div class="text-muted" style="font-size: 0.9rem;">
+                            <div style="color: var(--text-secondary); font-size: 0.9rem;">
                                 <i class="far fa-calendar"></i> Дата заказа: <?= formatDate($order['order_date']) ?>
                                 <?php if ($order['delivery_date']): ?>
                                 | <i class="far fa-clock"></i> Доставка: <?= formatDate($order['delivery_date']) ?>
