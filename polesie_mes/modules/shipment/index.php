@@ -38,7 +38,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && hasRole(['admin', 'manager', 'logis
                         carrier = ?,
                         driver_name = ?,
                         vehicle_number = ?,
-                        shipped_at = NOW(),
                         updated_at = NOW() 
                     WHERE id = ?
                 ");
@@ -125,11 +124,11 @@ $shipmentHistory = $stmt->fetchAll();
 // Отгруженные заказы для завершения
 $stmt = $db->query("
     SELECT o.*, c.name as customer_name, c.address,
-           DATE_FORMAT(o.shipped_at, '%d.%m.%Y %H:%i') as shipped_date
+           DATE_FORMAT(o.updated_at, '%d.%m.%Y %H:%i') as shipped_date
     FROM orders o
     LEFT JOIN partners c ON o.customer_id = c.id
     WHERE o.status = 'shipped'
-    ORDER BY o.shipped_at DESC
+    ORDER BY o.updated_at DESC
 ");
 $shippedOrders = $stmt->fetchAll();
 
