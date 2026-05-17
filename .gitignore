@@ -1,11 +1,11 @@
+```
 # Compiled and build artifacts
 *.pyc
 __pycache__/
 
 # Dependencies
-.venv/
-venv/
-node_modules/
+vendor/
+composer.lock
 
 # Logs and temp files
 *.log
@@ -25,17 +25,17 @@ node_modules/
 .DS_Store
 Thumbs.db
 
+# Backup files
+*~
+*.bak
+*.backup
+
 # Coverage reports
 coverage/
 htmlcov/
 .coverage
 
-# Distribution / packaging
-dist/
-build/
-*.egg-info/
-
-# MyPy cache
-.mypy_cache/
-# PyTest cache
-.pytest_cache/
+# IDE specific
+nbproject/
+.settings/
+```
