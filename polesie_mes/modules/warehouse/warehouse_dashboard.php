@@ -74,24 +74,44 @@ $stmt = $db->query("
 ");
 $criticalMaterials = $stmt->fetchAll();
 
-// 4. Все материалы на складе
+// 4. Ближайшие поставки (заказы поставщикам в статусе "в пути" или "ожидается")
 $stmt = $db->query("
-    SELECT i.*, 
-           c.name as category_name,
-           u.name as unit_name,
-           CASE 
-               WHEN i.current_stock <= 0 THEN 'critical'
-               WHEN i.current_stock < i.min_stock THEN 'low'
-               WHEN i.current_stock > i.min_stock * 2 THEN 'overstock'
-               ELSE 'normal'
-           END as stock_status
-    FROM items i
-    LEFT JOIN dictionaries c ON i.category_id = c.id AND c.dict_type = 'category'
-    LEFT JOIN dictionaries u ON i.unit_id = u.id AND u.dict_type = 'unit'
-    WHERE i.item_type = 'material'
-    ORDER BY i.name
+    SELECT po.id, po.order_number, po.supplier_name, po.expected_delivery_date, po.status,
+           COUNT(poi.id) as items_count
+    FROM purchase_orders po
+    LEFT JOIN purchase_order_items poi ON po.id = poi.order_id
+    WHERE po.status IN ('pending', 'partial', 'in_transit')
+    GROUP BY po.id
+    ORDER BY po.expected_delivery_date ASC
+    LIMIT 5
 ");
-$allMaterials = $stmt->fetchAll();
+$upcomingDeliveries = $stmt->fetchAll();
+
+// 5. Последние отгрузки
+$stmt = $db->query("
+    SELECT s.id, s.shipment_number, s.customer_name, s.shipment_date, s.status,
+           COUNT(si.id) as items_count
+    FROM shipments s
+    LEFT JOIN shipment_items si ON s.id = si.shipment_id
+    WHERE s.status IN ('pending', 'preparing')
+    ORDER BY s.shipment_date DESC
+    LIMIT 5
+");
+$pendingShipments = $stmt->fetchAll();
+
+// 6. Готовая продукция на складе
+$stmt = $db->query("
+    SELECT i.*, d.name as category_name, 
+           u.name as unit_name,
+           i.current_stock as available_stock
+    FROM items i
+    LEFT JOIN dictionaries d ON i.category_id = d.id AND d.dict_type = 'category'
+    LEFT JOIN dictionaries u ON i.unit_id = u.id AND u.dict_type = 'unit'
+    WHERE i.item_type = 'product' AND i.current_stock > 0
+    ORDER BY i.name ASC
+    LIMIT 10
+");
+$finishedGoods = $stmt->fetchAll();
 
 $pageTitle = 'Склад | PolesieMES';
 $currentPage = 'warehouse_dashboard';
@@ -357,6 +377,27 @@ $currentPage = 'warehouse_dashboard';
             font-weight: 600;
         }
         
+        .btn-info-custom {
+            background: linear-gradient(135deg, #32ade6, #007aff);
+            border: none;
+            color: white;
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .btn-info-custom:hover {
+            background: linear-gradient(135deg, #007aff, #005ecb);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(50, 173, 230, 0.4);
+            color: white;
+        }
+        
         /* Секции с заголовками */
         .dashboard-section {
             margin-bottom: 2rem;
@@ -547,53 +588,41 @@ $currentPage = 'warehouse_dashboard';
         </div>
         <?php endif; ?>
 
-        <!-- Все материалы -->
-        <div class="card" id="inventory-section">
+        <!-- Ближайшие поставки -->
+        <?php if (!empty($upcomingDeliveries)): ?>
+        <div class="card" id="deliveries-section">
             <div class="card-header">
                 <div class="card-title">
-                    <i class="fas fa-boxes"></i> Все материалы на складе
+                    <i class="fas fa-truck" style="color: var(--info-color);"></i> Ближайшие поставки
                 </div>
-                <div>
-                    <button class="btn-action" onclick="location.reload()">
-                        <i class="fas fa-sync"></i>
-                    </button>
-                </div>
+                <a href="purchase_orders/index.php" class="btn-action">
+                    <i class="fas fa-arrow-right"></i>
+                </a>
             </div>
             <div class="card-body">
-                <div class="materials-table-container">
+                <div class="table-responsive">
                     <table class="table">
                         <thead>
                             <tr>
-                                <th>Название</th>
-                                <th>Артикул</th>
-                                <th>Категория</th>
-                                <th>Остаток</th>
-                                <th>Ед. изм.</th>
-                                <th>Мин. запас</th>
+                                <th>№ заказа</th>
+                                <th>Поставщик</th>
+                                <th>Ожидаемая дата</th>
                                 <th>Статус</th>
+                                <th>Позиций</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($allMaterials as $material): ?>
+                            <?php foreach ($upcomingDeliveries as $delivery): ?>
                             <tr>
-                                <td><?= e($material['name']) ?></td>
-                                <td><code><?= e($material['item_code']) ?></code></td>
-                                <td><?= e($material['category_name'] ?? '-') ?></td>
-                                <td><strong><?= number_format($material['current_stock'], 2) ?></strong></td>
-                                <td><?= e($material['unit_name'] ?? '-') ?></td>
-                                <td><?= number_format($material['min_stock'], 2) ?></td>
+                                <td><strong><?= e($delivery['order_number']) ?></strong></td>
+                                <td><?= e($delivery['supplier_name']) ?></td>
+                                <td><?= date('d.m.Y', strtotime($delivery['expected_delivery_date'])) ?></td>
                                 <td>
-                                    <span class="badge-stock-<?= $material['stock_status'] ?>">
-                                        <?php
-                                        switch($material['stock_status']) {
-                                            case 'critical': echo 'Нет на складе'; break;
-                                            case 'low': echo 'Низкий запас'; break;
-                                            case 'overstock': echo 'Избыток'; break;
-                                            default: echo 'Норма';
-                                        }
-                                        ?>
+                                    <span class="badge-stock badge-<?= $delivery['status'] == 'in_transit' ? 'normal' : 'warning' ?>">
+                                        <?= $delivery['status'] == 'in_transit' ? 'В пути' : ($delivery['status'] == 'partial' ? 'Частично' : 'Ожидается') ?>
                                     </span>
                                 </td>
+                                <td><?= $delivery['items_count'] ?></td>
                             </tr>
                             <?php endforeach; ?>
                         </tbody>
@@ -601,6 +630,76 @@ $currentPage = 'warehouse_dashboard';
                 </div>
             </div>
         </div>
+        <?php else: ?>
+        <div class="card" id="deliveries-section">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-truck" style="color: var(--info-color);"></i> Ближайшие поставки
+                </div>
+            </div>
+            <div class="card-body" style="text-align: center; padding: 2rem;">
+                <p style="color: var(--text-muted);"><i class="fas fa-check-circle" style="color: var(--success-color);"></i> Нет активных поставок</p>
+                <a href="purchase_orders/index.php" class="btn-info-custom" style="margin-top: 1rem;">
+                    <i class="fas fa-plus"></i> Создать заказ поставщику
+                </a>
+            </div>
+        </div>
+        <?php endif; ?>
+
+        <!-- Ожидающие отгрузки -->
+        <?php if (!empty($pendingShipments)): ?>
+        <div class="card" id="shipments-section">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-shipping-fast" style="color: var(--danger-color);"></i> Ожидающие отгрузки
+                </div>
+                <a href="<?= APP_URL ?>/modules/shipment/index.php" class="btn-action">
+                    <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>№ отгрузки</th>
+                                <th>Клиент</th>
+                                <th>Дата отгрузки</th>
+                                <th>Статус</th>
+                                <th>Позиций</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($pendingShipments as $shipment): ?>
+                            <tr>
+                                <td><strong><?= e($shipment['shipment_number']) ?></strong></td>
+                                <td><?= e($shipment['customer_name']) ?></td>
+                                <td><?= date('d.m.Y', strtotime($shipment['shipment_date'])) ?></td>
+                                <td>
+                                    <span class="badge-stock badge-<?= $shipment['status'] == 'preparing' ? 'warning' : 'normal' ?>">
+                                        <?= $shipment['status'] == 'preparing' ? 'Подготовка' : 'Готова' ?>
+                                    </span>
+                                </td>
+                                <td><?= $shipment['items_count'] ?></td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <?php else: ?>
+        <div class="card" id="shipments-section">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-shipping-fast" style="color: var(--danger-color);"></i> Ожидающие отгрузки
+                </div>
+            </div>
+            <div class="card-body" style="text-align: center; padding: 2rem;">
+                <p style="color: var(--text-muted);"><i class="fas fa-check-circle" style="color: var(--success-color);"></i> Нет ожидающих отгрузок</p>
+            </div>
+        </div>
+        <?php endif; ?>
 
         <!-- Готовая продукция -->
         <?php if (!empty($finishedGoods)): ?>
