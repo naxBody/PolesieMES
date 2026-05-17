@@ -129,7 +129,7 @@ $stmt = $db->query("SELECT m.id, m.movement_date, i.name as item_name, i.item_co
     ORDER BY m.movement_date DESC LIMIT 20");
 $recent_consumptions = $stmt->fetchAll();
 
-$pageTitle = 'Расход материалов | Склад | ' . APP_NAME;
+$pageTitle = 'Расход материалов | PolesieMES';
 ?>
 <!DOCTYPE html>
 <html lang="ru">
@@ -137,20 +137,204 @@ $pageTitle = 'Расход материалов | Склад | ' . APP_NAME;
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= e($pageTitle) ?></title>
+    
+    <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
     <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/common-style.css">
+    <style>
+        .history-card {
+            background: var(--glass-bg);
+            backdrop-filter: var(--backdrop-blur);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .search-input {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            border-radius: 10px;
+            padding: 0.75rem 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .search-input:focus {
+            background: rgba(30, 30, 45, 0.7);
+            border-color: var(--primary-gradient-start);
+            box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.2);
+            color: var(--text-primary);
+        }
+        
+        .table-custom {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .table-custom th {
+            background: rgba(255,255,255,0.05);
+            color: var(--text-secondary);
+            font-weight: 600;
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 2px solid var(--glass-border);
+        }
+        
+        .table-custom td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--glass-border);
+            color: var(--text-primary);
+        }
+        
+        .table-custom tr:hover {
+            background: rgba(255,255,255,0.03);
+        }
+        
+        .quantity-negative {
+            color: var(--danger-color);
+            font-weight: 600;
+        }
+        
+        .quantity-positive {
+            color: var(--success-color);
+            font-weight: 600;
+        }
+        
+        .stock-low {
+            color: var(--warning-color);
+            font-weight: 600;
+        }
+        
+        .operation-consumption { 
+            background: #ffd60a; 
+            color: black; 
+            padding: 0.35rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .stat-card {
+            background: var(--glass-bg);
+            backdrop-filter: var(--backdrop-blur);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+        
+        .form-label {
+            color: var(--text-secondary);
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+        
+        .form-select, .form-control {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            border-radius: 10px;
+            padding: 0.75rem 1rem;
+        }
+        
+        .form-select:focus, .form-control:focus {
+            background: rgba(30, 30, 45, 0.7);
+            border-color: var(--primary-gradient-start);
+            box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.2);
+            color: var(--text-primary);
+        }
+        
+        .btn-action {
+            background: linear-gradient(135deg, var(--primary-gradient-start), var(--primary-gradient-end));
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 10px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-action:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+        }
+        
+        .btn-secondary-custom {
+            background: rgba(255,255,255,0.1);
+            color: var(--text-primary);
+            border: 1px solid var(--glass-border);
+            padding: 0.75rem 1.5rem;
+            border-radius: 10px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-secondary-custom:hover {
+            background: rgba(255,255,255,0.15);
+        }
+        
+        .badge-stock-ok {
+            background: var(--success-color);
+            color: white;
+            padding: 0.35rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .badge-stock-low {
+            background: var(--warning-color);
+            color: black;
+            padding: 0.35rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+    </style>
 </head>
 <body>
-    <div class="particles-container"><div class="particle"></div><div class="particle"></div></div>
-    <div class="glow-overlay"></div><div class="grid-overlay"></div>
+    <div class="particles-container"><div class="particle"></div><div class="particle"></div><div class="particle"></div></div>
+    <div class="glow-overlay"></div>
+    <div class="grid-overlay"></div>
     
     <nav class="navbar">
         <a href="<?= APP_URL ?>" class="nav-brand"><div class="brand-logo"><svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div><span class="brand-name">PolesieMES</span></a>
         <ul class="nav-menu">
             <li><a href="<?= APP_URL ?>/modules/warehouse/warehouse_dashboard.php" class="nav-link"><i class="fas fa-warehouse"></i> Склад</a></li>
+            <li><a href="inventory.php" class="nav-link"><i class="fas fa-boxes"></i> Остатки</a></li>
             <li><a href="consumption.php" class="nav-link active"><i class="fas fa-dolly"></i> Расход</a></li>
+            <li><a href="history.php" class="nav-link"><i class="fas fa-history"></i> История</a></li>
         </ul>
         <div class="user-menu">
             <span><?= e($_SESSION['full_name']) ?> (<?= e(getRoleName($_SESSION['role'])) ?>)</span>
@@ -160,170 +344,202 @@ $pageTitle = 'Расход материалов | Склад | ' . APP_NAME;
 
     <div class="main-content">
         <div class="page-header">
-            <h1><i class="fas fa-dolly"></i> Расход материалов</h1>
-            <a href="index.php" class="btn-primary-custom"><i class="fas fa-arrow-left"></i> Назад</a>
+            <div class="page-title">
+                <h1><i class="fas fa-dolly"></i> Расход материалов</h1>
+                <p>Списание материалов со склада</p>
+            </div>
+        </div>
+
+        <!-- Statistics -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value"><?= count($materials) ?></div>
+                <div class="stat-label">📦 Всего материалов</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" style="color: var(--warning-color);"><?= count(array_filter($materials, fn($m) => $m['current_stock'] <= $m['min_stock'])) ?></div>
+                <div class="stat-label">⚠️ Низкий запас</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" style="color: var(--info-color);"><?= count($recent_consumptions) ?></div>
+                <div class="stat-label">📋 Операций сегодня</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" style="color: var(--success-color);"><?= count($tasks) ?></div>
+                <div class="stat-label">🔧 Активных заданий</div>
+            </div>
         </div>
 
         <?php if ($success): ?>
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <i class="fas fa-check-circle"></i> <?= e($success_message) ?>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <div class="history-card" style="border-left: 4px solid var(--success-color);">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <i class="fas fa-check-circle" style="color: var(--success-color); font-size: 1.5rem;"></i>
+                <div>
+                    <strong style="color: var(--success-color);">Успешно!</strong>
+                    <div style="color: var(--text-primary);"><?= e($success_message) ?></div>
+                </div>
+            </div>
         </div>
         <?php endif; ?>
         
         <?php if (!empty($errors)): ?>
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <?php foreach ($errors as $err): ?><div><i class="fas fa-exclamation-triangle"></i> <?= e($err) ?></div><?php endforeach; ?>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <div class="history-card" style="border-left: 4px solid var(--danger-color);">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <i class="fas fa-exclamation-triangle" style="color: var(--danger-color); font-size: 1.5rem;"></i>
+                <div>
+                    <strong style="color: var(--danger-color);">Ошибка!</strong>
+                    <?php foreach ($errors as $err): ?>
+                    <div style="color: var(--text-primary);"><?= e($err) ?></div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
         </div>
         <?php endif; ?>
 
-        <!-- Вкладка: Массовое списание -->
-        <div class="card mb-4">
-            <div class="card-header bg-warning text-dark">
-                <h5 class="mb-0"><i class="fas fa-boxes"></i> Списание материалов</h5>
-            </div>
-            <div class="card-body">
-                <form method="POST" id="consumptionForm">
-                    <input type="hidden" name="action" value="batch_consumption">
-                    
-                    <div class="row mb-3">
-                        <div class="col-md-4">
-                            <label class="form-label">Производственное задание</label>
-                            <select name="task_id" id="taskSelect" class="form-select">
-                                <option value="">Не выбрано</option>
-                                <?php foreach ($tasks as $t): ?>
-                                <option value="<?= $t['id'] ?>" 
-                                    data-order="<?= e($t['order_number']) ?>" 
-                                    data-stage="<?= e($t['stage_name']) ?>">
-                                    <?= e($t['task_number']) ?> | <?= e($t['stage_name']) ?> (<?= e($t['order_number']) ?>)
-                                </option>
-                                <?php endforeach; ?>
-                            </select>
-                            <small class="text-muted">Привязка к заданию (опционально)</small>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Причина списания</label>
-                            <select name="reason" class="form-select">
-                                <?php foreach ($consumption_reasons as $key => $label): ?>
-                                <option value="<?= $key ?>"><?= $label ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Примечание</label>
-                            <input type="text" name="notes" class="form-control" placeholder="Комментарий к операции">
-                        </div>
+        <!-- Форма списания -->
+        <div class="history-card">
+            <form method="POST" id="consumptionForm">
+                <input type="hidden" name="action" value="batch_consumption">
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                    <div>
+                        <label class="form-label"><i class="fas fa-tasks"></i> Производственное задание</label>
+                        <select name="task_id" id="taskSelect" class="search-input" style="width: 100%;">
+                            <option value="">Не выбрано</option>
+                            <?php foreach ($tasks as $t): ?>
+                            <option value="<?= $t['id'] ?>" 
+                                data-order="<?= e($t['order_number']) ?>" 
+                                data-stage="<?= e($t['stage_name']) ?>">
+                                <?= e($t['task_number']) ?> | <?= e($t['stage_name']) ?> (<?= e($t['order_number']) ?>)
+                            </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <small style="color: var(--text-muted);">Привязка к заданию (опционально)</small>
                     </div>
+                    <div>
+                        <label class="form-label"><i class="fas fa-clipboard-list"></i> Причина списания</label>
+                        <select name="reason" class="search-input" style="width: 100%;">
+                            <?php foreach ($consumption_reasons as $key => $label): ?>
+                            <option value="<?= $key ?>"><?= $label ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label"><i class="fas fa-comment"></i> Примечание</label>
+                        <input type="text" name="notes" class="search-input" placeholder="Комментарий к операции" style="width: 100%;">
+                    </div>
+                </div>
 
-                    <div class="table-responsive">
-                        <table class="table table-hover table-bordered" id="materialsTable">
-                            <thead class="table-light">
-                                <tr>
-                                    <th width="40"><input type="checkbox" id="selectAll"></th>
-                                    <th>Код</th>
-                                    <th>Наименование</th>
-                                    <th width="120">Ед.изм.</th>
-                                    <th width="130">Остаток</th>
-                                    <th width="150">К списанию</th>
-                                    <th width="80">Статус</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($materials as $m): 
-                                    $unitName = isset($units[$m['unit_id']]) ? $units[$m['unit_id']] : 'шт.';
-                                    $lowStock = $m['current_stock'] <= $m['min_stock'];
-                                ?>
-                                <tr class="<?= $lowStock ? 'table-warning' : '' ?>">
-                                    <td>
-                                        <input type="checkbox" class="material-checkbox" 
-                                            data-id="<?= $m['id'] ?>" 
-                                            data-name="<?= e($m['name']) ?>"
-                                            data-stock="<?= $m['current_stock'] ?>">
-                                    </td>
-                                    <td><strong><?= e($m['item_code']) ?></strong></td>
-                                    <td><?= e($m['name']) ?></td>
-                                    <td><?= e($unitName) ?></td>
-                                    <td>
-                                        <span class="<?= $lowStock ? 'text-danger fw-bold' : 'text-success' ?>">
-                                            <?= number_format($m['current_stock'], 3) ?>
-                                        </span>
-                                        <?php if ($lowStock): ?>
-                                        <br><small class="text-danger"><i class="fas fa-exclamation-triangle"></i> Мин: <?= $m['min_stock'] ?></small>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td>
-                                        <input type="number" step="0.001" min="0" 
-                                            class="form-control form-control-sm qty-input" 
-                                            name="items[<?= $m['id'] ?>]" 
-                                            placeholder="0"
-                                            data-max="<?= $m['current_stock'] ?>"
-                                            oninput="validateQty(this)">
-                                    </td>
-                                    <td>
-                                        <span class="badge <?= $lowStock ? 'bg-warning text-dark' : 'bg-success' ?>">
-                                            <?= $lowStock ? 'Мало' : 'OK' ?>
-                                        </span>
-                                    </td>
-                                </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                    
-                    <div class="d-flex justify-content-between align-items-center mt-3">
-                        <div>
-                            <button type="button" class="btn btn-outline-secondary" onclick="clearAll()">
-                                <i class="fas fa-times"></i> Очистить
-                            </button>
-                            <button type="button" class="btn btn-outline-primary" onclick="fillFromTask()">
-                                <i class="fas fa-tasks"></i> Заполнить по заданию
-                            </button>
-                        </div>
-                        <div>
-                            <span id="selectedCount" class="me-3">Выбрано: <strong>0</strong></span>
-                            <button type="submit" class="btn btn-warning btn-lg">
-                                <i class="fas fa-minus-circle"></i> Списать материалы
-                            </button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- История последних операций -->
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="fas fa-history"></i> Последние операции списания</h5>
-            </div>
-            <div class="card-body">
                 <div class="table-responsive">
-                    <table class="table table-sm table-striped">
+                    <table class="table-custom" id="materialsTable">
                         <thead>
                             <tr>
-                                <th>Дата/Время</th>
-                                <th>Материал</th>
-                                <th>Количество</th>
-                                <th>Сотрудник</th>
-                                <th>Примечание</th>
+                                <th width="50"><input type="checkbox" id="selectAll"></th>
+                                <th>Код</th>
+                                <th>Наименование</th>
+                                <th width="100">Ед.изм.</th>
+                                <th width="120">Остаток</th>
+                                <th width="140">К списанию</th>
+                                <th width="90">Статус</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($recent_consumptions as $rc): ?>
+                            <?php foreach ($materials as $m): 
+                                $unitName = isset($units[$m['unit_id']]) ? $units[$m['unit_id']] : 'шт.';
+                                $lowStock = $m['current_stock'] <= $m['min_stock'];
+                            ?>
                             <tr>
-                                <td><?= date('d.m.Y H:i', strtotime($rc['movement_date'])) ?></td>
                                 <td>
-                                    <strong><?= e($rc['item_name']) ?></strong><br>
-                                    <small class="text-muted"><?= e($rc['item_code']) ?></small>
+                                    <input type="checkbox" class="material-checkbox" 
+                                        data-id="<?= $m['id'] ?>" 
+                                        data-name="<?= e($m['name']) ?>"
+                                        data-stock="<?= $m['current_stock'] ?>">
                                 </td>
-                                <td><span class="badge bg-warning text-dark"><?= number_format($rc['quantity'], 3) ?> <?= e($rc['unit_name']) ?></span></td>
-                                <td><?= e($rc['last_name'] . ' ' . $rc['first_name']) ?></td>
-                                <td><small><?= e($rc['notes']) ?></small></td>
+                                <td><strong style="color: var(--text-secondary);"><?= e($m['item_code']) ?></strong></td>
+                                <td><?= e($m['name']) ?></td>
+                                <td style="color: var(--text-secondary);"><?= e($unitName) ?></td>
+                                <td>
+                                    <span class="<?= $lowStock ? 'stock-low' : 'quantity-positive' ?>">
+                                        <?= number_format($m['current_stock'], 3) ?>
+                                    </span>
+                                    <?php if ($lowStock): ?>
+                                    <div style="font-size: 0.75rem; color: var(--warning-color); margin-top: 0.25rem;">
+                                        <i class="fas fa-exclamation-triangle"></i> Мин: <?= $m['min_stock'] ?>
+                                    </div>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <input type="number" step="0.001" min="0" 
+                                        class="search-input qty-input" 
+                                        name="items[<?= $m['id'] ?>]" 
+                                        placeholder="0"
+                                        data-max="<?= $m['current_stock'] ?>"
+                                        oninput="validateQty(this)"
+                                        style="width: 100%;">
+                                </td>
+                                <td>
+                                    <span class="<?= $lowStock ? 'badge-stock-low' : 'badge-stock-ok' ?>">
+                                        <?= $lowStock ? 'Мало' : 'OK' ?>
+                                    </span>
+                                </td>
                             </tr>
                             <?php endforeach; ?>
                         </tbody>
                     </table>
                 </div>
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+                    <div style="display: flex; gap: 1rem;">
+                        <button type="button" class="btn-secondary-custom" onclick="clearAll()">
+                            <i class="fas fa-times"></i> Очистить
+                        </button>
+                        <button type="button" class="btn-secondary-custom" onclick="fillFromTask()">
+                            <i class="fas fa-tasks"></i> Заполнить по заданию
+                        </button>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <span id="selectedCount" style="color: var(--text-secondary);">Выбрано: <strong style="color: var(--text-primary);">0</strong></span>
+                        <button type="submit" class="btn-action">
+                            <i class="fas fa-minus-circle"></i> Списать материалы
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- История последних операций -->
+        <div class="history-card">
+            <h3 style="margin-bottom: 1.5rem; color: var(--text-primary);"><i class="fas fa-history"></i> Последние операции списания</h3>
+            <div class="table-responsive">
+                <table class="table-custom">
+                    <thead>
+                        <tr>
+                            <th>Дата/Время</th>
+                            <th>Материал</th>
+                            <th>Количество</th>
+                            <th>Сотрудник</th>
+                            <th>Примечание</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($recent_consumptions as $rc): ?>
+                        <tr>
+                            <td style="color: var(--text-secondary);"><?= date('d.m.Y H:i', strtotime($rc['movement_date'])) ?></td>
+                            <td>
+                                <div style="color: var(--text-primary);"><?= e($rc['item_name']) ?></div>
+                                <small style="color: var(--text-muted);"><?= e($rc['item_code']) ?></small>
+                            </td>
+                            <td>
+                                <span class="operation-consumption">
+                                    <?= number_format($rc['quantity'], 3) ?> <?= e($rc['unit_name']) ?>
+                                </span>
+                            </td>
+                            <td style="color: var(--text-secondary);"><?= e($rc['last_name'] . ' ' . $rc['first_name']) ?></td>
+                            <td style="color: var(--text-muted); font-size: 0.9rem;"><?= e($rc['notes']) ?></td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
