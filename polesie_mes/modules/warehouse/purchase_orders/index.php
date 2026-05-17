@@ -27,6 +27,37 @@ $errorMessage = '';
 // ОБРАБОТКА ДЕЙСТВИЙ
 // ==========================================
 
+// AJAX запрос для получения деталей заказа
+if (isset($_GET['action']) && $_GET['action'] === 'get_order_details') {
+    header('Content-Type: application/json');
+    
+    $order_id = (int)($_GET['order_id'] ?? 0);
+    
+    if ($order_id > 0) {
+        $stmt = $db->prepare("
+            SELECT po.*, p.name as supplier_name, 
+                   s.first_name as created_by_first, s.last_name as created_by_last,
+                   r.first_name as received_by_first, r.last_name as received_by_last
+            FROM purchase_orders po
+            LEFT JOIN partners p ON po.supplier_id = p.id
+            LEFT JOIN staff s ON po.created_by = s.id
+            LEFT JOIN staff r ON po.received_by = r.id
+            WHERE po.id = ?
+        ");
+        $stmt->execute([$order_id]);
+        $order = $stmt->fetch();
+        
+        if ($order) {
+            echo json_encode(['success' => true, 'order' => $order]);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Заказ не найден']);
+        }
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Некорректный ID заказа']);
+    }
+    exit;
+}
+
 // Создание нового заказа поставщику
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     try {
@@ -174,6 +205,25 @@ $stmt = $db->query("
 ");
 $materials = $stmt->fetchAll();
 
+// Получаем данные о товарах в заказах для отображения
+foreach ($orders as &$order) {
+    $items = json_decode($order['items_json'], true);
+    if (is_array($items)) {
+        foreach ($items as &$item) {
+            if (isset($item['item_id'])) {
+                $stmt = $db->prepare("SELECT u.name as unit_name FROM items i LEFT JOIN dictionaries u ON i.unit_id = u.id WHERE i.id = ?");
+                $stmt->execute([$item['item_id']]);
+                $unitData = $stmt->fetch();
+                if ($unitData) {
+                    $item['unit_name'] = $unitData['unit_name'];
+                }
+            }
+        }
+        $order['items_json'] = json_encode($items, JSON_UNESCAPED_UNICODE);
+    }
+}
+unset($order);
+
 $pageTitle = 'Заказы поставщикам | PolesieMES';
 ?>
 
@@ -216,6 +266,75 @@ $pageTitle = 'Заказы поставщикам | PolesieMES';
         .priority-normal { background: #32ade6; color: white; }
         .priority-high { background: #ff9f0a; color: black; }
         .priority-urgent { background: #ff453a; color: white; }
+        
+        /* Order Details Grid */
+        .order-details-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+        }
+        
+        .detail-section {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 1.25rem;
+            transition: all 0.3s ease;
+        }
+        
+        .detail-section:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 107, 107, 0.3);
+        }
+        
+        .detail-section.full-width {
+            grid-column: 1 / -1;
+        }
+        
+        .detail-section h6 {
+            color: var(--primary-gradient-start);
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.95rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--glass-border);
+        }
+        
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            gap: 1rem;
+        }
+        
+        .detail-row:not(:last-child) {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .detail-label {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        
+        .detail-value {
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            text-align: right;
+        }
+        
+        .notes-content {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 8px;
+            padding: 1rem;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
         
         /* Modal Styles - Orange Theme */
         .modal-content {
@@ -296,6 +415,30 @@ $pageTitle = 'Заказы поставщикам | PolesieMES';
         .item-row-container:hover {
             background: rgba(255, 255, 255, 0.05);
             border-color: rgba(255, 107, 107, 0.3);
+        }
+        
+        /* Items table in modal */
+        #viewItemsContent table {
+            width: 100%;
+            margin-bottom: 1rem;
+        }
+        
+        #viewItemsContent th {
+            background: rgba(255, 107, 107, 0.2);
+            color: var(--primary-gradient-start);
+            font-weight: 600;
+            padding: 0.75rem;
+            border-bottom: 2px solid var(--glass-border);
+        }
+        
+        #viewItemsContent td {
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--glass-border);
+            vertical-align: middle;
+        }
+        
+        #viewItemsContent tr:hover {
+            background: rgba(255, 255, 255, 0.03);
         }
         
         .item-row-grid {
@@ -630,8 +773,11 @@ $pageTitle = 'Заказы поставщикам | PolesieMES';
                                             </button>
                                         </form>
                                         <?php endif; ?>
-                                        <button class="btn btn-secondary btn-sm" onclick="viewItems(<?= htmlspecialchars(json_encode($order['items_json'])) ?>)">
-                                            <i class="fas fa-eye"></i> Товары
+                                        <button class="btn btn-info btn-sm" onclick="viewOrderDetails(<?= $order['id'] ?>)">
+                                            <i class="fas fa-info-circle"></i> Детали
+                                        </button>
+                                        <button class="btn btn-secondary btn-sm" onclick="viewItems(<?= htmlspecialchars(json_encode($order['items_json'])) ?>, <?= $order['id'] ?>)">
+                                            <i class="fas fa-boxes"></i> Состав
                                         </button>
                                     </div>
                                 </td>
@@ -742,12 +888,27 @@ $pageTitle = 'Заказы поставщикам | PolesieMES';
         </div>
     </div>
 
-    <!-- Модальное окно просмотра товаров -->
-    <div class="modal fade" id="viewItemsModal" tabindex="-1">
-        <div class="modal-dialog">
+    <!-- Модальное окно просмотра деталей заказа -->
+    <div class="modal fade" id="orderDetailsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Товары заказа</h5>
+                    <h5 class="modal-title"><i class="fas fa-file-invoice"></i> Детали заказа <span id="orderNumberDisplay"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="orderDetailsContent">
+                    <!-- Content will be populated dynamically -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно просмотра товаров -->
+    <div class="modal fade" id="viewItemsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-boxes"></i> Состав поставки</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
@@ -872,30 +1033,162 @@ $pageTitle = 'Заказы поставщикам | PolesieMES';
             document.getElementById('itemsCountBadge').textContent = count;
         }
         
-        function viewItems(itemsJson) {
+        function viewItems(itemsJson, orderId = null) {
             const items = JSON.parse(itemsJson);
-            let html = '<div class="table-responsive"><table class="table"><thead><tr><th>Материал</th><th>Артикул</th><th>Кол-во</th><th>Цена</th><th>Сумма</th></tr></thead><tbody>';
+            let html = '<div class="table-responsive"><table class="table table-hover"><thead><tr><th>#</th><th>Материал</th><th>Артикул</th><th>Кол-во</th><th>Ед.</th><th>Цена</th><th>Сумма</th></tr></thead><tbody>';
             
             let total = 0;
-            items.forEach(item => {
+            items.forEach((item, index) => {
                 const sum = (item.quantity || 0) * (item.price || 0);
                 total += sum;
                 html += `<tr>
-                    <td>${item.item_name || 'Материал #' + item.item_id}</td>
+                    <td>${index + 1}</td>
+                    <td><strong>${item.item_name || 'Материал #' + item.item_id}</strong></td>
                     <td><span class="item-code-badge">${item.item_code || '-'}</span></td>
                     <td>${item.quantity}</td>
+                    <td>${item.unit_name || '-'}</td>
                     <td>${parseFloat(item.price).toFixed(2)} BYN</td>
                     <td><strong>${sum.toFixed(2)} BYN</strong></td>
                 </tr>`;
             });
             
             html += '</tbody></table></div>';
-            html += `<div class="total-summary-section"><span class="total-label">Итого:</span><span class="total-amount">${total.toFixed(2)} BYN</span></div>`;
+            html += `<div class="total-summary-section"><span class="total-label"><i class="fas fa-calculator"></i> Итого:</span><span class="total-amount">${total.toFixed(2)} BYN</span></div>`;
             
             document.getElementById('viewItemsContent').innerHTML = html;
             
             const modal = new bootstrap.Modal(document.getElementById('viewItemsModal'));
             modal.show();
+        }
+        
+        function viewOrderDetails(orderId) {
+            // Fetch order details via AJAX or use embedded data
+            fetch(`?action=get_order_details&order_id=${orderId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const order = data.order;
+                        const items = JSON.parse(order.items_json || '[]');
+                        
+                        let itemsHtml = '<div class="table-responsive"><table class="table table-sm"><thead><tr><th>Материал</th><th>Артикул</th><th>Кол-во</th><th>Цена</th><th>Сумма</th></tr></thead><tbody>';
+                        let itemsTotal = 0;
+                        items.forEach(item => {
+                            const sum = (item.quantity || 0) * (item.price || 0);
+                            itemsTotal += sum;
+                            itemsHtml += `<tr>
+                                <td>${item.item_name || 'Материал #' + item.item_id}</td>
+                                <td><span class="item-code-badge">${item.item_code || '-'}</span></td>
+                                <td>${item.quantity} ${item.unit_name || ''}</td>
+                                <td>${parseFloat(item.price).toFixed(2)} BYN</td>
+                                <td><strong>${sum.toFixed(2)} BYN</strong></td>
+                            </tr>`;
+                        });
+                        itemsHtml += '</tbody></table></div>';
+                        
+                        const statusNames = {
+                            'draft': 'Черновик',
+                            'sent': 'Отправлен',
+                            'confirmed': 'Подтверждён',
+                            'partial': 'Частично получен',
+                            'received': 'Получен',
+                            'cancelled': 'Отменён'
+                        };
+                        
+                        const priorityNames = {
+                            'low': 'Низкий',
+                            'normal': 'Обычный',
+                            'high': 'Высокий',
+                            'urgent': 'Срочный'
+                        };
+                        
+                        const statusClass = {
+                            'draft': 'status-draft',
+                            'sent': 'status-sent',
+                            'confirmed': 'status-confirmed',
+                            'partial': 'status-partial',
+                            'received': 'status-received',
+                            'cancelled': 'status-cancelled'
+                        };
+                        
+                        document.getElementById('orderNumberDisplay').textContent = '#' + order.order_number;
+                        document.getElementById('orderDetailsContent').innerHTML = `
+                            <div class="order-details-grid">
+                                <div class="detail-section">
+                                    <h6><i class="fas fa-info-circle"></i> Основная информация</h6>
+                                    <div class="detail-row">
+                                        <span class="detail-label">Номер заказа:</span>
+                                        <span class="detail-value"><strong>${order.order_number}</strong></span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span class="detail-label">Статус:</span>
+                                        <span class="detail-value"><span class="status-badge ${statusClass[order.status] || ''}">${statusNames[order.status] || order.status}</span></span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span class="detail-label">Приоритет:</span>
+                                        <span class="detail-value"><span class="priority-badge priority-${order.priority}">${priorityNames[order.priority] || order.priority}</span></span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span class="detail-label">Поставщик:</span>
+                                        <span class="detail-value">${order.supplier_name || 'Не указан'}</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="detail-section">
+                                    <h6><i class="fas fa-calendar-alt"></i> Даты</h6>
+                                    <div class="detail-row">
+                                        <span class="detail-label">Дата заказа:</span>
+                                        <span class="detail-value">${order.order_date ? new Date(order.order_date).toLocaleDateString('ru-RU') : '-'}</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span class="detail-label">Ожидаемая доставка:</span>
+                                        <span class="detail-value">${order.expected_delivery ? new Date(order.expected_delivery).toLocaleDateString('ru-RU') : 'Не указана'}</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span class="detail-label">Фактическая доставка:</span>
+                                        <span class="detail-value">${order.actual_delivery ? new Date(order.actual_delivery).toLocaleString('ru-RU') : '-'}</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="detail-section">
+                                    <h6><i class="fas fa-users"></i> Сотрудники</h6>
+                                    <div class="detail-row">
+                                        <span class="detail-label">Создан:</span>
+                                        <span class="detail-value">${order.created_by_first || ''} ${order.created_by_last || ''}</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span class="detail-label">Получил:</span>
+                                        <span class="detail-value">${order.received_by_first || ''} ${order.received_by_last || ''}</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="detail-section full-width">
+                                    <h6><i class="fas fa-boxes"></i> Состав поставки (${items.length} поз.)</h6>
+                                    ${itemsHtml}
+                                    <div class="total-summary-section">
+                                        <span class="total-label"><i class="fas fa-calculator"></i> Общая сумма:</span>
+                                        <span class="total-amount">${itemsTotal.toFixed(2)} BYN</span>
+                                    </div>
+                                </div>
+                                
+                                ${order.notes ? `
+                                <div class="detail-section full-width">
+                                    <h6><i class="fas fa-comment-alt"></i> Примечание</h6>
+                                    <div class="notes-content">${order.notes}</div>
+                                </div>
+                                ` : ''}
+                            </div>
+                        `;
+                        
+                        const modal = new bootstrap.Modal(document.getElementById('orderDetailsModal'));
+                        modal.show();
+                    } else {
+                        alert('Ошибка загрузки данных заказа');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Ошибка при загрузке данных заказа');
+                });
         }
         
         function editOrder(orderId) {
