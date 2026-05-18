@@ -361,10 +361,10 @@ $pageTitle = 'Детали заказа #' . e($order['order_number']) . ' | ' .
                             <div class="mb-3">
                                 <div class="info-label">Сумма заказа</div>
                                 <div class="info-value" style="font-size: 1.25rem; color: var(--success-color);">
-                                    <strong><?= formatNumber($order['total_amount'], 2) ?> BYN</strong>
+                                    <strong><?= formatNumber($order['total_amount'] ?? 0, 2) ?> BYN</strong>
                                 </div>
                             </div>
-                            <?php if ($order['tracking_number']): ?>
+                            <?php if (!empty($order['tracking_number'])): ?>
                             <div class="mb-3">
                                 <div class="info-label">Трекинг-номер</div>
                                 <div class="info-value"><?= e($order['tracking_number']) ?></div>
@@ -402,13 +402,16 @@ $pageTitle = 'Детали заказа #' . e($order['order_number']) . ' | ' .
                             <?php 
                             $itemNum = 1;
                             foreach ($items as $item): 
+                                $quantity = $item['quantity'] ?? 0;
+                                $unitPrice = $item['unit_price'] ?? 0;
+                                $totalPrice = $item['total_price'] ?? ($quantity * $unitPrice);
                             ?>
                             <tr>
                                 <td><?= $itemNum++ ?></td>
-                                <td><?= e($item['name'] ?? 'Товар #' . $item['product_id']) ?></td>
-                                <td style="text-align: center;"><?= $item['quantity'] ?></td>
-                                <td style="text-align: right;"><?= formatNumber($item['unit_price'], 2) ?> BYN</td>
-                                <td style="text-align: right;"><strong><?= formatNumber($item['total_price'], 2) ?> BYN</strong></td>
+                                <td><?= e($item['name'] ?? 'Товар #' . ($item['product_id'] ?? $itemNum)) ?></td>
+                                <td style="text-align: center;"><?= $quantity ?></td>
+                                <td style="text-align: right;"><?= formatNumber($unitPrice, 2) ?> BYN</td>
+                                <td style="text-align: right;"><strong><?= formatNumber($totalPrice, 2) ?> BYN</strong></td>
                             </tr>
                             <?php endforeach; ?>
                         </tbody>
