@@ -44,7 +44,7 @@ $stmt->execute([$id]);
 $taskCount = $stmt->fetch()['task_count'] ?? 0;
 
 // Получение количества записей в журнале перемещений
-$stmt = $db->prepare("SELECT COUNT(*) as movement_count FROM material_movements WHERE employee_id = ?");
+$stmt = $db->prepare("SELECT COUNT(*) as movement_count FROM movements WHERE employee_id = ?");
 $stmt->execute([$id]);
 $movementCount = $stmt->fetch()['movement_count'] ?? 0;
 
