@@ -146,6 +146,8 @@ body {
     -webkit-backdrop-filter: var(--backdrop-blur);
     border-bottom: 1px solid var(--border);
     transition: all 0.3s ease;
+    flex-wrap: nowrap;
+    gap: 1rem;
 }
 
 .navbar.scrolled {
@@ -160,6 +162,8 @@ body {
     gap: 1rem;
     text-decoration: none;
     color: var(--text-primary);
+    flex-shrink: 0;
+    min-width: fit-content;
 }
 
 .brand-logo {
@@ -198,8 +202,10 @@ body {
 .nav-menu {
     display: flex;
     align-items: center;
-    gap: 2rem;
+    gap: 1.5rem;
     list-style: none;
+    flex-shrink: 0;
+    min-width: fit-content;
 }
 
 .nav-link {
@@ -249,8 +255,10 @@ body {
 .user-menu {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.75rem;
     flex-shrink: 0;
+    min-width: fit-content;
+    max-width: 280px;
 }
 
 .user-avatar {
@@ -275,34 +283,39 @@ body {
     display: flex;
     flex-direction: column;
     min-width: 0;
-    max-width: 150px;
+    max-width: 120px;
+    overflow: hidden;
 }
 
 .user-name {
     font-weight: 600;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     color: var(--text-primary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    line-height: 1.3;
 }
 
 .user-role {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     color: var(--text-secondary);
     background: var(--glass-bg);
-    padding: 0.2rem 0.6rem;
+    padding: 0.15rem 0.5rem;
     border-radius: 6px;
     border: 1px solid var(--border);
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.2;
 }
 
 .btn-logout {
-    padding: 0.6rem 1.25rem;
+    padding: 0.5rem 1rem;
     background: var(--glass-bg);
     border: 1px solid var(--border);
     border-radius: 12px;
-    font-size: 0.875rem;
+    font-size: 0.8rem;
     font-weight: 600;
     font-family: inherit;
     color: var(--text-primary);
@@ -312,7 +325,9 @@ body {
     backdrop-filter: blur(10px);
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.4rem;
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 
 .btn-logout:hover {
@@ -883,6 +898,7 @@ body {
 @media (max-width: 992px) {
     .navbar {
         padding: 1rem;
+        flex-wrap: wrap;
     }
     
     .nav-menu {
@@ -900,6 +916,50 @@ body {
     .stats-grid {
         grid-template-columns: repeat(2, 1fr);
     }
+    
+    .user-info {
+        max-width: 100px;
+    }
+    
+    .user-name {
+        font-size: 0.8rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .navbar {
+        gap: 0.5rem;
+    }
+    
+    .brand-name {
+        font-size: 1.1rem;
+    }
+    
+    .user-menu {
+        gap: 0.5rem;
+    }
+    
+    .user-info {
+        max-width: 80px;
+    }
+    
+    .user-name {
+        font-size: 0.75rem;
+    }
+    
+    .user-role {
+        font-size: 0.65rem;
+        padding: 0.1rem 0.4rem;
+    }
+    
+    .btn-logout {
+        padding: 0.4rem 0.75rem;
+        font-size: 0.75rem;
+    }
+    
+    .btn-logout span {
+        display: none;
+    }
 }
 
 @media (max-width: 576px) {
@@ -914,5 +974,9 @@ body {
     
     .user-menu {
         display: none;
+    }
+    
+    .brand-name {
+        font-size: 1rem;
     }
 }
