@@ -53,9 +53,9 @@ $tasks = $stmt->fetchAll();
 
 // Получение истории изменений заказа
 $stmt = $db->prepare("
-    SELECT al.*, u.username
+    SELECT al.*, s.username
     FROM activity_log al
-    LEFT JOIN users u ON al.user_id = u.id
+    LEFT JOIN staff s ON al.user_id = s.id
     WHERE al.module = 'orders' AND al.record_id = :order_id
     ORDER BY al.created_at DESC
     LIMIT 20
