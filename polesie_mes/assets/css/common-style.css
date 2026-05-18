@@ -663,7 +663,7 @@ body {
 }
 
 .table {
-    color: var(--text-primary);
+    color: #ffffff !important;
     margin-bottom: 0;
     width: 100%;
 }
@@ -671,7 +671,7 @@ body {
 .table thead th {
     background: var(--glass-bg);
     border-bottom: 1px solid var(--border);
-    color: var(--text-secondary);
+    color: #ffffff !important;
     font-weight: 600;
     font-size: 0.875rem;
     padding: 1rem;
@@ -683,6 +683,7 @@ body {
     border-bottom: 1px solid var(--border);
     padding: 1rem;
     vertical-align: middle;
+    color: #ffffff !important;
 }
 
 .table tbody tr {
@@ -830,28 +831,34 @@ body {
     margin-bottom: 0.625rem;
 }
 
-.form-control, .form-input, select.form-control {
+.form-control, .form-input, select.form-control, textarea.form-control {
     width: 100%;
     padding: 1rem 1.25rem;
-    background: var(--bg-input);
+    background: rgba(30, 30, 45, 0.8);
     border: 1px solid var(--border);
     border-radius: 12px;
     font-size: 1rem;
     font-family: inherit;
-    color: var(--text-primary);
+    color: #ffffff !important;
     transition: all 0.3s ease;
     backdrop-filter: blur(10px);
 }
 
-.form-control:focus, .form-input:focus, select.form-control:focus {
+.form-control:focus, .form-input:focus, select.form-control:focus, textarea.form-control:focus {
     outline: none;
     border-color: var(--primary-gradient-start);
     box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.15), 0 0 20px rgba(255, 107, 107, 0.1);
-    background: rgba(30, 30, 45, 0.7);
+    background: rgba(40, 40, 60, 0.9);
+    color: #ffffff !important;
 }
 
-.form-control::placeholder {
-    color: var(--text-muted);
+.form-control::placeholder, .form-input::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.form-control option, .form-select option, select.form-control option {
+    background: #1a1a2e;
+    color: #ffffff;
 }
 
 /* Scrollbar */

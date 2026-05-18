@@ -74,6 +74,41 @@ $pageTitle = 'Новый заказ | Заказы | ' . APP_NAME;
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/common-style.css">
+    <style>
+        .form-label {
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+        .form-control, .form-select {
+            background: rgba(30, 30, 45, 0.8);
+            border: 1px solid var(--glass-border);
+            color: #ffffff !important;
+            border-radius: 8px;
+        }
+        .form-control:focus, .form-select:focus {
+            background: rgba(40, 40, 60, 0.9);
+            border-color: var(--primary-gradient-start);
+            color: #ffffff !important;
+            box-shadow: 0 0 15px rgba(255, 107, 107, 0.2);
+        }
+        .form-control::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+        .form-control option, .form-select option {
+            background: #1a1a2e;
+            color: #ffffff;
+        }
+        #itemsTable .form-control, #itemsTable .form-select {
+            font-size: 0.875rem;
+            color: #ffffff !important;
+        }
+        .price-cell, .total-cell {
+            font-weight: 600;
+            color: var(--primary-gradient-start);
+            padding: 0.5rem;
+        }
+    </style>
 </head>
 <body>
     <div class="particles-container"><div class="particle"></div><div class="particle"></div></div>
