@@ -148,6 +148,27 @@ body {
     transition: all 0.3s ease;
     flex-wrap: nowrap;
     gap: 1rem;
+    min-height: 76px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Стили для скроллбара навигации */
+.navbar::-webkit-scrollbar {
+    height: 3px;
+}
+
+.navbar::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.navbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 107, 107, 0.5);
+    border-radius: 2px;
+}
+
+.navbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 107, 107, 0.8);
 }
 
 .navbar.scrolled {
@@ -206,6 +227,11 @@ body {
     list-style: none;
     flex-shrink: 0;
     min-width: fit-content;
+    white-space: nowrap;
+}
+
+.nav-menu li {
+    white-space: nowrap;
 }
 
 .nav-link {
@@ -219,6 +245,7 @@ body {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    white-space: nowrap;
 }
 
 .nav-link::after {
@@ -259,6 +286,7 @@ body {
     flex-shrink: 0;
     min-width: fit-content;
     max-width: 280px;
+    white-space: nowrap;
 }
 
 .user-avatar {
