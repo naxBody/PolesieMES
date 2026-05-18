@@ -228,71 +228,7 @@ $pageTitle = 'Управление складом | ' . APP_NAME;
             color: var(--primary-gradient-start);
         }
         
-        /* Custom Buttons */
-        .btn-warning-custom {
-            background: linear-gradient(135deg, #ffd60a, #ff9f0a);
-            border: none;
-            color: #000;
-            padding: 0.6rem 1.2rem;
-            border-radius: 8px;
-            text-decoration: none;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        
-        .btn-warning-custom:hover {
-            background: linear-gradient(135deg, #ff9f0a, #ff8f00);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(255, 214, 10, 0.4);
-            color: #000;
-        }
-        
-        .btn-info-custom {
-            background: linear-gradient(135deg, #32ade6, #007aff);
-            border: none;
-            color: white;
-            padding: 0.6rem 1.2rem;
-            border-radius: 8px;
-            text-decoration: none;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        
-        .btn-info-custom:hover {
-            background: linear-gradient(135deg, #007aff, #005ecb);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(50, 173, 230, 0.4);
-            color: white;
-        }
-        
-        .btn-secondary-custom {
-            background: linear-gradient(135deg, #8e8e93, #636366);
-            border: none;
-            color: white;
-            padding: 0.6rem 1.2rem;
-            border-radius: 8px;
-            text-decoration: none;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        
-        .btn-secondary-custom:hover {
-            background: linear-gradient(135deg, #636366, #48484a);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(142, 142, 147, 0.4);
-            color: white;
-        }
-        
-        /* Transaction List */
+        /* Custom Buttons - Using common styles */
         .transaction-list {
             list-style: none;
         }

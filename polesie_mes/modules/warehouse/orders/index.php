@@ -377,38 +377,6 @@ $pageTitle = 'Отгрузка | PolesieMES';
             background: rgba(142, 142, 147, 0.3) !important;
             color: var(--text-primary);
         }
-        
-        .btn-success {
-            background: linear-gradient(135deg, #30d158, #24a945) !important;
-            border: none;
-            color: white;
-            padding: 0.6rem 1.25rem;
-            border-radius: 10px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-        
-        .btn-success:hover {
-            background: linear-gradient(135deg, #24a945, #1e8b38) !important;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(48, 209, 88, 0.4);
-        }
-        
-        .btn-warning {
-            background: linear-gradient(135deg, #ffd60a, #ff9f0a) !important;
-            border: none;
-            color: #000;
-            padding: 0.6rem 1.25rem;
-            border-radius: 10px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-        
-        .btn-warning:hover {
-            background: linear-gradient(135deg, #ff9f0a, #ff8f00) !important;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(255, 214, 10, 0.4);
-        }
     </style>
 </head>
 <body>
@@ -594,7 +562,7 @@ $pageTitle = 'Отгрузка | PolesieMES';
                         
                         <?php if ($order['status'] === 'ready'): ?>
                         <div class="mt-3">
-                            <button type="submit" class="btn btn-success">
+                            <button type="submit" class="btn-success">
                                 <i class="fas fa-check"></i> Подтвердить отгрузку
                             </button>
                         </div>
@@ -603,7 +571,7 @@ $pageTitle = 'Отгрузка | PolesieMES';
                             <form method="POST" style="display:inline;">
                                 <input type="hidden" name="action" value="cancel_shipment">
                                 <input type="hidden" name="order_id" value="<?= $order['id'] ?>">
-                                <button type="submit" class="btn btn-warning" onclick="return confirm('Отменить отгрузку?')">
+                                <button type="submit" class="btn-warning" onclick="return confirm('Отменить отгрузку?')">
                                     <i class="fas fa-undo"></i> Отменить отгрузку
                                 </button>
                             </form>

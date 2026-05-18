@@ -144,7 +144,7 @@ $pageTitle = 'Новый заказ | Заказы | ' . APP_NAME;
                             <button type="button" class="btn btn-sm btn-outline-primary" onclick="addItem()"><i class="fas fa-plus"></i> Добавить позицию</button>
                         </div>
                     </div>
-                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Создать заказ</button>
+                    <button type="submit" class="btn-primary"><i class="fas fa-save"></i> Создать заказ</button>
                 </form>
             </div>
         </div>
