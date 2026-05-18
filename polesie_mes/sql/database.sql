@@ -390,7 +390,13 @@ INSERT INTO items (item_type, item_code, name, category_id, unit_id, current_sto
 ('material', 'MAT-PNT-003', 'Эмаль ПФ-115 серая', 3, 2, 165.00, 40, 12.00, 13, 8),
 ('material', 'MAT-EL-001', 'Клеммная колодка ТК-10', 2, 1, 850.00, 200, 3.50, 12, 9),
 ('material', 'MAT-EL-002', 'Кабель ПВ3 2.5мм²', 2, 3, 1200.00, 500, 2.80, 12, 10),
-('material', 'MAT-EL-003', 'Автоматический выключатель АП-50', 2, 1, 320.00, 100, 15.00, 12, 9);
+('material', 'MAT-EL-003', 'Автоматический выключатель АП-50', 2, 1, 320.00, 100, 15.00, 12, 9),
+('material', 'MAT-ST-003', 'Сталь листовая Ст3 8мм', 1, 2, 1200.00, 400, 3.20, 11, 5),
+('material', 'MAT-ST-004', 'Уголок стальной 50х50х5', 1, 3, 950.00, 300, 4.50, 11, 5),
+('material', 'MAT-CU-004', 'Провод медный ПУГВ 6мм²', 2, 3, 780.00, 200, 8.50, 12, 10),
+('material', 'MAT-INS-003', 'Пленка электроизоляционная ПЭТФ', 2, 3, 280.00, 80, 18.00, 12, 6),
+('material', 'MAT-PRS-004', 'Сальник кабельный М20х1.5', 4, 1, 450.00, 150, 2.50, 12, 7),
+('material', 'MAT-PNT-004', 'Растворитель Р-4', 3, 2, 120.00, 30, 6.50, 13, 8);
 
 -- Оборудование
 INSERT INTO items (item_type, item_code, name, category_id, location_id, status, extra_specs) VALUES
@@ -422,7 +428,17 @@ INSERT INTO orders (order_number, customer_id, order_date, delivery_date, priori
 ('ORD-2023-045', 2, '2023-11-10', '2023-12-20', 'normal', 'completed', '[{"product_id":2,"quantity":15,"unit_price":4200,"total":63000},{"product_id":4,"quantity":3,"unit_price":5500,"total":16500}]', 79500.00, 3, 'Заказ прошлого года'),
 ('ORD-2023-046', 3, '2023-11-25', '2024-01-15', 'high', 'completed', '[{"product_id":1,"quantity":25,"unit_price":2500,"total":62500},{"product_id":2,"quantity":15,"unit_price":4200,"total":63000},{"product_id":6,"quantity":5,"unit_price":3200,"total":16000}]', 141500.00, 4, 'Крупный заказ МТЗ'),
 ('ORD-2023-047', 10, '2023-12-01', '2024-02-01', 'normal', 'completed', '[{"product_id":7,"quantity":4,"unit_price":5800,"total":23200},{"product_id":11,"quantity":1,"unit_price":850,"total":850}]', 24050.00, 3, 'Экспорт в Литву'),
-('ORD-2023-048', 5, '2023-12-10', '2024-01-30', 'urgent', 'completed', '[{"product_id":1,"quantity":20,"unit_price":2500,"total":50000},{"product_id":2,"quantity":8,"unit_price":4200,"total":33600},{"product_id":12,"quantity":3,"unit_price":1650,"total":4950}]', 88550.00, 4, 'Срочный заказ Гродноэнерго');
+('ORD-2023-048', 5, '2023-12-10', '2024-01-30', 'urgent', 'completed', '[{"product_id":1,"quantity":20,"unit_price":2500,"total":50000},{"product_id":2,"quantity":8,"unit_price":4200,"total":33600},{"product_id":12,"quantity":3,"unit_price":1650,"total":4950}]', 88550.00, 4, 'Срочный заказ Гродноэнерго'),
+('ORD-2024-011', 1, '2024-03-20', '2024-05-10', 'normal', 'new', '[{"product_id":5,"quantity":8,"unit_price":5500,"total":44000},{"product_id":8,"quantity":3,"unit_price":7200,"total":21600}]', 65600.00, 3, 'Заказ генераторов'),
+('ORD-2024-012', 2, '2024-03-22', '2024-05-20', 'high', 'confirmed', '[{"product_id":1,"quantity":15,"unit_price":2500,"total":37500},{"product_id":3,"quantity":10,"unit_price":1800,"total":18000},{"product_id":6,"quantity":5,"unit_price":3200,"total":16000}]', 71500.00, 4, 'Комплексный заказ'),
+('ORD-2024-013', 3, '2024-03-25', '2024-06-01', 'normal', 'new', '[{"product_id":7,"quantity":4,"unit_price":5800,"total":23200},{"product_id":9,"quantity":6,"unit_price":2100,"total":12600}]', 35800.00, 3, 'Насосы для агропрома'),
+('ORD-2024-014', 4, '2024-03-28', '2024-05-25', 'urgent', 'in_production', '[{"product_id":2,"quantity":25,"unit_price":4200,"total":105000},{"product_id":4,"quantity":8,"unit_price":5500,"total":44000}]', 149000.00, 4, 'Крупный заказ двигателей'),
+('ORD-2024-015', 5, '2024-04-01', '2024-06-15', 'normal', 'new', '[{"product_id":11,"quantity":10,"unit_price":850,"total":8500},{"product_id":12,"quantity":8,"unit_price":1650,"total":13200}]', 21700.00, 3, 'Щиты управления'),
+('ORD-2024-016', 6, '2024-04-05', '2024-06-20', 'low', 'planned', '[{"product_id":1,"quantity":30,"unit_price":2500,"total":75000},{"product_id":2,"quantity":20,"unit_price":4200,"total":84000},{"product_id":6,"quantity":10,"unit_price":3200,"total":32000}]', 191000.00, 4, 'Масштабная поставка'),
+('ORD-2024-017', 7, '2024-04-08', '2024-05-30', 'high', 'confirmed', '[{"product_id":10,"quantity":5,"unit_price":3400,"total":17000},{"product_id":8,"quantity":2,"unit_price":7200,"total":14400}]', 31400.00, 3, 'Заказ насосов и генераторов'),
+('ORD-2024-018', 8, '2024-04-10', '2024-07-01', 'normal', 'new', '[{"product_id":3,"quantity":20,"unit_price":1800,"total":36000},{"product_id":5,"quantity":10,"unit_price":5500,"total":55000}]', 91000.00, 4, 'Экспорт в Россию'),
+('ORD-2024-019', 9, '2024-04-12', '2024-06-25', 'normal', 'new', '[{"product_id":7,"quantity":3,"unit_price":5800,"total":17400},{"product_id":9,"quantity":5,"unit_price":2100,"total":10500}]', 27900.00, 3, 'Поставка в Украину'),
+('ORD-2024-020', 10, '2024-04-15', '2024-07-10', 'low', 'planned', '[{"product_id":1,"quantity":18,"unit_price":2500,"total":45000},{"product_id":11,"quantity":12,"unit_price":850,"total":10200}]', 55200.00, 4, 'Заказ в Литву');
 
 -- Технологические маршруты
 INSERT INTO tech_routes (product_id, stage_name, stage_code, sequence_order, estimated_hours, work_center) VALUES
@@ -472,7 +488,14 @@ INSERT INTO production_tasks (task_number, order_id, product_id, stage_name, sta
 ('TSK-2024-029', 5, 1, 'Сборка узла', 7, 10, '2024-03-15 08:00:00', '2024-03-19 17:00:00', 'completed', 5, 'Цех №1', 'passed', 2, '2024-03-19 17:00:00', 'Сборка'),
 ('TSK-2024-030', 5, 1, 'Электромонтаж', 8, 10, '2024-03-20 08:00:00', '2024-03-20 17:00:00', 'completed', 6, 'Цех №1', 'passed', 3, '2024-03-20 17:00:00', 'Электромонтаж'),
 ('TSK-2024-031', 5, 1, 'Предварительные испытания', 9, 10, '2024-03-21 08:00:00', '2024-03-21 17:00:00', 'completed', 5, 'Цех №1', 'passed', 2, '2024-03-21 17:00:00', 'Испытания'),
-('TSK-2024-032', 5, 1, 'Контроль качества', 10, 10, '2024-03-22 08:00:00', '2024-03-22 17:00:00', 'completed', NULL, 'ОТК', 'passed', 2, '2024-03-22 17:00:00', 'Контроль качества');
+('TSK-2024-032', 5, 1, 'Контроль качества', 10, 10, '2024-03-22 08:00:00', '2024-03-22 17:00:00', 'completed', NULL, 'ОТК', 'passed', 2, '2024-03-22 17:00:00', 'Контроль качества'),
+('TSK-2024-033', 14, 1, 'Намотка обмоток', 6, 20, '2024-03-26 08:00:00', '2024-04-02 17:00:00', 'planned', 6, 'Цех №2, уч.2', NULL, NULL, NULL, 'Запланирована намотка'),
+('TSK-2024-034', 14, 1, 'Сборка узла', 7, 20, '2024-04-03 08:00:00', '2024-04-09 17:00:00', 'planned', 5, 'Цех №1', NULL, NULL, NULL, 'Сборка двигателей'),
+('TSK-2024-035', 14, 1, 'Электромонтаж', 8, 20, '2024-04-10 08:00:00', '2024-04-10 17:00:00', 'planned', 6, 'Цех №1', NULL, NULL, NULL, 'Электромонтаж'),
+('TSK-2024-036', 14, 1, 'Предварительные испытания', 9, 20, '2024-04-11 08:00:00', '2024-04-11 17:00:00', 'planned', 5, 'Цех №1', NULL, NULL, NULL, 'Испытания'),
+('TSK-2024-037', 14, 1, 'Контроль качества', 10, 20, '2024-04-12 08:00:00', '2024-04-12 17:00:00', 'planned', NULL, 'ОТК', NULL, NULL, NULL, 'ОТК'),
+('TSK-2024-038', 14, 1, 'Упаковка', 11, 20, '2024-04-15 08:00:00', '2024-04-15 17:00:00', 'planned', 7, 'Цех №1', NULL, NULL, NULL, 'Упаковка'),
+('TSK-2024-039', 14, 1, 'Отгрузка', 12, 20, '2024-04-16 08:00:00', '2024-04-16 12:00:00', 'planned', 7, 'Склад', NULL, NULL, NULL, 'Отгрузка');
 
 -- Движение материалов
 INSERT INTO movements (movement_type, item_id, quantity, reference_type, reference_id, warehouse_from, warehouse_to, employee_id, notes) VALUES
