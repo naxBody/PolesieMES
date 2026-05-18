@@ -1207,18 +1207,20 @@ $currentPage = 'dashboard';
         
         .table tbody td {
             padding: 1rem 1.25rem;
-            font-size: 0.9rem;
-            color: rgba(255, 255, 255, 0.95) !important;
-            font-weight: 400;
+            font-size: 0.95rem;
+            color: #ffffff !important;
+            font-weight: 500;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
         }
         
         .table tbody tr {
-            background: rgba(255, 255, 255, 0.03);
+            background: rgba(255, 255, 255, 0.08);
         }
         
         .table th {
-            color: rgba(255, 255, 255, 0.8) !important;
-            font-weight: 600;
+            color: #ffffff !important;
+            font-weight: 700;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
         }
         
         .order-link {
@@ -1556,31 +1558,33 @@ $currentPage = 'dashboard';
         .module-stats {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 0.75rem;
-            margin-bottom: 1rem;
+            gap: 0.875rem;
+            margin-bottom: 1.25rem;
         }
         
         .module-stat-item {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 1rem;
-            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.08);
+            padding: 1.25rem;
+            border-radius: 12px;
             text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
         
         .module-stat-value {
-            font-size: 1.75rem;
+            font-size: 2rem;
             font-weight: 800;
-            color: var(--text-primary);
-            margin-bottom: 0.25rem;
+            color: #ffffff !important;
+            margin-bottom: 0.35rem;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
         }
         
         .module-stat-label {
-            font-size: 0.65rem;
-            color: var(--text-secondary);
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.9) !important;
             text-transform: uppercase;
             letter-spacing: 0.8px;
-            font-weight: 600;
+            font-weight: 700;
         }
         
         .module-issues-list {
@@ -1676,12 +1680,15 @@ $currentPage = 'dashboard';
         /* Chart Container */
         .chart-container {
             position: relative;
-            height: 320px;
+            height: 350px;
             padding: 1.5rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 16px;
+            border: 1px solid var(--border);
         }
         
         .kpi-grid + .content-grid .chart-container {
-            height: 350px;
+            height: 380px;
         }
         
         /* View Toggle */
@@ -2366,6 +2373,14 @@ $currentPage = 'dashboard';
                                     <div class="module-stat-value" style="color: #30d158;"><?= $stats['orders']['new_orders'] ?? 0 ?></div>
                                     <div class="module-stat-label">Новые</div>
                                 </div>
+                                <div class="module-stat-item">
+                                    <div class="module-stat-value" style="color: #ffd60a;"><?= $stats['orders']['in_production'] ?? 0 ?></div>
+                                    <div class="module-stat-label">В работе</div>
+                                </div>
+                                <div class="module-stat-item">
+                                    <div class="module-stat-value" style="color: #5ac8fa;"><?= $stats['orders']['ready'] ?? 0 ?></div>
+                                    <div class="module-stat-label">Готовы</div>
+                                </div>
                             </div>
                             <ul class="module-issues-list">
                                 <?php if (!empty($overdueOrders)): ?>
@@ -2395,12 +2410,20 @@ $currentPage = 'dashboard';
                             </div>
                             <div class="module-stats">
                                 <div class="module-stat-item">
-                                    <div class="module-stat-value"><?= $stats['production']['in_progress'] ?? 0 ?></div>
+                                    <div class="module-stat-value"><?= $stats['tasks']['in_progress'] ?? 0 ?></div>
                                     <div class="module-stat-label">В работе</div>
                                 </div>
                                 <div class="module-stat-item">
-                                    <div class="module-stat-value" style="color: #ffd60a;"><?= $stats['production']['planned'] ?? 0 ?></div>
+                                    <div class="module-stat-value" style="color: #ffd60a;"><?= $stats['tasks']['planned'] ?? 0 ?></div>
                                     <div class="module-stat-label">В плане</div>
+                                </div>
+                                <div class="module-stat-item">
+                                    <div class="module-stat-value" style="color: #30d158;"><?= $stats['tasks']['completed'] ?? 0 ?></div>
+                                    <div class="module-stat-label">Выполнено</div>
+                                </div>
+                                <div class="module-stat-item">
+                                    <div class="module-stat-value" style="color: #5ac8fa;"><?= $stats['tasks']['total_tasks'] ?? 0 ?></div>
+                                    <div class="module-stat-label">Всего</div>
                                 </div>
                             </div>
                             <ul class="module-issues-list">
@@ -2414,6 +2437,11 @@ $currentPage = 'dashboard';
                                 <li class="module-issue-item critical">
                                     <i class="fas fa-exclamation-circle"></i>
                                     <span><?= count($overdueTasks) ?> просрочено</span>
+                                </li>
+                                <?php else: ?>
+                                <li class="module-issue-item success">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Все по плану</span>
                                 </li>
                                 <?php endif; ?>
                             </ul>
@@ -2481,6 +2509,14 @@ $currentPage = 'dashboard';
                                     <div class="module-stat-value" style="color: #ff453a;"><?= $stats['equipment']['broken'] ?? 0 ?></div>
                                     <div class="module-stat-label">Неисправно</div>
                                 </div>
+                                <div class="module-stat-item">
+                                    <div class="module-stat-value" style="color: #ffd60a;"><?= $stats['equipment']['maintenance'] ?? 0 ?></div>
+                                    <div class="module-stat-label">На ТО</div>
+                                </div>
+                                <div class="module-stat-item">
+                                    <div class="module-stat-value" style="color: #5ac8fa;"><?= $stats['equipment']['total_equipment'] ?? 0 ?></div>
+                                    <div class="module-stat-label">Всего</div>
+                                </div>
                             </div>
                             <ul class="module-issues-list">
                                 <?php if (($stats['equipment']['maintenance'] ?? 0) > 0): ?>
@@ -2493,6 +2529,11 @@ $currentPage = 'dashboard';
                                 <li class="module-issue-item success">
                                     <i class="fas fa-check-circle"></i>
                                     <span>Все исправно</span>
+                                </li>
+                                <?php else: ?>
+                                <li class="module-issue-item critical">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    <span>Требуется ремонт</span>
                                 </li>
                                 <?php endif; ?>
                             </ul>
