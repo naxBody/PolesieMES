@@ -85,7 +85,7 @@ $pageTitle = 'Просмотр оборудования | ' . APP_NAME;
             <?php endif; ?>
         </ul>
         <div class="user-menu">
-            <span style="color: var(--text-secondary);"><?= e($_SESSION['full_name']) ?></span>
+            <span class="user-name" style="color: var(--text-secondary);"><?= e($_SESSION['full_name'] ?? 'Пользователь') ?></span>
             <a href="<?= APP_URL ?>/modules/auth/logout.php" class="btn-logout">Выход</a>
         </div>
     </nav>
@@ -119,14 +119,14 @@ $pageTitle = 'Просмотр оборудования | ' . APP_NAME;
                     </div>
                     <div class="col-md-6">
                         <p><strong>Статус:</strong> 
-                            <span class="badge-status <?= $equipment['status'] ?>">
+                            <span class="badge-status badge-<?= $equipment['status'] ?? 'operational' ?>">
                                 <?= $equipment['status'] == 'operational' ? 'В работе' :
                                     ($equipment['status'] == 'maintenance' ? 'Обслуживание' :
                                     ($equipment['status'] == 'broken' ? 'Неисправно' : 'Отключено')) ?>
                             </span>
                         </p>
-                        <p><strong>Дата ввода в эксплуатацию:</strong> <?= $equipment['commissioning_date'] ? date('d.m.Y', strtotime($equipment['commissioning_date'])) : '-' ?></p>
-                        <p><strong>Год выпуска:</strong> <?= e($equipment['manufacture_year'] ?? '-') ?></p>
+                        <p><strong>Дата ввода в эксплуатацию:</strong> <?= !empty($equipment['commissioning_date']) ? date('d.m.Y', strtotime($equipment['commissioning_date'])) : '-' ?></p>
+                        <p><strong>Год выпуска:</strong> <?= !empty($equipment['manufacture_year']) ? e($equipment['manufacture_year']) : '-' ?></p>
                     </div>
                 </div>
                 <?php if ($equipment['description']): ?>

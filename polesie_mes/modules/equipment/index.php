@@ -375,6 +375,19 @@ $pageTitle = 'Управление оборудованием | ' . APP_NAME;
         .status-indicator-dot.critical { background: var(--danger-color); }
         .status-indicator-dot.info { background: var(--info-color); }
         
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 0.5rem;
+        }
+        
+        .status-indicator.normal { background: var(--success-color); box-shadow: 0 0 10px rgba(48, 209, 88, 0.5); }
+        .status-indicator.warning { background: var(--warning-color); box-shadow: 0 0 10px rgba(255, 214, 10, 0.5); }
+        .status-indicator.critical { background: var(--danger-color); box-shadow: 0 0 10px rgba(255, 69, 58, 0.5); }
+        .status-indicator.info { background: var(--info-color); box-shadow: 0 0 10px rgba(90, 200, 250, 0.5); }
+        
         .chart-container {
             background: var(--bg-card);
             border: 1px solid var(--border);
@@ -538,8 +551,8 @@ $pageTitle = 'Управление оборудованием | ' . APP_NAME;
                 <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
             </div>
             <div class="user-info">
-                <span class="user-name"><?= e($_SESSION['full_name']) ?></span>
-                <span class="user-role"><?= e(getRoleName($_SESSION['role'])) ?></span>
+                <span class="user-name"><?= e($_SESSION['full_name'] ?? 'Пользователь') ?></span>
+                <span class="user-role"><?= e(getRoleName($_SESSION['role'] ?? '')) ?></span>
             </div>
             <a href="<?= APP_URL ?>/modules/auth/logout.php" class="btn-logout">
                 <i class="fas fa-sign-out-alt"></i>
@@ -690,12 +703,12 @@ $pageTitle = 'Управление оборудованием | ' . APP_NAME;
                             <?php foreach ($attentionEquipment as $item): ?>
                             <tr>
                                 <td>
-                                    <span class="status-indicator <?= $item['status_class'] ?>"></span>
+                                    <span class="status-indicator <?= $item['status_class'] ?? 'normal' ?>"></span>
                                     <strong><?= e($item['name']) ?></strong>
                                 </td>
                                 <td><?= e($item['category_name'] ?? '-') ?></td>
                                 <td>
-                                    <span class="badge-status <?= $item['status'] ?>">
+                                    <span class="badge-status badge-<?= $item['status'] ?? 'operational' ?>">
                                         <?= $item['status'] == 'operational' ? 'В работе' :
                                             ($item['status'] == 'maintenance' ? 'Обслуживание' :
                                             ($item['status'] == 'broken' ? 'Неисправно' : 'Отключено')) ?>
@@ -751,7 +764,7 @@ $pageTitle = 'Управление оборудованием | ' . APP_NAME;
                                 <?php foreach ($equipment as $item): ?>
                                 <tr data-status="<?= e($item['status']) ?>" data-category="<?= e($item['category_name'] ?? '') ?>">
                                     <td>
-                                        <span class="status-indicator-dot <?= $item['status_class'] ?>"></span>
+                                        <span class="status-indicator-dot <?= $item['status_class'] ?? 'normal' ?>"></span>
                                         <strong><?= e($item['name']) ?></strong>
                                     </td>
                                     <td><?= e($item['category_name'] ?? '-') ?></td>
@@ -761,7 +774,7 @@ $pageTitle = 'Управление оборудованием | ' . APP_NAME;
                                         <span style="color: var(--text-muted);">Не назначено</span>
                                     </td>
                                     <td>
-                                        <span class="badge-status <?= $item['status'] ?>">
+                                        <span class="badge-status badge-<?= $item['status'] ?? 'operational' ?>">
                                             <?= $item['status'] == 'operational' ? 'В работе' :
                                                 ($item['status'] == 'maintenance' ? 'Обслуживание' :
                                                 ($item['status'] == 'broken' ? 'Неисправно' : 'Отключено')) ?>
@@ -852,7 +865,7 @@ $pageTitle = 'Управление оборудованием | ' . APP_NAME;
                                 <td><strong><?= e($item['equipment_name']) ?></strong></td>
                                 <td><?= e($item['category_name'] ?? '-') ?></td>
                                 <td>
-                                    <span class="badge-status operational">В работе</span>
+                                    <span class="badge-status badge-operational">В работе</span>
                                 </td>
                             </tr>
                             <?php endforeach; ?>
