@@ -138,6 +138,77 @@ $stmt = $db->query("
 ");
 $onlineUsers = $stmt->fetch()['online_users'] ?? 0;
 
+// ==========================================
+// АНАЛИТИКА ДЛЯ ГРАФИКОВ ИЗ БД
+// ==========================================
+
+// Данные для графика эффективности по дням (7 дней)
+$stmt = $db->query("
+    SELECT 
+        DATE(created_at) as date,
+        DAYNAME(created_at) as day_name,
+        COUNT(*) as total_tasks,
+        SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_tasks
+    FROM production_tasks
+    WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+    GROUP BY DATE(created_at), DAYNAME(created_at)
+    ORDER BY date ASC
+");
+$efficiencyData = $stmt->fetchAll();
+
+// Данные для графика заказов по статусам
+$stmt = $db->query("
+    SELECT 
+        status,
+        COUNT(*) as count,
+        COALESCE(SUM(total_amount), 0) as total_value
+    FROM orders
+    WHERE status NOT IN ('completed', 'cancelled')
+    GROUP BY status
+");
+$orderStatusData = $stmt->fetchAll();
+
+// Данные для графика выполнения заказов по неделям месяца
+$stmt = $db->query("
+    SELECT 
+        WEEK(created_at) - WEEK(DATE_FORMAT(CURRENT_DATE(), '%Y-%m-01')) + 1 as week_num,
+        COUNT(*) as completed_count,
+        COALESCE(SUM(total_amount), 0) as completed_value
+    FROM orders
+    WHERE status = 'completed'
+    AND MONTH(created_at) = MONTH(CURRENT_DATE())
+    AND YEAR(created_at) = YEAR(CURRENT_DATE())
+    GROUP BY WEEK(created_at)
+    ORDER BY week_num ASC
+");
+$monthlyOrdersData = $stmt->fetchAll();
+
+// Данные для графика выручки по месяцам (6 месяцев)
+$stmt = $db->query("
+    SELECT 
+        DATE_FORMAT(created_at, '%M %Y') as month_name,
+        COALESCE(SUM(CASE WHEN status = 'completed' THEN total_amount ELSE 0 END), 0) as revenue
+    FROM orders
+    WHERE created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
+    GROUP BY DATE_FORMAT(created_at, '%Y-%m')
+    ORDER BY created_at ASC
+");
+$revenueData = $stmt->fetchAll();
+
+// Данные для графика производства по цехам/участкам
+$stmt = $db->query("
+    SELECT 
+        pt.stage_name as stage,
+        COUNT(*) as task_count,
+        SUM(CASE WHEN pt.status = 'completed' THEN 1 ELSE 0 END) as completed_count
+    FROM production_tasks pt
+    WHERE pt.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+    GROUP BY pt.stage_name
+    ORDER BY task_count DESC
+    LIMIT 5
+");
+$productionByStage = $stmt->fetchAll();
+
 // Просроченные заказы
 $stmt = $db->query("
     SELECT o.*, c.name as customer_name, DATEDIFF(NOW(), o.delivery_date) as days_overdue
@@ -1758,118 +1829,8 @@ $currentPage = 'dashboard';
 
     <!-- Основной контент -->
     <div class="main-content">
-        <?php if ($isDirector): ?>
-        <!-- Панель директора с расширенной статистикой -->
-        <div class="director-dashboard" style="margin-bottom: 2rem;">
-            <div class="card" style="border-color: rgba(255, 107, 107, 0.3); background: linear-gradient(135deg, rgba(255, 107, 107, 0.1) 0%, rgba(255, 142, 83, 0.05) 100%);">
-                <div class="card-header" style="border-bottom: 1px solid rgba(255, 107, 107, 0.2);">
-                    <div class="card-title" style="display: flex; align-items: center; gap: 0.75rem;">
-                        <i class="fas fa-crown" style="color: #ffd60a; font-size: 1.5rem;"></i>
-                        <span>Панель руководителя - сводка по предприятию</span>
-                    </div>
-                </div>
-                <div class="card-body" style="padding: 1.5rem;">
-                    <div class="row g-4">
-                        <div class="col-md-3 col-sm-6">
-                            <div class="director-metric" style="text-align: center; padding: 1rem; background: rgba(255, 255, 255, 0.03); border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.08);">
-                                <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Активные заказы</div>
-                                <div style="font-size: 1.75rem; font-weight: 700; color: #FF6B6B;"><?= formatCurrency($directorStats['activeOrdersValue'] ?? 0) ?></div>
-                                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">на сумму</div>
-                            </div>
-                        </div>
-                        <div class="col-md-3 col-sm-6">
-                            <div class="director-metric" style="text-align: center; padding: 1rem; background: rgba(255, 255, 255, 0.03); border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.08);">
-                                <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">В работе сегодня</div>
-                                <div style="font-size: 1.75rem; font-weight: 700; color: #30d158;"><?= $directorStats['inProduction']['count'] ?? 0 ?></div>
-                                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">заказов на <?= formatCurrency($directorStats['inProduction']['value'] ?? 0) ?></div>
-                            </div>
-                        </div>
-                        <div class="col-md-3 col-sm-6">
-                            <div class="director-metric" style="text-align: center; padding: 1rem; background: rgba(255, 255, 255, 0.03); border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.08);">
-                                <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Выполнено за сегодня</div>
-                                <div style="font-size: 1.75rem; font-weight: 700; color: #5ac8fa;"><?= $directorStats['completedToday']['count'] ?? 0 ?></div>
-                                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">на <?= formatCurrency($directorStats['completedToday']['value'] ?? 0) ?></div>
-                            </div>
-                        </div>
-                        <div class="col-md-3 col-sm-6">
-                            <div class="director-metric" style="text-align: center; padding: 1rem; background: rgba(255, 255, 255, 0.03); border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.08);">
-                                <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Сотрудников в системе</div>
-                                <div style="font-size: 1.75rem; font-weight: 700; color: #ffd60a;"><?= $directorStats['totalEmployees'] ?? 0 ?></div>
-                                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">всего</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="row g-4" style="margin-top: 1rem;">
-                        <div class="col-md-4 col-sm-6">
-                            <div class="director-alert" style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: rgba(255, 69, 58, 0.1); border-radius: 12px; border: 1px solid rgba(255, 69, 58, 0.3);">
-                                <div style="width: 48px; height: 48px; border-radius: 10px; background: rgba(255, 69, 58, 0.2); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                                    <i class="fas fa-exclamation-triangle" style="color: #ff453a; font-size: 1.25rem;"></i>
-                                </div>
-                                <div>
-                                    <div style="font-size: 0.85rem; color: var(--text-secondary);">Просроченные заказы</div>
-                                    <div style="font-size: 1.5rem; font-weight: 700; color: #ff453a;"><?= $directorStats['overdueOrdersCount'] ?? 0 ?></div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4 col-sm-6">
-                            <div class="director-alert" style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: rgba(255, 214, 10, 0.1); border-radius: 12px; border: 1px solid rgba(255, 214, 10, 0.3);">
-                                <div style="width: 48px; height: 48px; border-radius: 10px; background: rgba(255, 214, 10, 0.2); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                                    <i class="fas fa-boxes" style="color: #ffd60a; font-size: 1.25rem;"></i>
-                                </div>
-                                <div>
-                                    <div style="font-size: 0.85rem; color: var(--text-secondary);">Материалы ниже нормы</div>
-                                    <div style="font-size: 1.5rem; font-weight: 700; color: #ffd60a;"><?= $directorStats['lowStockCount'] ?? 0 ?></div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4 col-sm-6">
-                            <div class="director-alert" style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: rgba(48, 209, 88, 0.1); border-radius: 12px; border: 1px solid rgba(48, 209, 88, 0.3);">
-                                <div style="width: 48px; height: 48px; border-radius: 10px; background: rgba(48, 209, 88, 0.2); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                                    <i class="fas fa-chart-line" style="color: #30d158; font-size: 1.25rem;"></i>
-                                </div>
-                                <div>
-                                    <div style="font-size: 0.85rem; color: var(--text-secondary);">Эффективность (мес)</div>
-                                    <div style="font-size: 1.5rem; font-weight: 700; color: #30d158;"><?= $directorStats['monthlyEfficiency'] ?? 0 ?>%</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <?php endif; ?>
-
-        <div class="page-header">
-            <div class="welcome-section">
-                <h1>Добро пожаловать, <?= e($userFirstName) ?>!</h1>
-                <p>Обзор производства на <?= date('d.m.Y') ?> • Онлайн: <?= $onlineUsers ?> пользователей</p>
-            </div>
-            <div class="quick-actions">
-                <?php if (hasRole(['admin', 'director', 'manager'])): ?>
-                <!-- Быстрые действия для админа, директора и менеджера -->
-                <a href="<?= APP_URL ?>/modules/orders/create.php" class="btn-quick primary">
-                    <i class="fas fa-plus"></i>
-                    Новый заказ
-                </a>
-                <?php endif; ?>
-                
-                <?php if (hasRole(['admin', 'director', 'manager', 'warehouse_keeper'])): ?>
-                <a href="<?= APP_URL ?>/modules/warehouse/receipt.php" class="btn-quick">
-                    <i class="fas fa-truck-loading"></i>
-                    Поступление
-                </a>
-                <?php endif; ?>
-                
-                <a href="<?= APP_URL ?>/modules/reports/index.php" class="btn-quick">
-                    <i class="fas fa-file-export"></i>
-                    Отчёты
-                </a>
-            </div>
-        </div>
-
-        <!-- Статистические карточки -->
-        <div class="stats-grid">
+        <!-- KPI Cards - Основные показатели -->
+        <div class="kpi-grid">
             <div class="stat-card">
                 <div class="stat-header">
                     <div class="stat-icon">
@@ -2599,19 +2560,25 @@ $currentPage = 'dashboard';
             }
         }
 
-        // Chart.js - Efficiency Chart
+        // Chart.js - Efficiency Chart с реальными данными из БД
         const ctxEfficiency = document.getElementById('efficiencyChart').getContext('2d');
         const gradientEfficiency = ctxEfficiency.createLinearGradient(0, 0, 0, 250);
         gradientEfficiency.addColorStop(0, 'rgba(255, 107, 107, 0.5)');
         gradientEfficiency.addColorStop(1, 'rgba(255, 107, 107, 0.0)');
 
+        // Подготовка данных за 7 дней
+        const efficiencyLabels = <?= json_encode(array_map(function($d) { 
+            return substr($d['day_name'], 0, 3); 
+        }, $efficiencyData)) ?: json_encode(['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']) ?>;
+        const efficiencyCompleted = <?= json_encode(array_column($efficiencyData, 'completed_tasks')) ?: json_encode([8, 10, 12, 9, 11, 6, 5]) ?>;
+
         new Chart(ctxEfficiency, {
             type: 'line',
             data: {
-                labels: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'],
+                labels: efficiencyLabels,
                 datasets: [{
                     label: 'Выполнено заданий',
-                    data: [<?= rand(8, 15) ?>, <?= rand(8, 15) ?>, <?= rand(8, 15) ?>, <?= rand(8, 15) ?>, <?= rand(8, 15) ?>, <?= rand(5, 10) ?>, <?= rand(5, 10) ?>],
+                    data: efficiencyCompleted,
                     borderColor: '#FF6B6B',
                     backgroundColor: gradientEfficiency,
                     borderWidth: 3,
@@ -2628,7 +2595,21 @@ $currentPage = 'dashboard';
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: { display: false }
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(15, 15, 26, 0.9)',
+                        titleColor: '#fff',
+                        bodyColor: 'rgba(255, 255, 255, 0.8)',
+                        borderColor: 'rgba(255, 255, 255, 0.1)',
+                        borderWidth: 1,
+                        padding: 12,
+                        displayColors: false,
+                        callbacks: {
+                            label: function(context) {
+                                return 'Выполнено: ' + context.parsed.y + ' заданий';
+                            }
+                        }
+                    }
                 },
                 scales: {
                     x: {
@@ -2644,19 +2625,32 @@ $currentPage = 'dashboard';
             }
         });
 
-        // Chart.js - Orders Status Pie Chart
+        // Chart.js - Orders Status Pie Chart с реальными данными
         const ctxOrdersStatus = document.getElementById('ordersStatusChart').getContext('2d');
+        
+        // Подготовка данных статусов заказов
+        const statusMap = {
+            'new': 0,
+            'in_production': 0,
+            'quality_check': 0,
+            'ready': 0,
+            'completed': 0
+        };
+        <?php foreach ($orderStatusData as $item): ?>
+        statusMap['<?= $item['status'] ?>'] = <?= $item['count'] ?>;
+        <?php endforeach; ?>
+        
         new Chart(ctxOrdersStatus, {
             type: 'doughnut',
             data: {
                 labels: ['Новые', 'В производстве', 'На контроле качества', 'Готовы', 'Завершены'],
                 datasets: [{
                     data: [
-                        <?= $stats['orders']['new_orders'] ?? 0 ?>,
-                        <?= $stats['orders']['production_orders'] ?? 0 ?>,
-                        <?= $stats['orders']['qc_orders'] ?? 0 ?>,
-                        <?= $stats['orders']['ready_orders'] ?? 0 ?>,
-                        <?= $stats['orders']['completed_orders'] ?? 0 ?>
+                        statusMap['new'],
+                        statusMap['in_production'],
+                        statusMap['quality_check'],
+                        statusMap['ready'],
+                        statusMap['completed']
                     ],
                     backgroundColor: [
                         '#5ac8fa',
@@ -2681,24 +2675,48 @@ $currentPage = 'dashboard';
                             font: { size: 11 },
                             padding: 15
                         }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(15, 15, 26, 0.9)',
+                        titleColor: '#fff',
+                        bodyColor: 'rgba(255, 255, 255, 0.8)',
+                        borderColor: 'rgba(255, 255, 255, 0.1)',
+                        borderWidth: 1,
+                        padding: 12,
+                        callbacks: {
+                            label: function(context) {
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percent = ((context.parsed / total) * 100).toFixed(1);
+                                return context.label + ': ' + context.parsed + ' (' + percent + '%)';
+                            }
+                        }
                     }
                 }
             }
         });
 
-        // Chart.js - Monthly Orders Bar Chart
+        // Chart.js - Monthly Revenue Bar Chart с реальными данными
         const ctxMonthly = document.getElementById('monthlyOrdersChart').getContext('2d');
         const gradientMonthly = ctxMonthly.createLinearGradient(0, 0, 0, 300);
         gradientMonthly.addColorStop(0, 'rgba(48, 209, 88, 0.6)');
         gradientMonthly.addColorStop(1, 'rgba(48, 209, 88, 0.1)');
 
+        // Подготовка данных по неделям месяца
+        const monthLabels = ['Неделя 1', 'Неделя 2', 'Неделя 3', 'Неделя 4'];
+        const monthData = [0, 0, 0, 0];
+        <?php foreach ($monthlyOrdersData as $item): ?>
+        <?php if (isset($item['week_num']) && $item['week_num'] >= 1 && $item['week_num'] <= 4): ?>
+        monthData[<?= $item['week_num'] - 1 ?>] = <?= $item['completed_count'] ?>;
+        <?php endif; ?>
+        <?php endforeach; ?>
+
         new Chart(ctxMonthly, {
             type: 'bar',
             data: {
-                labels: ['Неделя 1', 'Неделя 2', 'Неделя 3', 'Неделя 4'],
+                labels: monthLabels,
                 datasets: [{
                     label: 'Завершено заказов',
-                    data: [<?= rand(3, 8) ?>, <?= rand(3, 8) ?>, <?= rand(3, 8) ?>, <?= rand(3, 8) ?>],
+                    data: monthData,
                     backgroundColor: gradientMonthly,
                     borderColor: '#30d158',
                     borderWidth: 2,
@@ -2710,7 +2728,21 @@ $currentPage = 'dashboard';
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: { display: false }
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(15, 15, 26, 0.9)',
+                        titleColor: '#fff',
+                        bodyColor: 'rgba(255, 255, 255, 0.8)',
+                        borderColor: 'rgba(255, 255, 255, 0.1)',
+                        borderWidth: 1,
+                        padding: 12,
+                        displayColors: false,
+                        callbacks: {
+                            label: function(context) {
+                                return 'Завершено: ' + context.parsed.y + ' заказов';
+                            }
+                        }
+                    }
                 },
                 scales: {
                     x: {
