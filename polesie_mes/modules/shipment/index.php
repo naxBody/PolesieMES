@@ -38,6 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && hasRole(['admin', 'manager', 'logis
                         carrier = ?,
                         driver_name = ?,
                         vehicle_number = ?,
+                        shipped_at = NOW(),
                         updated_at = NOW() 
                     WHERE id = ?
                 ");
@@ -69,6 +70,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && hasRole(['admin', 'manager', 'logis
     } catch (Exception $e) {
         $errorMessage = "Ошибка: " . $e->getMessage();
     }
+}
+
+// Экспорт в CSV
+if (isset($_GET['export']) && $_GET['export'] === 'csv' && hasRole(['admin', 'manager', 'logistician'])) {
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename="otgruzki_' . date('Y-m-d') . '.csv"');
+    
+    $output = fopen('php://output', 'w');
+    fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF)); // BOM для UTF-8
+    
+    fputcsv($output, ['№ заказа', 'Клиент', 'Адрес доставки', 'Контакты', 'Дата поставки', 'Статус', 'Сумма (BYN)']);
+    
+    $stmt_export = $db->query("
+        SELECT o.order_number, c.name as customer_name, c.address, c.phone as customer_phone, c.email,
+               o.delivery_date, o.status, o.total_amount
+        FROM orders o
+        LEFT JOIN partners c ON o.customer_id = c.id
+        WHERE o.status IN ('ready', 'shipped', 'completed')
+        ORDER BY o.delivery_date ASC
+    ");
+    $exportOrders = $stmt_export->fetchAll();
+    
+    $statusNames = ['ready' => 'Готов', 'shipped' => 'В пути', 'completed' => 'Завершён', 'cancelled' => 'Отменён'];
+    
+    foreach ($exportOrders as $order) {
+        fputcsv($output, [
+            $order['order_number'],
+            $order['customer_name'] ?? '-',
+            $order['address'] ?? '-',
+            ($order['customer_phone'] ?? '') . ' | ' . ($order['email'] ?? ''),
+            date('d.m.Y', strtotime($order['delivery_date'])),
+            $statusNames[$order['status']] ?? $order['status'],
+            number_format((float)($order['total_amount'] ?? 0), 2, ',', ' ')
+        ]);
+    }
+    fclose($output);
+    exit;
 }
 
 // Получение готовых к отгрузке заказов
@@ -361,6 +399,11 @@ $pageTitle = 'Отгрузка продукции | ' . APP_NAME;
                 <h1><i class="fas fa-truck-loading"></i> Отгрузка продукции</h1>
                 <p>Управление отгрузкой и доставкой заказов клиентам</p>
             </div>
+            <div class="page-actions">
+                <a href="?export=csv" class="btn-primary-custom">
+                    <i class="fas fa-file-csv"></i> Экспорт CSV
+                </a>
+            </div>
         </div>
 
         <?php if ($successMessage): ?>
@@ -463,9 +506,6 @@ $pageTitle = 'Отгрузка продукции | ' . APP_NAME;
                                         <a href="order_details.php?order_id=<?= $order['id'] ?>" class="btn btn-primary btn-sm" title="Просмотр полной информации о заказе">
                                             <i class="fas fa-eye"></i> Информация
                                         </a>
-                                        <a href="../documents/index.php?order_id=<?= $order['id'] ?>" class="btn btn-info btn-sm">
-                                            <i class="fas fa-file-alt"></i> Документы
-                                        </a>
                                     </div>
                                 </td>
                             </tr>
@@ -506,7 +546,7 @@ $pageTitle = 'Отгрузка продукции | ' . APP_NAME;
                                 <td><strong><?= e($order['order_number']) ?></strong></td>
                                 <td><?= e($order['customer_name']) ?></td>
                                 <td><?= e($order['address']) ?></td>
-                                <td><?= $order['shipped_date'] ?></td>
+                                <td><?= e($order['shipped_date']) ?></td>
                                 <td>
                                     <div class="btn-group btn-group-sm">
                                         <button class="btn btn-success btn-sm" onclick="showCompleteModal(<?= $order['id'] ?>, '<?= e($order['order_number']) ?>')">
