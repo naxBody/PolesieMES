@@ -738,8 +738,9 @@ $currentPage = 'director_dashboard';
             <li><a href="<?= APP_URL ?>/modules/dashboard/index.php" class="nav-link"><i class="fas fa-home"></i> Главная</a></li>
             <li><a href="<?= APP_URL ?>/modules/orders/index.php" class="nav-link"><i class="fas fa-shopping-cart"></i> Заказы</a></li>
             <li><a href="<?= APP_URL ?>/modules/production/index.php" class="nav-link"><i class="fas fa-cogs"></i> Производство</a></li>
-            <li><a href="<?= APP_URL ?>/modules/warehouse/index.php" class="nav-link"><i class="fas fa-warehouse"></i> Склад</a></li>
-            <li><a href="<?= APP_URL ?>/modules/equipment/index.php" class="nav-link"><i class="fas fa-tools"></i> Оборудование</a></li>
+            <li><a href="#warehouse-section" class="nav-link"><i class="fas fa-warehouse"></i> Склад</a></li>
+            <li><a href="#equipment-section" class="nav-link"><i class="fas fa-tools"></i> Оборудование</a></li>
+            <li><a href="#shipment-section" class="nav-link"><i class="fas fa-truck"></i> Отгрузка</a></li>
             <li><a href="<?= APP_URL ?>/modules/employees/index.php" class="nav-link"><i class="fas fa-users"></i> Сотрудники</a></li>
         </ul>
         
