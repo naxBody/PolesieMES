@@ -1292,16 +1292,16 @@ $currentPage = 'dashboard';
             padding: 0.35rem 0.75rem;
             border-radius: 8px;
             font-size: 0.75rem;
-            font-weight: 600;
-            color: #ffffff !important;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+            font-weight: 700;
+            color: #000000 !important;
+            text-shadow: none;
         }
         
-        .badge.new { background: rgba(90, 200, 250, 0.85); color: #ffffff !important; border: 1px solid rgba(90, 200, 250, 0.5); }
-        .badge.production { background: rgba(255, 214, 10, 0.85); color: #000000 !important; border: 1px solid rgba(255, 214, 10, 0.5); }
-        .badge.completed { background: rgba(48, 209, 88, 0.85); color: #ffffff !important; border: 1px solid rgba(48, 209, 88, 0.5); }
-        .badge.danger { background: rgba(255, 69, 58, 0.85); color: #ffffff !important; border: 1px solid rgba(255, 69, 58, 0.5); }
-        .badge.warning { background: rgba(255, 159, 10, 0.85); color: #000000 !important; border: 1px solid rgba(255, 159, 10, 0.5); }
+        .badge.new { background: rgba(90, 200, 250, 0.9); color: #000000 !important; border: 1px solid rgba(90, 200, 250, 0.5); }
+        .badge.production { background: rgba(255, 214, 10, 0.95); color: #000000 !important; border: 1px solid rgba(255, 214, 10, 0.6); }
+        .badge.completed { background: rgba(48, 209, 88, 0.9); color: #000000 !important; border: 1px solid rgba(48, 209, 88, 0.5); }
+        .badge.danger { background: rgba(255, 69, 58, 0.9); color: #ffffff !important; border: 1px solid rgba(255, 69, 58, 0.5); }
+        .badge.warning { background: rgba(255, 159, 10, 0.95); color: #000000 !important; border: 1px solid rgba(255, 159, 10, 0.6); }
         
         /* Side Panel */
         .side-panel {
