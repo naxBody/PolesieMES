@@ -898,7 +898,7 @@ body {
 @media (max-width: 992px) {
     .navbar {
         padding: 1rem;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
     }
     
     .nav-menu {
