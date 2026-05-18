@@ -867,8 +867,8 @@ $currentPage = 'dashboard';
         /* KPI Grid - основные показатели на всю ширину */
         .kpi-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 1.5rem;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.25rem;
             margin-bottom: 2rem;
         }
         
@@ -880,7 +880,7 @@ $currentPage = 'dashboard';
         
         @media (min-width: 1800px) {
             .kpi-grid {
-                gap: 2rem;
+                gap: 1.5rem;
             }
         }
         
@@ -890,17 +890,17 @@ $currentPage = 'dashboard';
             -webkit-backdrop-filter: var(--backdrop-blur);
             border-radius: 16px;
             border: 1px solid var(--border);
-            padding: 1.5rem;
+            padding: 1.25rem;
             position: relative;
             overflow: hidden;
             transition: all 0.3s ease;
-            min-height: 180px;
+            min-height: 160px;
             display: flex;
             flex-direction: column;
         }
         
         .kpi-grid .stat-card {
-            min-height: 200px;
+            min-height: 175px;
         }
         
         .stat-card:hover {
@@ -914,16 +914,16 @@ $currentPage = 'dashboard';
             position: absolute;
             top: 0;
             right: 0;
-            width: 120px;
-            height: 120px;
+            width: 100px;
+            height: 100px;
             background: radial-gradient(circle, rgba(255, 107, 107, 0.1) 0%, transparent 60%);
             border-radius: 0 16px 0 100%;
             z-index: 0;
         }
         
         .kpi-grid .stat-card::before {
-            width: 150px;
-            height: 150px;
+            width: 120px;
+            height: 120px;
             background: radial-gradient(circle, rgba(255, 107, 107, 0.12) 0%, transparent 60%);
         }
         
@@ -931,16 +931,16 @@ $currentPage = 'dashboard';
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 1rem;
+            margin-bottom: 0.875rem;
             position: relative;
             z-index: 1;
         }
         
         .stat-icon {
-            width: 50px;
-            height: 50px;
+            width: 44px;
+            height: 44px;
             background: var(--gradient-primary);
-            border-radius: 14px;
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -949,43 +949,43 @@ $currentPage = 'dashboard';
         }
         
         .kpi-grid .stat-icon {
-            width: 56px;
-            height: 56px;
+            width: 48px;
+            height: 48px;
         }
         
         .stat-icon svg, .stat-icon i {
-            width: 26px;
-            height: 26px;
+            width: 22px;
+            height: 22px;
             fill: white;
         }
         
         .kpi-grid .stat-icon svg, 
         .kpi-grid .stat-icon i {
-            width: 30px;
-            height: 30px;
+            width: 26px;
+            height: 26px;
         }
         
         .stat-icon i {
-            font-size: 1.4rem;
+            font-size: 1.2rem;
         }
         
         .kpi-grid .stat-icon i {
-            font-size: 1.6rem;
+            font-size: 1.4rem;
         }
         
         .stat-trend {
             display: flex;
             align-items: center;
             gap: 0.35rem;
-            padding: 0.3rem 0.6rem;
+            padding: 0.25rem 0.5rem;
             border-radius: 8px;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             font-weight: 700;
         }
         
         .kpi-grid .stat-trend {
-            font-size: 0.8rem;
-            padding: 0.35rem 0.7rem;
+            font-size: 0.75rem;
+            padding: 0.3rem 0.6rem;
         }
         
         .stat-trend.up {
@@ -999,7 +999,7 @@ $currentPage = 'dashboard';
         }
         
         .stat-value {
-            font-size: 2.25rem;
+            font-size: 2rem;
             font-weight: 800;
             background: var(--gradient-primary);
             -webkit-background-clip: text;
@@ -1010,12 +1010,12 @@ $currentPage = 'dashboard';
         }
         
         .kpi-grid .stat-value {
-            font-size: 2.5rem;
+            font-size: 2.2rem;
         }
         
         .stat-label {
             color: var(--text-secondary);
-            font-size: 0.85rem;
+            font-size: 0.75rem;
             font-weight: 600;
             margin-top: 0.25rem;
             text-transform: uppercase;
@@ -1025,38 +1025,38 @@ $currentPage = 'dashboard';
         .stat-details {
             display: flex;
             flex-wrap: wrap;
-            gap: 1rem;
+            gap: 0.75rem;
             margin-top: auto;
-            padding-top: 1rem;
+            padding-top: 0.75rem;
             border-top: 1px solid var(--border);
         }
         
         .stat-detail-item {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
-            font-size: 0.8rem;
+            gap: 0.4rem;
+            font-size: 0.75rem;
             color: var(--text-muted);
             font-weight: 500;
-            padding: 0.25rem 0.5rem;
+            padding: 0.2rem 0.4rem;
             background: rgba(255, 255, 255, 0.03);
             border-radius: 6px;
         }
         
         .stat-detail-item i {
-            font-size: 0.6rem;
+            font-size: 0.55rem;
         }
         
         .dot {
-            width: 8px;
-            height: 8px;
+            width: 7px;
+            height: 7px;
             border-radius: 50%;
-            box-shadow: 0 0 8px currentColor;
+            box-shadow: 0 0 6px currentColor;
         }
         
         .kpi-grid .dot {
-            width: 10px;
-            height: 10px;
+            width: 9px;
+            height: 9px;
         }
         
         .dot.new { 
@@ -1180,7 +1180,11 @@ $currentPage = 'dashboard';
         .table tbody td {
             padding: 1rem 1.25rem;
             font-size: 0.9rem;
-            color: var(--text-primary);
+            color: #ffffff !important;
+        }
+        
+        .table tbody tr {
+            background: rgba(255, 255, 255, 0.02);
         }
         
         .order-link {
@@ -1635,12 +1639,12 @@ $currentPage = 'dashboard';
         /* Chart Container */
         .chart-container {
             position: relative;
-            height: 280px;
-            padding: 1.25rem;
+            height: 320px;
+            padding: 1.5rem;
         }
         
         .kpi-grid + .content-grid .chart-container {
-            height: 320px;
+            height: 350px;
         }
         
         /* View Toggle */

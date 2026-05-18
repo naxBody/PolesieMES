@@ -438,7 +438,16 @@ INSERT INTO orders (order_number, customer_id, order_date, delivery_date, priori
 ('ORD-2024-017', 7, '2024-04-08', '2024-05-30', 'high', 'confirmed', '[{"product_id":10,"quantity":5,"unit_price":3400,"total":17000},{"product_id":8,"quantity":2,"unit_price":7200,"total":14400}]', 31400.00, 3, 'Заказ насосов и генераторов'),
 ('ORD-2024-018', 8, '2024-04-10', '2024-07-01', 'normal', 'new', '[{"product_id":3,"quantity":20,"unit_price":1800,"total":36000},{"product_id":5,"quantity":10,"unit_price":5500,"total":55000}]', 91000.00, 4, 'Экспорт в Россию'),
 ('ORD-2024-019', 9, '2024-04-12', '2024-06-25', 'normal', 'new', '[{"product_id":7,"quantity":3,"unit_price":5800,"total":17400},{"product_id":9,"quantity":5,"unit_price":2100,"total":10500}]', 27900.00, 3, 'Поставка в Украину'),
-('ORD-2024-020', 10, '2024-04-15', '2024-07-10', 'low', 'planned', '[{"product_id":1,"quantity":18,"unit_price":2500,"total":45000},{"product_id":11,"quantity":12,"unit_price":850,"total":10200}]', 55200.00, 4, 'Заказ в Литву');
+('ORD-2024-020', 10, '2024-04-15', '2024-07-10', 'low', 'planned', '[{"product_id":1,"quantity":18,"unit_price":2500,"total":45000},{"product_id":11,"quantity":12,"unit_price":850,"total":10200}]', 55200.00, 4, 'Заказ в Литву'),
+-- Дополнительные заказы для наполнения графиков (текущий месяц)
+('ORD-2026-001', 1, DATE_SUB(NOW(), INTERVAL 25 DAY), DATE_ADD(NOW(), INTERVAL 5 DAY), 'high', 'completed', '[{"product_id":1,"quantity":10,"unit_price":2500,"total":25000}]', 25000.00, 3, 'Текущий заказ 1'),
+('ORD-2026-002', 2, DATE_SUB(NOW(), INTERVAL 20 DAY), DATE_ADD(NOW(), INTERVAL 10 DAY), 'normal', 'completed', '[{"product_id":2,"quantity":5,"unit_price":4200,"total":21000}]', 21000.00, 4, 'Текущий заказ 2'),
+('ORD-2026-003', 3, DATE_SUB(NOW(), INTERVAL 18 DAY), DATE_ADD(NOW(), INTERVAL 12 DAY), 'normal', 'ready', '[{"product_id":3,"quantity":8,"unit_price":1800,"total":14400}]', 14400.00, 3, 'Текущий заказ 3'),
+('ORD-2026-004', 4, DATE_SUB(NOW(), INTERVAL 15 DAY), DATE_ADD(NOW(), INTERVAL 15 DAY), 'urgent', 'in_production', '[{"product_id":1,"quantity":15,"unit_price":2500,"total":37500}]', 37500.00, 4, 'Текущий заказ 4'),
+('ORD-2026-005', 5, DATE_SUB(NOW(), INTERVAL 12 DAY), DATE_ADD(NOW(), INTERVAL 18 DAY), 'normal', 'in_production', '[{"product_id":2,"quantity":12,"unit_price":4200,"total":50400}]', 50400.00, 3, 'Текущий заказ 5'),
+('ORD-2026-006', 6, DATE_SUB(NOW(), INTERVAL 10 DAY), DATE_ADD(NOW(), INTERVAL 20 DAY), 'high', 'quality_check', '[{"product_id":3,"quantity":20,"unit_price":1800,"total":36000}]', 36000.00, 4, 'Текущий заказ 6'),
+('ORD-2026-007', 7, DATE_SUB(NOW(), INTERVAL 8 DAY), DATE_ADD(NOW(), INTERVAL 22 DAY), 'normal', 'new', '[{"product_id":1,"quantity":25,"unit_price":2500,"total":62500}]', 62500.00, 3, 'Текущий заказ 7'),
+('ORD-2026-008', 8, DATE_SUB(NOW(), INTERVAL 5 DAY), DATE_ADD(NOW(), INTERVAL 25 DAY), 'low', 'confirmed', '[{"product_id":2,"quantity":18,"unit_price":4200,"total":75600}]', 75600.00, 4, 'Текущий заказ 8');
 
 -- Технологические маршруты
 INSERT INTO tech_routes (product_id, stage_name, stage_code, sequence_order, estimated_hours, work_center) VALUES
@@ -496,6 +505,29 @@ INSERT INTO production_tasks (task_number, order_id, product_id, stage_name, sta
 ('TSK-2024-037', 14, 1, 'Контроль качества', 10, 20, '2024-04-12 08:00:00', '2024-04-12 17:00:00', 'planned', NULL, 'ОТК', NULL, NULL, NULL, 'ОТК'),
 ('TSK-2024-038', 14, 1, 'Упаковка', 11, 20, '2024-04-15 08:00:00', '2024-04-15 17:00:00', 'planned', 7, 'Цех №1', NULL, NULL, NULL, 'Упаковка'),
 ('TSK-2024-039', 14, 1, 'Отгрузка', 12, 20, '2024-04-16 08:00:00', '2024-04-16 12:00:00', 'planned', 7, 'Склад', NULL, NULL, NULL, 'Отгрузка');
+
+-- Дополнительные производственные задания для наполнения графиков (текущий месяц и последние 7 дней)
+INSERT INTO production_tasks (task_number, order_id, product_id, stage_name, stage_sequence, quantity, planned_start, planned_end, status, assigned_to, work_center, qc_result, qc_inspector_id, qc_date, notes) VALUES
+('TSK-2026-001', 1, 1, 'Подготовка материалов', 1, 5, DATE_SUB(NOW(), INTERVAL 6 DAY), DATE_SUB(NOW(), INTERVAL 6 DAY), 'completed', 5, 'Цех №1', 'passed', 2, NOW(), 'Подготовка выполнена'),
+('TSK-2026-002', 1, 1, 'Раскрой заготовок', 2, 5, DATE_SUB(NOW(), INTERVAL 5 DAY), DATE_SUB(NOW(), INTERVAL 5 DAY), 'completed', 5, 'Цех №1', 'passed', 2, NOW(), 'Раскрой завершен'),
+('TSK-2026-003', 2, 1, 'Механическая обработка', 3, 8, DATE_SUB(NOW(), INTERVAL 5 DAY), DATE_SUB(NOW(), INTERVAL 4 DAY), 'completed', 6, 'Цех №1, уч.1', 'passed', 3, NOW(), 'Мехобработка на ЧПУ'),
+('TSK-2026-004', 2, 1, 'Намотка обмоток', 6, 8, DATE_SUB(NOW(), INTERVAL 4 DAY), DATE_SUB(NOW(), INTERVAL 3 DAY), 'completed', 6, 'Цех №2, уч.2', 'passed', 3, NOW(), 'Намотка обмоток'),
+('TSK-2026-005', 3, 1, 'Сборка узла', 7, 10, DATE_SUB(NOW(), INTERVAL 4 DAY), DATE_SUB(NOW(), INTERVAL 3 DAY), 'completed', 5, 'Цех №1', 'passed', 2, NOW(), 'Сборка двигателя'),
+('TSK-2026-006', 3, 1, 'Электромонтаж', 8, 10, DATE_SUB(NOW(), INTERVAL 3 DAY), DATE_SUB(NOW(), INTERVAL 3 DAY), 'completed', 6, 'Цех №1', 'passed', 3, NOW(), 'Электромонтаж'),
+('TSK-2026-007', 4, 1, 'Предварительные испытания', 9, 12, DATE_SUB(NOW(), INTERVAL 3 DAY), DATE_SUB(NOW(), INTERVAL 2 DAY), 'completed', 5, 'Цех №1', 'passed', 2, NOW(), 'Испытания'),
+('TSK-2026-008', 4, 1, 'Контроль качества', 10, 12, DATE_SUB(NOW(), INTERVAL 2 DAY), DATE_SUB(NOW(), INTERVAL 2 DAY), 'completed', NULL, 'ОТК', 'passed', 2, NOW(), 'Передано на ОТК'),
+('TSK-2026-009', 5, 1, 'Упаковка', 11, 15, DATE_SUB(NOW(), INTERVAL 2 DAY), DATE_SUB(NOW(), INTERVAL 1 DAY), 'completed', 7, 'Цех №1', NULL, NULL, NULL, 'Упаковка'),
+('TSK-2026-010', 5, 1, 'Отгрузка', 12, 15, DATE_SUB(NOW(), INTERVAL 1 DAY), DATE_SUB(NOW(), INTERVAL 1 DAY), 'completed', 7, 'Склад', NULL, NULL, NULL, 'Отгружено'),
+('TSK-2026-011', 6, 1, 'Подготовка материалов', 1, 20, DATE_SUB(NOW(), INTERVAL 1 DAY), NOW(), 'in_progress', 5, 'Цех №1', NULL, NULL, NULL, 'Подготовка в процессе'),
+('TSK-2026-012', 6, 1, 'Раскрой заготовок', 2, 20, NOW(), DATE_ADD(NOW(), INTERVAL 1 DAY), 'planned', 6, 'Цех №1', NULL, NULL, NULL, 'Запланирован раскрой'),
+('TSK-2026-013', 7, 1, 'Механическая обработка', 3, 8, DATE_SUB(NOW(), INTERVAL 6 DAY), DATE_SUB(NOW(), INTERVAL 5 DAY), 'completed', 5, 'Цех №1, уч.1', 'passed', 2, NOW(), 'Мехобработка'),
+('TSK-2026-014', 7, 1, 'Сварочные работы', 4, 8, DATE_SUB(NOW(), INTERVAL 5 DAY), DATE_SUB(NOW(), INTERVAL 4 DAY), 'completed', NULL, 'Цех №1, уч.2', 'passed', 3, NOW(), 'Сварка'),
+('TSK-2026-015', 8, 1, 'Грунтовка и покраска', 5, 10, DATE_SUB(NOW(), INTERVAL 4 DAY), DATE_SUB(NOW(), INTERVAL 3 DAY), 'completed', NULL, 'Цех №2, уч.1', 'passed', 2, NOW(), 'Покраска'),
+('TSK-2026-016', 8, 1, 'Намотка обмоток', 6, 10, DATE_SUB(NOW(), INTERVAL 3 DAY), DATE_SUB(NOW(), INTERVAL 2 DAY), 'in_progress', 6, 'Цех №2, уч.2', NULL, NULL, NULL, 'Намотка в процессе'),
+('TSK-2026-017', 9, 1, 'Сборка узла', 7, 12, DATE_SUB(NOW(), INTERVAL 2 DAY), DATE_SUB(NOW(), INTERVAL 1 DAY), 'completed', 5, 'Цех №1', 'passed', 2, NOW(), 'Сборка'),
+('TSK-2026-018', 9, 1, 'Электромонтаж', 8, 12, DATE_SUB(NOW(), INTERVAL 1 DAY), NOW(), 'in_progress', 6, 'Цех №1', NULL, NULL, NULL, 'Электромонтаж'),
+('TSK-2026-019', 10, 1, 'Предварительные испытания', 9, 5, DATE_SUB(NOW(), INTERVAL 5 DAY), DATE_SUB(NOW(), INTERVAL 4 DAY), 'completed', 5, 'Цех №1', 'passed', 2, NOW(), 'Испытания'),
+('TSK-2026-020', 10, 1, 'Контроль качества', 10, 5, DATE_SUB(NOW(), INTERVAL 4 DAY), DATE_SUB(NOW(), INTERVAL 3 DAY), 'completed', NULL, 'ОТК', 'passed', 2, NOW(), 'ОТК пройден');
 
 -- Движение материалов
 INSERT INTO movements (movement_type, item_id, quantity, reference_type, reference_id, warehouse_from, warehouse_to, employee_id, notes) VALUES
