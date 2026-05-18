@@ -2271,7 +2271,7 @@ $currentPage = 'dashboard';
             <div class="stat-card">
                 <div class="stat-header">
                     <div class="stat-icon">
-                        <i class="fas fa-ruble-sign"></i>
+                        <i class="fas fa-money-bill-wave"></i>
                     </div>
                     <div class="stat-trend up">
                         <i class="fas fa-calendar"></i>

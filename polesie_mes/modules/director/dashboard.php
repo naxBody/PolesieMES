@@ -777,7 +777,7 @@ $currentPage = 'director_dashboard';
             </div>
             
             <div class="kpi-card">
-                <div class="kpi-icon revenue"><i class="fas fa-ruble-sign"></i></div>
+                <div class="kpi-icon revenue"><i class="fas fa-money-bill-wave"></i></div>
                 <div class="kpi-value"><?= number_format($monthlyRevenue, 0, '.', ' ') ?> р.</div>
                 <div class="kpi-label">Выручка за месяц</div>
                 <div class="kpi-trend">
