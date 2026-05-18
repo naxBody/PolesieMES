@@ -125,6 +125,7 @@ function getPriorityClass($priority) {
 function getRoleName($role) {
     $roles = [
         'admin' => 'Администратор',
+        'director' => 'Директор',
         'manager' => 'Менеджер',
         'technologist' => 'Технолог',
         'operator' => 'Оператор',

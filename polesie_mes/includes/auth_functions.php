@@ -113,8 +113,8 @@ function hasRole($roles) {
         $roles = [$roles];
     }
     
-    // Администратор имеет доступ ко всему
-    if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin') {
+    // Администратор и Директор имеют доступ ко всему
+    if (isset($_SESSION['role']) && ($_SESSION['role'] === 'admin' || $_SESSION['role'] === 'director')) {
         return true;
     }
     
