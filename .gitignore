@@ -1,1 +1,1 @@
-Nothing should be ignored based on the provided file changes. The modification of 'polesie_mes/modules/dashboard/index.php' is a source code file that should be tracked in version control. No build artifacts, dependencies, or temporary files are present in the changes.
+Nothing needs to be added to the .gitignore file based on the provided changes. The modified file 'polesie_mes/modules/dashboard/index.php' is a source code file that should not be ignored. No build artifacts, dependency directories, or temporary files were detected in the changes.
