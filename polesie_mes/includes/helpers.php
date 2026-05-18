@@ -51,7 +51,7 @@ function formatCurrency($amount, $currency = CURRENCY) {
         'BYN' => 'Br',
         'USD' => '$',
         'EUR' => '€',
-        'RUB' => '₽'
+        'RUB' => 'р.'
     ];
     
     $symbol = $currencies[$currency] ?? $currency;
