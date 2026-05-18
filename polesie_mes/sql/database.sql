@@ -35,7 +35,7 @@ CREATE TABLE staff (
     email VARCHAR(100),
     phone VARCHAR(20),
     department VARCHAR(100),
-    role ENUM('admin', 'manager', 'operator', 'warehouse_keeper') NOT NULL,
+    role ENUM('admin', 'director', 'manager', 'operator', 'warehouse_keeper') NOT NULL,
     hire_date DATE,
     status ENUM('active', 'vacation', 'sick', 'terminated') DEFAULT 'active',
     is_active BOOLEAN DEFAULT TRUE,
@@ -323,12 +323,14 @@ INSERT INTO dictionaries (dict_type, code, name) VALUES
 -- Должности
 INSERT INTO dictionaries (dict_type, code, name, description) VALUES
 ('position', 'ADMIN', 'Администратор', 'Полный доступ ко всем модулям'),
+('position', 'DIRECTOR', 'Директор', 'Просмотр всей информации о предприятии'),
 ('position', 'MANAGER', 'Менеджер', 'Управление заказами, клиентами, производством'),
 ('position', 'OPERATOR', 'Оператор', 'Работа с производственными заданиями'),
 ('position', 'STOREKEEPER', 'Кладовщик', 'Учет материалов на складе');
 
--- Сотрудники и пользователи (8 человек, 4 роли)
+-- Сотрудники и пользователи (9 человек, 5 ролей)
 INSERT INTO staff (employee_code, username, password, first_name, last_name, middle_name, position_id, email, phone, department, role, hire_date, status) VALUES
+('EMP000', 'director', 'director123', 'Николай', 'Петров', 'Васильевич', 2, 'director@polesie.by', '+375290000000', 'Руководство', 'director', '2015-01-10', 'active'),
 ('EMP001', 'admin', 'admin123', 'Александр', 'Иванов', 'Петрович', 1, 'admin@polesie.by', '+375291111111', 'Администрация', 'admin', '2018-01-15', 'active'),
 ('EMP002', 'manager1', 'manager123', 'Елена', 'Смирнова', 'Владимировна', 2, 'manager@polesie.by', '+375292222222', 'Производство', 'manager', '2018-03-20', 'active'),
 ('EMP003', 'manager2', 'sales123', 'Дмитрий', 'Козлов', 'Андреевич', 2, 'sales@polesie.by', '+375293333333', 'Отдел продаж', 'manager', '2019-06-10', 'active'),

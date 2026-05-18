@@ -14,12 +14,13 @@ require_once __DIR__ . '/../../includes/helpers.php';
 requireAuth();
 
 // Перенаправление работников склада на специализированный дашборд
-// Администраторы НЕ перенаправляются, они остаются на главном дашборде
-if (isset($_SESSION['role']) && $_SESSION['role'] === 'warehouse_keeper' && $_SESSION['role'] !== 'admin') {
+// Администраторы и Директора НЕ перенаправляются, они остаются на главном дашборде
+if (isset($_SESSION['role']) && $_SESSION['role'] === 'warehouse_keeper' && $_SESSION['role'] !== 'admin' && $_SESSION['role'] !== 'director') {
     header('Location: ' . APP_URL . '/modules/warehouse/warehouse_dashboard.php');
     exit;
 }
 
+// Директор получает доступ ко всей информации о предприятии
 // Администраторы и менеджеры получают доступ ко всем страницам через главный дашборд
 // Операторы также могут видеть все страницы, но с акцентом на производство
 
@@ -1581,8 +1582,8 @@ $currentPage = 'dashboard';
                 </a>
             </li>
 
-            <?php if (hasRole(['admin', 'manager'])): ?>
-            <!-- Заказы - только админ и менеджеры -->
+            <?php if (hasRole(['admin', 'director', 'manager'])): ?>
+            <!-- Заказы - только админ, директор и менеджеры -->
             <li>
                 <a href="<?= APP_URL ?>/modules/orders/index.php" class="nav-link">
                     <i class="fas fa-shopping-cart"></i>
@@ -1591,7 +1592,7 @@ $currentPage = 'dashboard';
             </li>
             <?php endif; ?>
 
-            <?php if (hasRole(['admin', 'manager', 'technologist', 'operator', 'warehouse_keeper'])): ?>
+            <?php if (hasRole(['admin', 'director', 'manager', 'technologist', 'operator', 'warehouse_keeper'])): ?>
             <!-- Производство - все основные роли -->
             <li>
                 <a href="<?= APP_URL ?>/modules/production/index.php" class="nav-link">
@@ -1601,7 +1602,7 @@ $currentPage = 'dashboard';
             </li>
             <?php endif; ?>
 
-            <?php if (hasRole(['admin', 'manager', 'warehouse_keeper'])): ?>
+            <?php if (hasRole(['admin', 'director', 'manager', 'warehouse_keeper'])): ?>
             <!-- Склад -->
             <li>
                 <a href="<?= APP_URL ?>/modules/warehouse/warehouse_dashboard.php" class="nav-link">
@@ -1611,7 +1612,7 @@ $currentPage = 'dashboard';
             </li>
             <?php endif; ?>
 
-            <?php if (hasRole(['admin', 'manager', 'technologist', 'operator', 'warehouse_keeper'])): ?>
+            <?php if (hasRole(['admin', 'director', 'manager', 'technologist', 'operator', 'warehouse_keeper'])): ?>
             <!-- Оборудование - расширенный доступ -->
             <li>
                 <a href="<?= APP_URL ?>/modules/equipment/index.php" class="nav-link">
@@ -1621,7 +1622,7 @@ $currentPage = 'dashboard';
             </li>
             <?php endif; ?>
 
-            <?php if (hasRole(['admin', 'manager', 'logistician', 'warehouse_keeper'])): ?>
+            <?php if (hasRole(['admin', 'director', 'manager', 'logistician', 'warehouse_keeper'])): ?>
             <!-- Отгрузка -->
             <li>
                 <a href="<?= APP_URL ?>/modules/shipment/index.php" class="nav-link">
@@ -1631,7 +1632,7 @@ $currentPage = 'dashboard';
             </li>
             <?php endif; ?>
 
-            <?php if (hasRole(['admin', 'manager', 'technologist', 'warehouse_keeper'])): ?>
+            <?php if (hasRole(['admin', 'director', 'manager', 'technologist', 'warehouse_keeper'])): ?>
             <!-- Документы -->
             <li>
                 <a href="<?= APP_URL ?>/modules/documents/index.php" class="nav-link">
@@ -1641,8 +1642,8 @@ $currentPage = 'dashboard';
             </li>
             <?php endif; ?>
 
-            <?php if (hasRole('admin')): ?>
-            <!-- Сотрудники - только админ -->
+            <?php if (hasRole(['admin', 'director'])): ?>
+            <!-- Сотрудники - только админ и директор -->
             <li>
                 <a href="<?= APP_URL ?>/modules/employees/index.php" class="nav-link">
                     <i class="fas fa-users"></i>
@@ -1681,15 +1682,15 @@ $currentPage = 'dashboard';
                 <p>Обзор производства на <?= date('d.m.Y') ?> • Онлайн: <?= $onlineUsers ?> пользователей</p>
             </div>
             <div class="quick-actions">
-                <?php if (hasRole(['admin', 'manager'])): ?>
-                <!-- Быстрые действия для админа и менеджера -->
+                <?php if (hasRole(['admin', 'director', 'manager'])): ?>
+                <!-- Быстрые действия для админа, директора и менеджера -->
                 <a href="<?= APP_URL ?>/modules/orders/create.php" class="btn-quick primary">
                     <i class="fas fa-plus"></i>
                     Новый заказ
                 </a>
                 <?php endif; ?>
                 
-                <?php if (hasRole(['admin', 'manager', 'warehouse_keeper'])): ?>
+                <?php if (hasRole(['admin', 'director', 'manager', 'warehouse_keeper'])): ?>
                 <a href="<?= APP_URL ?>/modules/warehouse/receipt.php" class="btn-quick">
                     <i class="fas fa-truck-loading"></i>
                     Поступление

@@ -33,14 +33,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $role = $_SESSION['role'];
             
             // Перенаправление в зависимости от роли
-            if ($role === 'warehouse_keeper' && $role !== 'admin') {
+            if ($role === 'warehouse_keeper' && $role !== 'admin' && $role !== 'director') {
                 // Работник склада - только складской дашборд
                 $redirect = '/modules/warehouse/warehouse_dashboard.php';
-            } elseif ($role === 'operator' && $role !== 'admin') {
+            } elseif ($role === 'operator' && $role !== 'admin' && $role !== 'director') {
                 // Оператор - производство
                 $redirect = '/modules/production/index.php';
             } else {
-                // Администратор и менеджеры - главный дашборд со всеми модулями
+                // Администратор, Директор и менеджеры - главный дашборд со всеми модулями
                 $redirect = $_GET['redirect'] ?? '/modules/dashboard/index.php';
             }
             
