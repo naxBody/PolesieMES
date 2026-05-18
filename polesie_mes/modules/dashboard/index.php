@@ -2190,17 +2190,50 @@ $currentPage = 'dashboard';
                     </div>
                 </div>
 
-                <!-- График эффективности -->
-                <div class="card">
+                <!-- Графики и аналитика -->
+                <div class="content-grid" style="margin-bottom: 1.5rem;">
+                    <!-- График эффективности -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i class="fas fa-chart-line"></i>
+                                Эффективность производства (7 дней)
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="efficiencyChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Диаграмма статусов заказов -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i class="fas fa-chart-pie"></i>
+                                Статусы заказов
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="ordersStatusChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Дополнительные графики в одну колонку -->
+                <div class="card" style="margin-bottom: 1.5rem;">
                     <div class="card-header">
                         <div class="card-title">
-                            <i class="fas fa-chart-line"></i>
-                            Эффективность производства (7 дней)
+                            <i class="fas fa-chart-bar"></i>
+                            Динамика выполнения заказов (месяц)
                         </div>
                     </div>
                     <div class="card-body">
-                        <div class="chart-container">
-                            <canvas id="efficiencyChart"></canvas>
+                        <div class="chart-container" style="height: 300px;">
+                            <canvas id="monthlyOrdersChart"></canvas>
                         </div>
                     </div>
                 </div>
@@ -2565,20 +2598,20 @@ $currentPage = 'dashboard';
         }
 
         // Chart.js - Efficiency Chart
-        const ctx = document.getElementById('efficiencyChart').getContext('2d');
-        const gradient = ctx.createLinearGradient(0, 0, 0, 250);
-        gradient.addColorStop(0, 'rgba(255, 107, 107, 0.5)');
-        gradient.addColorStop(1, 'rgba(255, 107, 107, 0.0)');
+        const ctxEfficiency = document.getElementById('efficiencyChart').getContext('2d');
+        const gradientEfficiency = ctxEfficiency.createLinearGradient(0, 0, 0, 250);
+        gradientEfficiency.addColorStop(0, 'rgba(255, 107, 107, 0.5)');
+        gradientEfficiency.addColorStop(1, 'rgba(255, 107, 107, 0.0)');
 
-        new Chart(ctx, {
+        new Chart(ctxEfficiency, {
             type: 'line',
             data: {
                 labels: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'],
                 datasets: [{
                     label: 'Выполнено заданий',
-                    data: [<?= rand(5, 15) ?>, <?= rand(5, 15) ?>, <?= rand(5, 15) ?>, <?= rand(5, 15) ?>, <?= rand(5, 15) ?>, <?= rand(3, 10) ?>, <?= rand(3, 10) ?>],
+                    data: [<?= rand(8, 15) ?>, <?= rand(8, 15) ?>, <?= rand(8, 15) ?>, <?= rand(8, 15) ?>, <?= rand(8, 15) ?>, <?= rand(5, 10) ?>, <?= rand(5, 10) ?>],
                     borderColor: '#FF6B6B',
-                    backgroundColor: gradient,
+                    backgroundColor: gradientEfficiency,
                     borderWidth: 3,
                     fill: true,
                     tension: 0.4,
@@ -2593,27 +2626,98 @@ $currentPage = 'dashboard';
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: {
-                        display: false
-                    }
+                    legend: { display: false }
                 },
                 scales: {
                     x: {
-                        grid: {
-                            color: 'rgba(255, 255, 255, 0.05)'
-                        },
-                        ticks: {
-                            color: 'rgba(255, 255, 255, 0.7)'
-                        }
+                        grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                        ticks: { color: 'rgba(255, 255, 255, 0.7)' }
                     },
                     y: {
-                        grid: {
-                            color: 'rgba(255, 255, 255, 0.05)'
-                        },
-                        ticks: {
-                            color: 'rgba(255, 255, 255, 0.7)',
-                            stepSize: 5
-                        },
+                        grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                        ticks: { color: 'rgba(255, 255, 255, 0.7)', stepSize: 5 },
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Chart.js - Orders Status Pie Chart
+        const ctxOrdersStatus = document.getElementById('ordersStatusChart').getContext('2d');
+        new Chart(ctxOrdersStatus, {
+            type: 'doughnut',
+            data: {
+                labels: ['Новые', 'В производстве', 'На контроле качества', 'Готовы', 'Завершены'],
+                datasets: [{
+                    data: [
+                        <?= $stats['orders']['new_orders'] ?? 0 ?>,
+                        <?= $stats['orders']['production_orders'] ?? 0 ?>,
+                        <?= $stats['orders']['qc_orders'] ?? 0 ?>,
+                        <?= $stats['orders']['ready_orders'] ?? 0 ?>,
+                        <?= $stats['orders']['completed_orders'] ?? 0 ?>
+                    ],
+                    backgroundColor: [
+                        '#5ac8fa',
+                        '#ffd60a',
+                        '#ff9f0a',
+                        '#bf5af2',
+                        '#30d158'
+                    ],
+                    borderWidth: 0,
+                    hoverOffset: 10
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '60%',
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            color: 'rgba(255, 255, 255, 0.8)',
+                            font: { size: 11 },
+                            padding: 15
+                        }
+                    }
+                }
+            }
+        });
+
+        // Chart.js - Monthly Orders Bar Chart
+        const ctxMonthly = document.getElementById('monthlyOrdersChart').getContext('2d');
+        const gradientMonthly = ctxMonthly.createLinearGradient(0, 0, 0, 300);
+        gradientMonthly.addColorStop(0, 'rgba(48, 209, 88, 0.6)');
+        gradientMonthly.addColorStop(1, 'rgba(48, 209, 88, 0.1)');
+
+        new Chart(ctxMonthly, {
+            type: 'bar',
+            data: {
+                labels: ['Неделя 1', 'Неделя 2', 'Неделя 3', 'Неделя 4'],
+                datasets: [{
+                    label: 'Завершено заказов',
+                    data: [<?= rand(3, 8) ?>, <?= rand(3, 8) ?>, <?= rand(3, 8) ?>, <?= rand(3, 8) ?>],
+                    backgroundColor: gradientMonthly,
+                    borderColor: '#30d158',
+                    borderWidth: 2,
+                    borderRadius: 8,
+                    barThickness: 40
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: 'rgba(255, 255, 255, 0.7)' }
+                    },
+                    y: {
+                        grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                        ticks: { color: 'rgba(255, 255, 255, 0.7)', stepSize: 2 },
                         beginAtZero: true
                     }
                 }
