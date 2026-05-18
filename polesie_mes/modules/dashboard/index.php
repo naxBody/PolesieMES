@@ -1855,6 +1855,63 @@ $currentPage = 'dashboard';
             flex-shrink: 0;
         }
         
+        /* Chart Legend Grid - новые стили для карточек статусов */
+        .chart-legend-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 0.75rem;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+        
+        .legend-stat-card {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.2s ease;
+        }
+        
+        .legend-stat-card:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+        }
+        
+        .legend-stat-icon {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+            flex-shrink: 0;
+        }
+        
+        .legend-stat-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.15rem;
+        }
+        
+        .legend-stat-name {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.6);
+            font-weight: 500;
+        }
+        
+        .legend-stat-value {
+            font-size: 0.95rem;
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 600;
+        }
+        
+        .legend-stat-sum {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+        
         /* Progress Bar Container */
         .progress-bar-container {
             padding: 1rem;
@@ -2498,141 +2555,118 @@ $currentPage = 'dashboard';
 
                 <!-- Графики и аналитика -->
                 <div class="content-grid" style="margin-bottom: 1.5rem;">
-                    <!-- График эффективности -->
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-title">
-                                <i class="fas fa-chart-line"></i>
-                                Эффективность производства (7 дней)
-                            </div>
-                            <div class="card-info-tooltip">
-                                <i class="fas fa-info-circle"></i>
-                                <span class="tooltip-text">
-                                    <strong>Что показывает:</strong> Динамику выполненных производственных заданий за последние 7 дней.<br>
-                                    <strong>Для чего:</strong> Помогает оценить производительность цеха и выявить дни с низкой эффективностью.<br>
-                                    <strong>Как читать:</strong> Чем выше точка на графике, тем больше заданий выполнено в этот день.
-                                </span>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <div class="chart-kpi-row">
-                                <div class="chart-kpi-item">
-                                    <div class="chart-kpi-value"><?= array_sum(array_column($efficiencyData, 'completed_tasks')) ?></div>
-                                    <div class="chart-kpi-label">Всего выполнено</div>
-                                </div>
-                                <div class="chart-kpi-item">
-                                    <div class="chart-kpi-value"><?= round(array_sum(array_column($efficiencyData, 'completed_tasks')) / 7, 1) ?></div>
-                                    <div class="chart-kpi-label">В среднем в день</div>
-                                </div>
-                                <div class="chart-kpi-item">
-                                    <?php 
-                                    $lastWeekCompleted = array_sum(array_column($efficiencyData, 'completed_tasks'));
-                                    $prevWeekStmt = $db->query("SELECT COUNT(*) as cnt FROM production_tasks WHERE status = 'completed' AND created_at BETWEEN DATE_SUB(NOW(), INTERVAL 14 DAY) AND DATE_SUB(NOW(), INTERVAL 7 DAY)");
-                                    $prevWeekCompleted = $prevWeekStmt->fetch()['cnt'] ?? 0;
-                                    $growthPercent = $prevWeekCompleted > 0 ? round((($lastWeekCompleted - $prevWeekCompleted) / $prevWeekCompleted) * 100, 1) : 0;
-                                    ?>
-                                    <div class="chart-kpi-value" style="color: <?= $growthPercent >= 0 ? '#30d158' : '#ff453a' ?>;">
-                                        <?= $growthPercent >= 0 ? '+' : '' ?><?= $growthPercent ?>%
-                                    </div>
-                                    <div class="chart-kpi-label">К прошлой неделе</div>
-                                </div>
-                            </div>
-                            <div class="chart-container">
-                                <canvas id="efficiencyChart"></canvas>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Диаграмма статусов заказов -->
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-title">
-                                <i class="fas fa-chart-pie"></i>
-                                Статусы заказов
-                            </div>
-                            <div class="card-info-tooltip">
-                                <i class="fas fa-info-circle"></i>
-                                <span class="tooltip-text">
-                                    <strong>Что показывает:</strong> Распределение заказов по стадиям выполнения в реальном времени.<br>
-                                    <strong>Для чего:</strong> Позволяет быстро оценить загрузку производства и количество заказов в работе.<br>
-                                    <strong>Как читать:</strong> Каждый сектор показывает долю заказов в определённом статусе от общего количества.
-                                </span>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <div class="chart-kpi-row">
-                                <div class="chart-kpi-item">
-                                    <div class="chart-kpi-value"><?= $stats['orders']['total'] ?? 0 ?></div>
-                                    <div class="chart-kpi-label">Всего заказов</div>
-                                </div>
-                                <div class="chart-kpi-item">
-                                    <div class="chart-kpi-value" style="color: #30d158;"><?= $stats['orders']['completed_orders'] ?? 0 ?></div>
-                                    <div class="chart-kpi-label">Завершено</div>
-                                </div>
-                                <div class="chart-kpi-item">
-                                    <div class="chart-kpi-value" style="color: #ffd60a;"><?= ($stats['orders']['in_production'] ?? 0) + ($stats['orders']['quality_check'] ?? 0) ?></div>
-                                    <div class="chart-kpi-label">В работе</div>
-                                </div>
-                            </div>
-                            <div class="chart-container">
-                                <canvas id="ordersStatusChart"></canvas>
-                            </div>
-                            <div class="chart-legend-detailed">
-                                <div class="legend-item"><span class="legend-color" style="background: #5ac8fa;"></span>Новые: <?= $orderStatusData[array_search('new', array_column($orderStatusData, 'status'))]['count'] ?? 0 ?></div>
-                                <div class="legend-item"><span class="legend-color" style="background: #ffd60a;"></span>В производстве: <?= $orderStatusData[array_search('in_production', array_column($orderStatusData, 'status'))]['count'] ?? 0 ?></div>
-                                <div class="legend-item"><span class="legend-color" style="background: #ff9f0a;"></span>На контроле качества: <?= $orderStatusData[array_search('quality_check', array_column($orderStatusData, 'status'))]['count'] ?? 0 ?></div>
-                                <div class="legend-item"><span class="legend-color" style="background: #bf5af2;"></span>Готовы к отгрузке: <?= $orderStatusData[array_search('ready', array_column($orderStatusData, 'status'))]['count'] ?? 0 ?></div>
-                                <div class="legend-item"><span class="legend-color" style="background: #30d158;"></span>Завершены: <?= $orderStatusData[array_search('completed', array_column($orderStatusData, 'status'))]['count'] ?? 0 ?></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Дополнительные графики в одну колонку -->
-                <div class="card" style="margin-bottom: 1.5rem;">
+                <!-- График эффективности -->
+                <div class="card">
                     <div class="card-header">
                         <div class="card-title">
-                            <i class="fas fa-chart-bar"></i>
-                            Динамика выполнения заказов по неделям месяца
+                            <i class="fas fa-chart-line"></i>
+                            Эффективность производства (7 дней)
                         </div>
                         <div class="card-info-tooltip">
                             <i class="fas fa-info-circle"></i>
                             <span class="tooltip-text">
-                                <strong>Что показывает:</strong> Количество завершённых заказов по каждой неделе текущего месяца.<br>
-                                <strong>Для чего:</strong> Помогает оценить выполнение месячного плана и равномерность загрузки.<br>
-                                <strong>Как читать:</strong> Высота столбца показывает количество завершённых заказов в неделю.
+                                <strong>Что показывает:</strong> Динамику выполненных производственных заданий за последние 7 дней.<br>
+                                <strong>Для чего:</strong> Помогает оценить производительность цеха и выявить дни с низкой эффективностью.<br>
+                                <strong>Как читать:</strong> Чем выше точка на графике, тем больше заданий выполнено в этот день.
                             </span>
                         </div>
                     </div>
                     <div class="card-body">
                         <div class="chart-kpi-row">
                             <div class="chart-kpi-item">
-                                <?php $monthlyTotal = array_sum(array_column($monthlyOrdersData, 'completed_count')); ?>
-                                <div class="chart-kpi-value"><?= $monthlyTotal ?></div>
-                                <div class="chart-kpi-label">Выполнено за месяц</div>
+                                <?php $totalCompleted = array_sum(array_column($efficiencyData, 'completed_tasks')); ?>
+                                <div class="chart-kpi-value"><?= $totalCompleted ?></div>
+                                <div class="chart-kpi-label">Всего выполнено</div>
                             </div>
                             <div class="chart-kpi-item">
-                                <div class="chart-kpi-value"><?= $planPercent ?>%</div>
-                                <div class="chart-kpi-label">Выполнение плана (20)</div>
+                                <div class="chart-kpi-value"><?= round($totalCompleted / 7, 1) ?></div>
+                                <div class="chart-kpi-label">В среднем в день</div>
                             </div>
                             <div class="chart-kpi-item">
-                                <div class="chart-kpi-value" style="font-size: 1.2rem;"><?= number_format($stats['revenue'] ?? 0, 0, '.', ' ') ?> ₽</div>
-                                <div class="chart-kpi-label">Выручка за месяц</div>
+                                <?php 
+                                $prevWeekStmt = $db->query("SELECT COUNT(*) as cnt FROM production_tasks WHERE status = 'completed' AND created_at BETWEEN DATE_SUB(NOW(), INTERVAL 14 DAY) AND DATE_SUB(NOW(), INTERVAL 7 DAY)");
+                                $prevWeekCompleted = $prevWeekStmt->fetch()['cnt'] ?? 0;
+                                $growthPercent = $prevWeekCompleted > 0 ? round((($totalCompleted - $prevWeekCompleted) / $prevWeekCompleted) * 100, 1) : 0;
+                                ?>
+                                <div class="chart-kpi-value" style="color: <?= $growthPercent >= 0 ? '#30d158' : '#ff453a' ?>;">
+                                    <?= $growthPercent >= 0 ? '+' : '' ?><?= $growthPercent ?>%
+                                </div>
+                                <div class="chart-kpi-label">К прошлой неделе</div>
+                            </div>
+                            <div class="chart-kpi-item">
+                                <?php $totalTasks = array_sum(array_column($efficiencyData, 'total_tasks')); ?>
+                                <div class="chart-kpi-value" style="color: #5ac8fa;"><?= $totalTasks ?></div>
+                                <div class="chart-kpi-label">Всего заданий</div>
                             </div>
                         </div>
-                        <div class="chart-container" style="height: 300px;">
-                            <canvas id="monthlyOrdersChart"></canvas>
+                        <div class="chart-container" style="height: 280px;">
+                            <canvas id="efficiencyChart"></canvas>
                         </div>
-                        <?php if ($monthlyTotal > 0): ?>
-                        <div class="progress-bar-container" style="margin-top: 1rem;">
-                            <div class="progress-label">Прогресс выполнения месячного плана</div>
-                            <div class="progress-track">
-                                <div class="progress-fill" style="width: <?= $planPercent ?>%; background: linear-gradient(90deg, #30d158, #5ac8fa);"></div>
-                            </div>
-                            <div class="progress-value"><?= $monthlyTotal ?> из 20 заказов</div>
-                        </div>
-                        <?php endif; ?>
                     </div>
+                </div>
+
+                <!-- Диаграмма статусов заказов -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i class="fas fa-chart-pie"></i>
+                            Статусы заказов
+                        </div>
+                        <div class="card-info-tooltip">
+                            <i class="fas fa-info-circle"></i>
+                            <span class="tooltip-text">
+                                <strong>Что показывает:</strong> Распределение заказов по стадиям выполнения в реальном времени.<br>
+                                <strong>Для чего:</strong> Позволяет быстро оценить загрузку производства и количество заказов в работе.<br>
+                                <strong>Как читать:</strong> Каждый сектор показывает долю заказов в определённом статусе от общего количества.
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-kpi-row">
+                            <div class="chart-kpi-item">
+                                <div class="chart-kpi-value"><?= $stats['orders']['total'] ?? 0 ?></div>
+                                <div class="chart-kpi-label">Всего заказов</div>
+                            </div>
+                            <div class="chart-kpi-item">
+                                <div class="chart-kpi-value" style="color: #30d158;"><?= $stats['orders']['completed_orders'] ?? 0 ?></div>
+                                <div class="chart-kpi-label">Завершено</div>
+                            </div>
+                            <div class="chart-kpi-item">
+                                <div class="chart-kpi-value" style="color: #ffd60a;"><?= ($stats['orders']['in_production'] ?? 0) + ($stats['orders']['quality_check'] ?? 0) ?></div>
+                                <div class="chart-kpi-label">В работе</div>
+                            </div>
+                            <div class="chart-kpi-item">
+                                <div class="chart-kpi-value" style="color: #bf5af2;"><?= $stats['orders']['ready_orders'] ?? 0 ?></div>
+                                <div class="chart-kpi-label">Готовы</div>
+                            </div>
+                        </div>
+                        <div class="chart-legend-grid">
+                            <?php foreach ($orderStatusData as $item): ?>
+                            <div class="legend-stat-card">
+                                <div class="legend-stat-icon" style="background: <?= 
+                                    $item['status'] === 'new' ? '#5ac8fa' :
+                                    ($item['status'] === 'in_production' ? '#ffd60a' :
+                                    ($item['status'] === 'quality_check' ? '#ff9f0a' :
+                                    ($item['status'] === 'ready' ? '#bf5af2' : '#30d158')))
+                                ?>;"></div>
+                                <div class="legend-stat-info">
+                                    <div class="legend-stat-name"><?= 
+                                        $item['status'] === 'new' ? 'Новые' :
+                                        ($item['status'] === 'in_production' ? 'В производстве' :
+                                        ($item['status'] === 'quality_check' ? 'На контроле качества' :
+                                        ($item['status'] === 'ready' ? 'Готовы к отгрузке' : 'Завершены')))
+                                    ?></div>
+                                    <div class="legend-stat-value"><?= $item['count'] ?> заказ.</div>
+                                    <div class="legend-stat-sum"><?= number_format($item['total_value'], 0, '.', ' ') ?> ₽</div>
+                                </div>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
+                        <div class="chart-container" style="height: 250px; margin-top: 1rem;">
+                            <canvas id="ordersStatusChart"></canvas>
+                        </div>
+                    </div>
+                </div>
                 </div>
 
                 <!-- Комбинированный график: Заказы vs Производство -->
@@ -2676,92 +2710,6 @@ $currentPage = 'dashboard';
                         </div>
                         <div class="chart-container" style="height: 350px;">
                             <canvas id="ordersVsProductionChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Новый график: Выручка по месяцам -->
-                <div class="card" style="margin-bottom: 1.5rem;">
-                    <div class="card-header">
-                        <div class="card-title">
-                            <i class="fas fa-coins"></i>
-                            Динамика выручки (6 месяцев)
-                        </div>
-                        <div class="card-info-tooltip">
-                            <i class="fas fa-info-circle"></i>
-                            <span class="tooltip-text">
-                                <strong>Что показывает:</strong> Изменение выручки от завершённых заказов по месяцам.<br>
-                                <strong>Для чего:</strong> Анализ финансовых результатов и выявление сезонных тенденций.<br>
-                                <strong>Как читать:</strong> Высота столбца показывает сумму выручки в рублях за месяц.
-                            </span>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <div class="chart-kpi-row">
-                            <div class="chart-kpi-item">
-                                <?php 
-                                $totalRevenue = array_sum(array_column($revenueData, 'revenue'));
-                                $avgRevenue = count($revenueData) > 0 ? $totalRevenue / count($revenueData) : 0;
-                                ?>
-                                <div class="chart-kpi-value"><?= number_format($totalRevenue, 0, '.', ' ') ?> ₽</div>
-                                <div class="chart-kpi-label">За 6 месяцев</div>
-                            </div>
-                            <div class="chart-kpi-item">
-                                <div class="chart-kpi-value"><?= number_format($avgRevenue, 0, '.', ' ') ?> ₽</div>
-                                <div class="chart-kpi-label">В среднем</div>
-                            </div>
-                            <div class="chart-kpi-item">
-                                <?php 
-                                $maxRevenue = max(array_column($revenueData, 'revenue'));
-                                $minRevenue = min(array_column($revenueData, 'revenue'));
-                                $volatility = $maxRevenue > 0 ? round((($maxRevenue - $minRevenue) / $maxRevenue) * 100, 1) : 0;
-                                ?>
-                                <div class="chart-kpi-value"><?= $volatility ?>%</div>
-                                <div class="chart-kpi-label">Волатильность</div>
-                            </div>
-                        </div>
-                        <div class="chart-container" style="height: 300px;">
-                            <canvas id="revenueChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Новый график: Производство по этапам/цехам -->
-                <div class="card" style="margin-bottom: 1.5rem;">
-                    <div class="card-header">
-                        <div class="card-title">
-                            <i class="fas fa-industry"></i>
-                            Загрузка производственных этапов (30 дней)
-                        </div>
-                        <div class="card-info-tooltip">
-                            <i class="fas fa-info-circle"></i>
-                            <span class="tooltip-text">
-                                <strong>Что показывает:</strong> Распределение производственных заданий по этапам/цехам.<br>
-                                <strong>Для чего:</strong> Выявление узких мест и неравномерной загрузки участков.<br>
-                                <strong>Как читать:</strong> Длина полосы показывает количество заданий на каждом этапе. Зелёным — выполненные.
-                            </span>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <div class="chart-kpi-row">
-                            <div class="chart-kpi-item">
-                                <?php $totalStageTasks = array_sum(array_column($productionByStage, 'task_count')); ?>
-                                <div class="chart-kpi-value"><?= $totalStageTasks ?></div>
-                                <div class="chart-kpi-label">Всего заданий</div>
-                            </div>
-                            <div class="chart-kpi-item">
-                                <?php $totalStageCompleted = array_sum(array_column($productionByStage, 'completed_count')); ?>
-                                <div class="chart-kpi-value" style="color: #30d158;"><?= $totalStageCompleted ?></div>
-                                <div class="chart-kpi-label">Выполнено</div>
-                            </div>
-                            <div class="chart-kpi-item">
-                                <?php $stageEfficiency = $totalStageTasks > 0 ? round(($totalStageCompleted / $totalStageTasks) * 100, 1) : 0; ?>
-                                <div class="chart-kpi-value" style="color: #ffd60a;"><?= $stageEfficiency ?>%</div>
-                                <div class="chart-kpi-label">Эффективность</div>
-                            </div>
-                        </div>
-                        <div class="chart-container" style="height: 300px;">
-                            <canvas id="productionByStageChart"></canvas>
                         </div>
                     </div>
                 </div>
@@ -3066,36 +3014,6 @@ $currentPage = 'dashboard';
                     </ul>
                 </div>
 
-                <!-- Заканчиваются материалы -->
-                <div class="alert-card danger">
-                    <div class="alert-header danger">
-                        <i class="fas fa-triangle-exclamation"></i>
-                        Низкие запасы
-                    </div>
-                    <ul class="alert-list">
-                        <?php foreach ($lowStockMaterials as $material): ?>
-                        <li class="alert-item">
-                            <div class="alert-item-header">
-                                <span class="alert-item-title"><?= e($material['name']) ?></span>
-                                <span class="badge danger">
-                                    <?= $material['current_stock'] ?> / <?= $material['min_stock'] ?>
-                                </span>
-                            </div>
-                            <div class="progress-container">
-                                <div class="progress-bar">
-                                    <div class="progress-fill" style="width: <?= ($material['current_stock'] / $material['min_stock']) * 100 ?>%;"></div>
-                                </div>
-                            </div>
-                        </li>
-                        <?php endforeach; ?>
-                        <?php if (empty($lowStockMaterials)): ?>
-                        <li class="empty-state">
-                            <i class="fas fa-check-circle"></i>
-                            <p>Запасы в норме</p>
-                        </li>
-                        <?php endif; ?>
-                    </ul>
-                </div>
 
                 <!-- Просроченные заказы -->
                 <?php if (!empty($overdueOrders)): ?>
@@ -3294,72 +3212,10 @@ $currentPage = 'dashboard';
             }
         });
 
-        // Chart.js - Monthly Revenue Bar Chart с реальными данными
-        const ctxMonthly = document.getElementById('monthlyOrdersChart').getContext('2d');
-        const gradientMonthly = ctxMonthly.createLinearGradient(0, 0, 0, 300);
-        gradientMonthly.addColorStop(0, 'rgba(48, 209, 88, 0.6)');
-        gradientMonthly.addColorStop(1, 'rgba(48, 209, 88, 0.1)');
-
-        // Подготовка данных по неделям месяца
-        const monthLabels = ['Неделя 1', 'Неделя 2', 'Неделя 3', 'Неделя 4'];
-        const monthData = [0, 0, 0, 0];
-        <?php foreach ($monthlyOrdersData as $item): ?>
-        <?php if (isset($item['week_num']) && $item['week_num'] >= 1 && $item['week_num'] <= 4): ?>
-        monthData[<?= $item['week_num'] - 1 ?>] = <?= $item['completed_count'] ?>;
-        <?php endif; ?>
-        <?php endforeach; ?>
-
-        new Chart(ctxMonthly, {
-            type: 'bar',
-            data: {
-                labels: monthLabels,
-                datasets: [{
-                    label: 'Завершено заказов',
-                    data: monthData,
-                    backgroundColor: gradientMonthly,
-                    borderColor: '#30d158',
-                    borderWidth: 2,
-                    borderRadius: 8,
-                    barThickness: 40
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        backgroundColor: 'rgba(15, 15, 26, 0.9)',
-                        titleColor: '#fff',
-                        bodyColor: 'rgba(255, 255, 255, 0.8)',
-                        borderColor: 'rgba(255, 255, 255, 0.1)',
-                        borderWidth: 1,
-                        padding: 12,
-                        displayColors: false,
-                        callbacks: {
-                            label: function(context) {
-                                return 'Завершено: ' + context.parsed.y + ' заказов';
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    x: {
-                        grid: { display: false },
-                        ticks: { color: 'rgba(255, 255, 255, 0.7)' }
-                    },
-                    y: {
-                        grid: { color: 'rgba(255, 255, 255, 0.05)' },
-                        ticks: { color: 'rgba(255, 255, 255, 0.7)', stepSize: 2 },
-                        beginAtZero: true
-                    }
-                }
-            }
-        });
 
         // Chart.js - Комбинированный график: Заказы vs Производство
         const ctxOrdersVsProduction = document.getElementById('ordersVsProductionChart').getContext('2d');
-        
+
         const ordersVsProdLabels = <?= json_encode(array_column($fullOrdersVsProduction, 'short_date')) ?>;
         const ordersCountData = <?= json_encode(array_column($fullOrdersVsProduction, 'orders_count')) ?>;
         const tasksCountData = <?= json_encode(array_column($fullOrdersVsProduction, 'tasks_count')) ?>;
@@ -3480,142 +3336,6 @@ $currentPage = 'dashboard';
                             text: 'Выполнено',
                             color: 'rgba(48, 209, 88, 0.8)'
                         }
-                    }
-                }
-            }
-        });
-
-        // Chart.js - Revenue Chart (Выручка по месяцам)
-        const ctxRevenue = document.getElementById('revenueChart').getContext('2d');
-        const gradientRevenue = ctxRevenue.createLinearGradient(0, 0, 0, 300);
-        gradientRevenue.addColorStop(0, 'rgba(90, 200, 250, 0.7)');
-        gradientRevenue.addColorStop(1, 'rgba(90, 200, 250, 0.1)');
-
-        const revenueLabels = <?= json_encode(array_column($revenueData, 'month_name')) ?: json_encode(['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн']) ?>;
-        const revenueValues = <?= json_encode(array_column($revenueData, 'revenue')) ?: json_encode([0, 0, 0, 0, 0, 0]) ?>;
-
-        new Chart(ctxRevenue, {
-            type: 'bar',
-            data: {
-                labels: revenueLabels,
-                datasets: [{
-                    label: 'Выручка (₽)',
-                    data: revenueValues,
-                    backgroundColor: gradientRevenue,
-                    borderColor: '#5ac8fa',
-                    borderWidth: 2,
-                    borderRadius: 8,
-                    barThickness: 50
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        backgroundColor: 'rgba(15, 15, 26, 0.95)',
-                        titleColor: '#fff',
-                        bodyColor: 'rgba(255, 255, 255, 0.8)',
-                        borderColor: 'rgba(255, 255, 255, 0.1)',
-                        borderWidth: 1,
-                        padding: 12,
-                        displayColors: false,
-                        callbacks: {
-                            label: function(context) {
-                                return 'Выручка: ' + context.parsed.y.toLocaleString('ru-RU') + ' ₽';
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    x: {
-                        grid: { display: false },
-                        ticks: { color: 'rgba(255, 255, 255, 0.7)' }
-                    },
-                    y: {
-                        grid: { color: 'rgba(255, 255, 255, 0.05)' },
-                        ticks: { 
-                            color: 'rgba(255, 255, 255, 0.7)',
-                            callback: function(value) {
-                                return value.toLocaleString('ru-RU') + ' ₽';
-                            }
-                        },
-                        beginAtZero: true
-                    }
-                }
-            }
-        });
-
-        // Chart.js - Production By Stage Chart (Загрузка этапов)
-        const ctxProductionByStage = document.getElementById('productionByStageChart').getContext('2d');
-        
-        const stageLabels = <?= json_encode(array_column($productionByStage, 'stage')) ?: json_encode(['Заготовка', 'Обработка', 'Сборка', 'Покраска', 'Контроль']) ?>;
-        const stageTaskCounts = <?= json_encode(array_column($productionByStage, 'task_count')) ?: json_encode([0, 0, 0, 0, 0]) ?>;
-        const stageCompletedCounts = <?= json_encode(array_column($productionByStage, 'completed_count')) ?: json_encode([0, 0, 0, 0, 0]) ?>;
-
-        new Chart(ctxProductionByStage, {
-            type: 'bar',
-            data: {
-                labels: stageLabels,
-                datasets: [
-                    {
-                        label: 'Всего заданий',
-                        data: stageTaskCounts,
-                        backgroundColor: 'rgba(255, 107, 107, 0.7)',
-                        borderColor: '#FF6B6B',
-                        borderWidth: 2,
-                        borderRadius: 8,
-                        barThickness: 40
-                    },
-                    {
-                        label: 'Выполнено',
-                        data: stageCompletedCounts,
-                        backgroundColor: 'rgba(48, 209, 88, 0.7)',
-                        borderColor: '#30d158',
-                        borderWidth: 2,
-                        borderRadius: 8,
-                        barThickness: 40
-                    }
-                ]
-            },
-            options: {
-                indexAxis: 'y',
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'top',
-                        labels: {
-                            color: 'rgba(255, 255, 255, 0.8)',
-                            usePointStyle: true,
-                            pointStyle: 'circle',
-                            padding: 15
-                        }
-                    },
-                    tooltip: {
-                        backgroundColor: 'rgba(15, 15, 26, 0.95)',
-                        titleColor: '#fff',
-                        bodyColor: 'rgba(255, 255, 255, 0.8)',
-                        borderColor: 'rgba(255, 255, 255, 0.1)',
-                        borderWidth: 1,
-                        padding: 12,
-                        callbacks: {
-                            label: function(context) {
-                                return context.dataset.label + ': ' + context.parsed.x;
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    x: {
-                        grid: { color: 'rgba(255, 255, 255, 0.05)' },
-                        ticks: { color: 'rgba(255, 255, 255, 0.7)' },
-                        beginAtZero: true
-                    },
-                    y: {
-                        grid: { display: false },
-                        ticks: { color: 'rgba(255, 255, 255, 0.7)' }
                     }
                 }
             }
