@@ -876,10 +876,10 @@ $pageTitle = 'Заказы поставщикам | PolesieMES';
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <button type="button" class="btn-secondary" data-bs-dismiss="modal">
                             <i class="fas fa-times"></i> Отмена
                         </button>
-                        <button type="submit" class="btn btn-primary" style="background: var(--gradient-primary); border: none;">
+                        <button type="submit" class="btn-primary" style="background: var(--gradient-primary); border: none;">
                             <i class="fas fa-save"></i> Создать заказ
                         </button>
                     </div>

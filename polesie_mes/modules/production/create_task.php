@@ -146,7 +146,7 @@ $pageTitle = 'Новое задание | Производство | ' . APP_NAM
                             <textarea name="notes" class="form-control" rows="2"></textarea>
                         </div>
                     </div>
-                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Создать задание</button>
+                    <button type="submit" class="btn-primary"><i class="fas fa-save"></i> Создать задание</button>
                 </form>
             </div>
         </div>

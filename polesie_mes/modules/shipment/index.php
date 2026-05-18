@@ -676,8 +676,8 @@ $pageTitle = 'Отгрузка продукции | ' . APP_NAME;
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                        <button type="submit" class="btn btn-warning">
+                        <button type="button" class="btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                        <button type="submit" class="btn-warning">
                             <i class="fas fa-truck"></i> Подтвердить отгрузку
                         </button>
                     </div>
@@ -718,8 +718,8 @@ $pageTitle = 'Отгрузка продукции | ' . APP_NAME;
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                        <button type="submit" class="btn btn-success">
+                        <button type="button" class="btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                        <button type="submit" class="btn-success">
                             <i class="fas fa-check"></i> Подтвердить завершение
                         </button>
                     </div>
