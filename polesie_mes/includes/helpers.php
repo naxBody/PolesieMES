@@ -37,7 +37,10 @@ function formatDateTime($datetime, $format = DATETIME_FORMAT) {
  * Форматирование числа
  */
 function formatNumber($number, $decimals = 2) {
-    return number_format($number, $decimals, ',', ' ');
+    if ($number === null || $number === '') {
+        $number = 0;
+    }
+    return number_format((float)$number, $decimals, ',', ' ');
 }
 
 /**
