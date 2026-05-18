@@ -37,7 +37,8 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_order_details') {
         $stmt = $db->prepare("
             SELECT po.*, p.name as supplier_name, 
                    s.first_name as created_by_first, s.last_name as created_by_last,
-                   r.first_name as received_by_first, r.last_name as received_by_last
+                   r.first_name as received_by_first, r.last_name as received_by_last,
+                   COALESCE(po.total_amount, 0) as total_amount
             FROM purchase_orders po
             LEFT JOIN partners p ON po.supplier_id = p.id
             LEFT JOIN staff s ON po.created_by = s.id
@@ -182,7 +183,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 $stmt = $db->query("
     SELECT po.*, p.name as supplier_name, 
            s.first_name as created_by_first, s.last_name as created_by_last,
-           r.first_name as received_by_first, r.last_name as received_by_last
+           r.first_name as received_by_first, r.last_name as received_by_last,
+           COALESCE(po.total_amount, 0) as total_amount
     FROM purchase_orders po
     LEFT JOIN partners p ON po.supplier_id = p.id
     LEFT JOIN staff s ON po.created_by = s.id
