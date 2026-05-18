@@ -1,1 +1,1 @@
-Nothing needs to be added to .gitignore since the only change is adding a PHP source file (`polesie_mes/modules/director/dashboard.php`) which is not a build artifact, dependency, or temporary file.
+Nothing should be ignored based on the provided file changes, as they only contain PHP source files (.php) which are legitimate code files to track in version control.
