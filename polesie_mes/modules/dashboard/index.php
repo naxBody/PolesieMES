@@ -142,7 +142,7 @@ $onlineUsers = $stmt->fetch()['online_users'] ?? 0;
 // АНАЛИТИКА ДЛЯ ГРАФИКОВ ИЗ БД
 // ==========================================
 
-// Данные для графика эффективности по дням (7 дней)
+// Данные для графика эффективности по дням (7 дней) - с заполнением всех дней недели
 $stmt = $db->query("
     SELECT 
         DATE(created_at) as date,
@@ -154,7 +154,35 @@ $stmt = $db->query("
     GROUP BY DATE(created_at), DAYNAME(created_at)
     ORDER BY date ASC
 ");
-$efficiencyData = $stmt->fetchAll();
+$efficiencyDataRaw = $stmt->fetchAll();
+
+// Создаем полный массив данных за последние 7 дней с нулями для дней без данных
+$efficiencyData = [];
+for ($i = 6; $i >= 0; $i--) {
+    $date = date('Y-m-d', strtotime("-$i days"));
+    $dayName = date('l', strtotime("-$i days"));
+    $found = false;
+    foreach ($efficiencyDataRaw as $row) {
+        if ($row['date'] === $date) {
+            $efficiencyData[] = [
+                'date' => $row['date'],
+                'day_name' => $row['day_name'],
+                'total_tasks' => $row['total_tasks'],
+                'completed_tasks' => $row['completed_tasks']
+            ];
+            $found = true;
+            break;
+        }
+    }
+    if (!$found) {
+        $efficiencyData[] = [
+            'date' => $date,
+            'day_name' => $dayName,
+            'total_tasks' => 0,
+            'completed_tasks' => 0
+        ];
+    }
+}
 
 // Данные для графика заказов по статусам
 $stmt = $db->query("
@@ -1180,11 +1208,17 @@ $currentPage = 'dashboard';
         .table tbody td {
             padding: 1rem 1.25rem;
             font-size: 0.9rem;
-            color: #ffffff !important;
+            color: rgba(255, 255, 255, 0.95) !important;
+            font-weight: 400;
         }
         
         .table tbody tr {
-            background: rgba(255, 255, 255, 0.02);
+            background: rgba(255, 255, 255, 0.03);
+        }
+        
+        .table th {
+            color: rgba(255, 255, 255, 0.8) !important;
+            font-weight: 600;
         }
         
         .order-link {
@@ -1527,23 +1561,26 @@ $currentPage = 'dashboard';
         }
         
         .module-stat-item {
-            background: rgba(255, 255, 255, 0.03);
-            padding: 0.75rem;
-            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 10px;
             text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.08);
         }
         
         .module-stat-value {
-            font-size: 1.25rem;
-            font-weight: 700;
+            font-size: 1.75rem;
+            font-weight: 800;
             color: var(--text-primary);
+            margin-bottom: 0.25rem;
         }
         
         .module-stat-label {
-            font-size: 0.7rem;
-            color: var(--text-muted);
+            font-size: 0.65rem;
+            color: var(--text-secondary);
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.8px;
+            font-weight: 600;
         }
         
         .module-issues-list {
