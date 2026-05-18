@@ -219,7 +219,7 @@ $pageTitle = 'Заказ #' . e($order['order_number']) . ' | ' . APP_NAME;
             background: rgba(255, 255, 255, 0.02);
             border-radius: 12px;
             overflow: hidden;
-            color: #ffffff !important;
+            color: #000000 !important;
         }
         
         .items-table th {
@@ -234,7 +234,7 @@ $pageTitle = 'Заказ #' . e($order['order_number']) . ' | ' . APP_NAME;
             padding: 1rem;
             border-bottom: 1px solid var(--glass-border);
             vertical-align: middle;
-            color: #ffffff !important;
+            color: #000000 !important;
         }
         
         .items-table tr:last-child td {
