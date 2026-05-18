@@ -63,6 +63,8 @@ $pageTitle = 'Вход в систему | ' . APP_NAME;
     
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Common Style -->
+    <link href="<?= APP_URL ?>/assets/css/common-style.css" rel="stylesheet">
     
     <style>
         :root {
