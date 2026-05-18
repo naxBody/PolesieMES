@@ -155,6 +155,67 @@ $stmt = $db->query("
 ");
 $weeklyEfficiency = $stmt->fetch();
 
+// Статистика по производству (для модулей)
+$stats['production'] = [
+    'in_progress' => $stats['tasks']['in_progress'] ?? 0,
+    'planned' => $stats['tasks']['planned'] ?? 0
+];
+
+// Статистика по складу
+$materialStatsStmt = $db->query("SELECT COUNT(*) as total FROM items WHERE item_type = 'material'");
+$materialStats = ['total' => $materialStatsStmt->fetch()['total'] ?? 0];
+
+// Статистика по отгрузкам
+$shipmentStats = [
+    'ready' => ['count' => $stats['orders']['ready_orders'] ?? 0],
+    'shipped' => ['count' => 0] // Можно расширить при наличии статуса shipped
+];
+
+// ==========================================
+// ДОПОЛНИТЕЛЬНАЯ СТАТИСТИКА ДЛЯ ДИРЕКТОРА
+// ==========================================
+$isDirector = hasRole(['director', 'admin']);
+
+if ($isDirector) {
+    // Общая стоимость всех активных заказов
+    $stmt = $db->query("SELECT COALESCE(SUM(total_amount), 0) as active_orders_value FROM orders WHERE status NOT IN ('completed', 'cancelled')");
+    $directorStats['activeOrdersValue'] = $stmt->fetch()['active_orders_value'];
+    
+    // Количество сотрудников по ролям
+    $stmt = $db->query("SELECT role, COUNT(*) as count FROM staff GROUP BY role");
+    $directorStats['employeesByRole'] = $stmt->fetchAll();
+    
+    // Всего сотрудников
+    $stmt = $db->query("SELECT COUNT(*) as total FROM staff");
+    $directorStats['totalEmployees'] = $stmt->fetch()['total'];
+    
+    // Заказы в работе с суммой
+    $stmt = $db->query("SELECT COUNT(*) as count, COALESCE(SUM(total_amount), 0) as value FROM orders WHERE status = 'in_production'");
+    $directorStats['inProduction'] = $stmt->fetch();
+    
+    // Просроченные заказы (полное количество)
+    $stmt = $db->query("SELECT COUNT(*) as count FROM orders WHERE status NOT IN ('completed', 'cancelled') AND delivery_date < NOW()");
+    $directorStats['overdueOrdersCount'] = $stmt->fetch()['count'];
+    
+    // Материалы с низким запасом (полное количество)
+    $stmt = $db->query("SELECT COUNT(*) as count FROM items WHERE item_type = 'material' AND current_stock < min_stock");
+    $directorStats['lowStockCount'] = $stmt->fetch()['count'];
+    
+    // Выполнено заказов за сегодня
+    $stmt = $db->query("SELECT COUNT(*) as count, COALESCE(SUM(total_amount), 0) as value FROM orders WHERE status = 'completed' AND DATE(updated_at) = CURDATE()");
+    $directorStats['completedToday'] = $stmt->fetch();
+    
+    // Средняя эффективность за месяц
+    $stmt = $db->query("SELECT ROUND(AVG(efficiency_percent), 1) as avg_efficiency FROM (
+        SELECT 
+            ROUND(SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 1) as efficiency_percent
+        FROM production_tasks
+        WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+        GROUP BY DATE(created_at)
+    ) as daily_efficiency");
+    $directorStats['monthlyEfficiency'] = $stmt->fetch()['avg_efficiency'] ?? 0;
+}
+
 // ==========================================
 // СВОДКА ПО МОДУЛЯМ С ПРОБЛЕМАМИ И РЕКОМЕНДАЦИЯМИ
 // ==========================================
@@ -294,6 +355,11 @@ if ($readyOrdersCount > 0) {
         'link' => APP_URL . '/modules/documents/index.php'
     ];
 }
+
+// Доступные заказы для документов (все активные заказы)
+$availableOrdersStmt = $db->query("SELECT COUNT(*) as count FROM orders WHERE status NOT IN ('completed', 'cancelled')");
+$availableOrders = ['count' => $availableOrdersStmt->fetch()['count'] ?? 0];
+$pendingDocsCount = $readyOrdersCount; // Заказы готовые к отгрузке требуют документы
 
 $pageTitle = 'Панель управления | ' . APP_NAME;
 $currentPage = 'dashboard';
@@ -1676,6 +1742,88 @@ $currentPage = 'dashboard';
 
     <!-- Основной контент -->
     <div class="main-content">
+        <?php if ($isDirector): ?>
+        <!-- Панель директора с расширенной статистикой -->
+        <div class="director-dashboard" style="margin-bottom: 2rem;">
+            <div class="card" style="border-color: rgba(255, 107, 107, 0.3); background: linear-gradient(135deg, rgba(255, 107, 107, 0.1) 0%, rgba(255, 142, 83, 0.05) 100%);">
+                <div class="card-header" style="border-bottom: 1px solid rgba(255, 107, 107, 0.2);">
+                    <div class="card-title" style="display: flex; align-items: center; gap: 0.75rem;">
+                        <i class="fas fa-crown" style="color: #ffd60a; font-size: 1.5rem;"></i>
+                        <span>Панель руководителя - сводка по предприятию</span>
+                    </div>
+                </div>
+                <div class="card-body" style="padding: 1.5rem;">
+                    <div class="row g-4">
+                        <div class="col-md-3 col-sm-6">
+                            <div class="director-metric" style="text-align: center; padding: 1rem; background: rgba(255, 255, 255, 0.03); border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.08);">
+                                <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Активные заказы</div>
+                                <div style="font-size: 1.75rem; font-weight: 700; color: #FF6B6B;"><?= formatCurrency($directorStats['activeOrdersValue'] ?? 0) ?></div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">на сумму</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6">
+                            <div class="director-metric" style="text-align: center; padding: 1rem; background: rgba(255, 255, 255, 0.03); border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.08);">
+                                <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">В работе сегодня</div>
+                                <div style="font-size: 1.75rem; font-weight: 700; color: #30d158;"><?= $directorStats['inProduction']['count'] ?? 0 ?></div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">заказов на <?= formatCurrency($directorStats['inProduction']['value'] ?? 0) ?></div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6">
+                            <div class="director-metric" style="text-align: center; padding: 1rem; background: rgba(255, 255, 255, 0.03); border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.08);">
+                                <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Выполнено за сегодня</div>
+                                <div style="font-size: 1.75rem; font-weight: 700; color: #5ac8fa;"><?= $directorStats['completedToday']['count'] ?? 0 ?></div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">на <?= formatCurrency($directorStats['completedToday']['value'] ?? 0) ?></div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6">
+                            <div class="director-metric" style="text-align: center; padding: 1rem; background: rgba(255, 255, 255, 0.03); border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.08);">
+                                <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Сотрудников в системе</div>
+                                <div style="font-size: 1.75rem; font-weight: 700; color: #ffd60a;"><?= $directorStats['totalEmployees'] ?? 0 ?></div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">всего</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row g-4" style="margin-top: 1rem;">
+                        <div class="col-md-4 col-sm-6">
+                            <div class="director-alert" style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: rgba(255, 69, 58, 0.1); border-radius: 12px; border: 1px solid rgba(255, 69, 58, 0.3);">
+                                <div style="width: 48px; height: 48px; border-radius: 10px; background: rgba(255, 69, 58, 0.2); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                    <i class="fas fa-exclamation-triangle" style="color: #ff453a; font-size: 1.25rem;"></i>
+                                </div>
+                                <div>
+                                    <div style="font-size: 0.85rem; color: var(--text-secondary);">Просроченные заказы</div>
+                                    <div style="font-size: 1.5rem; font-weight: 700; color: #ff453a;"><?= $directorStats['overdueOrdersCount'] ?? 0 ?></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-sm-6">
+                            <div class="director-alert" style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: rgba(255, 214, 10, 0.1); border-radius: 12px; border: 1px solid rgba(255, 214, 10, 0.3);">
+                                <div style="width: 48px; height: 48px; border-radius: 10px; background: rgba(255, 214, 10, 0.2); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                    <i class="fas fa-boxes" style="color: #ffd60a; font-size: 1.25rem;"></i>
+                                </div>
+                                <div>
+                                    <div style="font-size: 0.85rem; color: var(--text-secondary);">Материалы ниже нормы</div>
+                                    <div style="font-size: 1.5rem; font-weight: 700; color: #ffd60a;"><?= $directorStats['lowStockCount'] ?? 0 ?></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-sm-6">
+                            <div class="director-alert" style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: rgba(48, 209, 88, 0.1); border-radius: 12px; border: 1px solid rgba(48, 209, 88, 0.3);">
+                                <div style="width: 48px; height: 48px; border-radius: 10px; background: rgba(48, 209, 88, 0.2); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                    <i class="fas fa-chart-line" style="color: #30d158; font-size: 1.25rem;"></i>
+                                </div>
+                                <div>
+                                    <div style="font-size: 0.85rem; color: var(--text-secondary);">Эффективность (мес)</div>
+                                    <div style="font-size: 1.5rem; font-weight: 700; color: #30d158;"><?= $directorStats['monthlyEfficiency'] ?? 0 ?>%</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
+
         <div class="page-header">
             <div class="welcome-section">
                 <h1>Добро пожаловать, <?= e($userFirstName) ?>!</h1>
@@ -2064,7 +2212,7 @@ $currentPage = 'dashboard';
                             </div>
                             <div class="module-stats">
                                 <div class="module-stat-item">
-                                    <div class="module-stat-value"><?= $stats['orders']['total_orders'] ?? 0 ?></div>
+                                    <div class="module-stat-value"><?= $stats['orders']['total'] ?? 0 ?></div>
                                     <div class="module-stat-label">Всего</div>
                                 </div>
                                 <div class="module-stat-item">
@@ -2246,7 +2394,7 @@ $currentPage = 'dashboard';
                             </div>
                             <div class="module-stats">
                                 <div class="module-stat-item">
-                                    <div class="module-stat-value"><?= count($availableOrders) ?></div>
+                                    <div class="module-stat-value"><?= $availableOrders['count'] ?? 0 ?></div>
                                     <div class="module-stat-label">Доступно</div>
                                 </div>
                                 <div class="module-stat-item">
