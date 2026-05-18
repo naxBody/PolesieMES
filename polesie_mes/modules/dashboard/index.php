@@ -2659,7 +2659,7 @@ $currentPage = 'dashboard';
                                         ($item['status'] === 'ready' ? 'Готовы к отгрузке' : 'Завершены')))
                                     ?></div>
                                     <div class="legend-stat-value"><?= $item['count'] ?> заказ.</div>
-                                    <div class="legend-stat-sum"><?= number_format($item['total_value'], 0, '.', ' ') ?> ₽</div>
+                                    <div class="legend-stat-sum"><?= number_format($item['total_value'], 0, '.', ' ') ?> р.</div>
                                 </div>
                             </div>
                             <?php endforeach; ?>

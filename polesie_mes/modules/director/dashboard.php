@@ -778,10 +778,10 @@ $currentPage = 'director_dashboard';
             
             <div class="kpi-card">
                 <div class="kpi-icon revenue"><i class="fas fa-ruble-sign"></i></div>
-                <div class="kpi-value"><?= number_format($monthlyRevenue, 0, '.', ' ') ?> ₽</div>
+                <div class="kpi-value"><?= number_format($monthlyRevenue, 0, '.', ' ') ?> р.</div>
                 <div class="kpi-label">Выручка за месяц</div>
                 <div class="kpi-trend">
-                    Активных на сумму: <?= number_format($ordersStats['active_value'], 0, '.', ' ') ?> ₽
+                    Активных на сумму: <?= number_format($ordersStats['active_value'], 0, '.', ' ') ?> р.
                 </div>
             </div>
             
@@ -867,7 +867,7 @@ $currentPage = 'director_dashboard';
                             <tr>
                                 <td><?= e($order['order_number']) ?></td>
                                 <td><?= e($order['supplier_name']) ?></td>
-                                <td><?= number_format($order['total_amount'], 0, '.', ' ') ?> ₽</td>
+                                <td><?= number_format($order['total_amount'], 0, '.', ' ') ?> р.</td>
                                 <td><?= formatDate($order['expected_delivery']) ?></td>
                                 <td><span class="badge warning"><?= e($order['status_name']) ?></span></td>
                                 <td>
@@ -1099,7 +1099,7 @@ $currentPage = 'director_dashboard';
                                 <td><?= e($order['customer_name']) ?></td>
                                 <td><?= formatDate($order['delivery_date']) ?></td>
                                 <td style="color: var(--danger-color);">+<?= abs($order['days_overdue']) ?></td>
-                                <td><?= number_format($order['total_amount'], 0, '.', ' ') ?> ₽</td>
+                                <td><?= number_format($order['total_amount'], 0, '.', ' ') ?> р.</td>
                                 <td>
                                     <a href="<?= APP_URL ?>/modules/orders/view.php?id=<?= $order['id'] ?>" class="btn-module btn-outline" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
                                         <i class="fas fa-eye"></i>
@@ -1136,7 +1136,7 @@ $currentPage = 'director_dashboard';
                                 <td><?= e($order['customer_name']) ?></td>
                                 <td><?= e($order['manager_first'] . ' ' . $order['manager_last']) ?></td>
                                 <td><?= formatDate($order['created_at']) ?></td>
-                                <td><?= number_format($order['total_amount'], 0, '.', ' ') ?> ₽</td>
+                                <td><?= number_format($order['total_amount'], 0, '.', ' ') ?> р.</td>
                             </tr>
                             <?php endforeach; ?>
                         </tbody>
