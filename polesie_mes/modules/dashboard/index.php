@@ -1258,17 +1258,17 @@ $currentPage = 'dashboard';
         .table tbody td {
             padding: 1rem 1.25rem;
             font-size: 0.95rem;
-            color: #f0f0f0 !important;
+            color: #000000 !important;
             font-weight: 500;
         }
         
         .table tbody tr {
-            background: rgba(30, 30, 40, 0.6);
-            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: none;
         }
         
         .table th {
-            color: #ffffff !important;
+            color: #000000 !important;
             font-weight: 700;
         }
         
