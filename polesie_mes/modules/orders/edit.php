@@ -99,23 +99,27 @@ $pageTitle = 'Редактирование заказа #' . e($order['order_num
             margin-bottom: 0.5rem;
         }
         .form-control, .form-select {
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(30, 30, 45, 0.8);
             border: 1px solid var(--glass-border);
-            color: var(--text-primary);
+            color: #ffffff !important;
             border-radius: 8px;
         }
         .form-control:focus, .form-select:focus {
-            background: rgba(255, 255, 255, 0.08);
+            background: rgba(40, 40, 60, 0.9);
             border-color: var(--primary-gradient-start);
-            color: var(--text-primary);
+            color: #ffffff !important;
             box-shadow: 0 0 15px rgba(255, 107, 107, 0.2);
+        }
+        .form-control::placeholder {
+            color: rgba(255, 255, 255, 0.5);
         }
         .form-control option, .form-select option {
             background: #1a1a2e;
-            color: var(--text-primary);
+            color: #ffffff;
         }
         #itemsTable .form-control, #itemsTable .form-select {
             font-size: 0.875rem;
+            color: #ffffff !important;
         }
         .price-cell, .total-cell {
             font-weight: 600;
