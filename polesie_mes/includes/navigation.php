@@ -131,7 +131,7 @@ if (!isset($currentModule)) {
 </nav>
 
 <style>
-/* Стили навигации как на главной странице */
+/* Стили навигации как на dashboard */
 .navbar {
     position: fixed;
     top: 0;
@@ -246,7 +246,7 @@ if (!isset($currentModule)) {
 }
 
 .nav-link i {
-    font-size: 0.9rem;
+    font-size: 1rem;
 }
 
 .user-menu {
@@ -265,6 +265,7 @@ if (!isset($currentModule)) {
     align-items: center;
     justify-content: center;
     box-shadow: 0 0 30px rgba(255, 107, 107, 0.4);
+    flex-shrink: 0;
 }
 
 .user-avatar svg {
@@ -277,6 +278,7 @@ if (!isset($currentModule)) {
     display: flex;
     flex-direction: column;
     white-space: nowrap;
+    min-width: 0;
 }
 
 .user-name {
@@ -284,6 +286,8 @@ if (!isset($currentModule)) {
     font-size: 0.85rem;
     color: #ffffff;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .user-role {
@@ -294,6 +298,7 @@ if (!isset($currentModule)) {
     border-radius: 6px;
     border: 1px solid rgba(255, 255, 255, 0.1);
     white-space: nowrap;
+    display: inline-block;
 }
 
 .btn-logout {
@@ -313,6 +318,7 @@ if (!isset($currentModule)) {
     align-items: center;
     gap: 0.4rem;
     white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .btn-logout:hover {
