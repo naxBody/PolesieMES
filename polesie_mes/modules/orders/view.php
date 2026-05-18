@@ -526,19 +526,24 @@ $pageTitle = 'Заказ #' . e($order['order_number']) . ' | ' . APP_NAME;
                             </thead>
                             <tbody>
                                 <?php foreach ($items as $item): ?>
+                                <?php 
+                                    $quantity = $item['quantity'] ?? 0;
+                                    $unitPrice = $item['unit_price'] ?? 0;
+                                    $totalPrice = $item['total_price'] ?? ($quantity * $unitPrice);
+                                ?>
                                 <tr>
                                     <td>
                                         <div style="display: flex; align-items: center; gap: 0.75rem;">
                                             <div style="width: 40px; height: 40px; background: rgba(255, 107, 107, 0.2); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
                                                 <i class="fas fa-box" style="color: var(--primary-gradient-start);"></i>
                                             </div>
-                                            <strong><?= e($item['name'] ?? 'Товар #' . $item['product_id']) ?></strong>
+                                            <strong><?= e($item['name'] ?? 'Товар #' . ($item['product_id'] ?? '')) ?></strong>
                                         </div>
                                     </td>
-                                    <td style="text-align: center; font-weight: 600;"><?= $item['quantity'] ?></td>
-                                    <td style="text-align: right;"><?= formatNumber($item['unit_price'], 2) ?> BYN</td>
+                                    <td style="text-align: center; font-weight: 600;"><?= (int)$quantity ?></td>
+                                    <td style="text-align: right;"><?= formatNumber($unitPrice, 2) ?> BYN</td>
                                     <td style="text-align: right; font-weight: 600; color: var(--primary-gradient-start);">
-                                        <?= formatNumber($item['total_price'], 2) ?> BYN
+                                        <?= formatNumber($totalPrice, 2) ?> BYN
                                     </td>
                                 </tr>
                                 <?php endforeach; ?>
