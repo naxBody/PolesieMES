@@ -1258,7 +1258,7 @@ $currentPage = 'dashboard';
         .table tbody td {
             padding: 1rem 1.25rem;
             font-size: 0.95rem;
-            color: #f0f0f0 !important;
+            color: var(--text-primary) !important;
             font-weight: 500;
         }
         
@@ -1268,7 +1268,7 @@ $currentPage = 'dashboard';
         }
         
         .table th {
-            color: #ffffff !important;
+            color: var(--text-secondary) !important;
             font-weight: 700;
         }
         
