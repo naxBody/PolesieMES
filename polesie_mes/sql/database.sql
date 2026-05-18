@@ -195,7 +195,7 @@ CREATE TABLE purchase_orders (
     INDEX idx_expected_delivery (expected_delivery)
 );
 
--- ==================== ЖУРНАЛЫ И ЛОГИРОВАНИЕ (2 таблицы) ====================
+-- ==================== ЖУРНАЛЫ И ЛОГИРОВАНИЕ (3 таблицы) ====================
 
 -- 8. ЖУРНАЛ СОБЫТИЙ (activity_log + maintenance_logs)
 CREATE TABLE journal (
@@ -221,6 +221,24 @@ CREATE TABLE journal (
     FOREIGN KEY (item_id) REFERENCES items(id),
     FOREIGN KEY (technician_id) REFERENCES staff(id),
     INDEX idx_journal_type (journal_type)
+);
+
+-- 8a. ЖУРНАЛ АКТИВНОСТИ (для совместимости с модулями)
+CREATE TABLE activity_log (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT,
+    username VARCHAR(50),
+    action VARCHAR(100),
+    module VARCHAR(50),
+    record_id INT,
+    description TEXT,
+    ip_address VARCHAR(45),
+    extra_data JSON,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES staff(id),
+    INDEX idx_module (module),
+    INDEX idx_record_id (record_id),
+    INDEX idx_created_at (created_at)
 );
 
 -- 9. ТЕХНОЛОГИЧЕСКИЕ МАРШРУТЫ (production_stages как справочник)
