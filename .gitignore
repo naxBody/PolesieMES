@@ -1,1 +1,1 @@
-Nothing should be ignored based on the provided file changes, as they only contain PHP source files (.php) which are legitimate code files to track in version control.
+Nothing should be ignored based on the provided file changes. The only modified file is a PHP source file (`polesie_mes/modules/dashboard/index.php`), which should not be added to .gitignore.
