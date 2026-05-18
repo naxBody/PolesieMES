@@ -460,6 +460,9 @@ $pageTitle = 'Отгрузка продукции | ' . APP_NAME;
                                             <i class="fas fa-check"></i> Завершить
                                         </button>
                                         <?php endif; ?>
+                                        <a href="order_details.php?order_id=<?= $order['id'] ?>" class="btn btn-primary btn-sm" title="Просмотр полной информации о заказе">
+                                            <i class="fas fa-eye"></i> Информация
+                                        </a>
                                         <a href="../documents/index.php?order_id=<?= $order['id'] ?>" class="btn btn-info btn-sm">
                                             <i class="fas fa-file-alt"></i> Документы
                                         </a>
@@ -505,9 +508,14 @@ $pageTitle = 'Отгрузка продукции | ' . APP_NAME;
                                 <td><?= e($order['address']) ?></td>
                                 <td><?= $order['shipped_date'] ?></td>
                                 <td>
-                                    <button class="btn btn-success btn-sm" onclick="showCompleteModal(<?= $order['id'] ?>, '<?= e($order['order_number']) ?>')">
-                                        <i class="fas fa-check"></i> Завершить
-                                    </button>
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-success btn-sm" onclick="showCompleteModal(<?= $order['id'] ?>, '<?= e($order['order_number']) ?>')">
+                                            <i class="fas fa-check"></i> Завершить
+                                        </button>
+                                        <a href="order_details.php?order_id=<?= $order['id'] ?>" class="btn btn-primary btn-sm" title="Просмотр полной информации о заказе">
+                                            <i class="fas fa-eye"></i> Информация
+                                        </a>
+                                    </div>
                                 </td>
                             </tr>
                             <?php endforeach; ?>
@@ -538,6 +546,7 @@ $pageTitle = 'Отгрузка продукции | ' . APP_NAME;
                                 <th>Сумма (BYN)</th>
                                 <th>Статус</th>
                                 <th>Последнее обновление</th>
+                                <th>Действия</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -555,6 +564,11 @@ $pageTitle = 'Отгрузка продукции | ' . APP_NAME;
                                     </span>
                                 </td>
                                 <td><?= e($order['last_update']) ?></td>
+                                <td>
+                                    <a href="order_details.php?order_id=<?= $order['id'] ?>" class="btn btn-primary btn-sm" title="Просмотр полной информации о заказе">
+                                        <i class="fas fa-eye"></i> Информация
+                                    </a>
+                                </td>
                             </tr>
                             <?php endforeach; ?>
                         </tbody>
