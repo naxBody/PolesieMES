@@ -395,6 +395,33 @@ $pageTitle = 'Управление оборудованием | ' . APP_NAME;
             padding: 1.5rem;
             margin-bottom: 2rem;
             backdrop-filter: var(--backdrop-blur);
+            position: relative;
+            min-height: 320px;
+        }
+        
+        .chart-container canvas {
+            max-height: 250px;
+        }
+        
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 200px;
+            text-align: center;
+        }
+        
+        .empty-state i {
+            font-size: 3rem;
+            color: var(--text-muted);
+            opacity: 0.5;
+            margin-bottom: 1rem;
+        }
+        
+        .empty-state p {
+            color: var(--text-muted);
+            font-size: 1rem;
         }
         
         .charts-row {
@@ -609,11 +636,36 @@ $pageTitle = 'Управление оборудованием | ' . APP_NAME;
         <div class="charts-row">
             <div class="chart-container">
                 <h3 style="margin-bottom: 1rem; font-size: 1.1rem;"><i class="fas fa-chart-pie"></i> Статус оборудования</h3>
-                <canvas id="statusChart" height="200"></canvas>
+                <?php if ($equipmentStats['total'] > 0): ?>
+                <div style="height: 250px; position: relative;">
+                    <canvas id="statusChart"></canvas>
+                </div>
+                <?php else: ?>
+                <div class="empty-state">
+                    <i class="fas fa-inbox"></i>
+                    <p>Нет данных для отображения</p>
+                </div>
+                <?php endif; ?>
             </div>
             <div class="chart-container">
                 <h3 style="margin-bottom: 1rem; font-size: 1.1rem;"><i class="fas fa-chart-bar"></i> Оборудование по категориям</h3>
-                <canvas id="categoryChart" height="200"></canvas>
+                <?php 
+                $displayCategoryCount = [];
+                foreach ($equipment as $item) {
+                    $catName = $item['category_name'] ?? 'Без категории';
+                    $displayCategoryCount[$catName] = ($displayCategoryCount[$catName] ?? 0) + 1;
+                }
+                if (!empty($displayCategoryCount)): 
+                ?>
+                <div style="height: 250px; position: relative;">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+                <?php else: ?>
+                <div class="empty-state">
+                    <i class="fas fa-inbox"></i>
+                    <p>Нет данных для отображения</p>
+                </div>
+                <?php endif; ?>
             </div>
         </div>
 
@@ -972,94 +1024,95 @@ $pageTitle = 'Управление оборудованием | ' . APP_NAME;
 
         // Initialize Charts
         document.addEventListener('DOMContentLoaded', function() {
-            // Status Chart
-            const statusCtx = document.getElementById('statusChart').getContext('2d');
-            new Chart(statusCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['В работе', 'На обслуживании', 'Неисправно', 'Отключено'],
-                    datasets: [{
-                        data: [<?= $equipmentStats['operational'] ?>, <?= $equipmentStats['maintenance'] ?>, <?= $equipmentStats['broken'] ?>, <?= $equipmentStats['offline'] ?>],
-                        backgroundColor: [
-                            '#30d158',
-                            '#ffd60a',
-                            '#ff453a',
-                            '#5ac8fa'
-                        ],
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                color: 'rgba(255, 255, 255, 0.8)',
-                                font: {
-                                    family: 'Outfit',
-                                    size: 12
+            // Status Chart - only if data exists
+            const statusCanvas = document.getElementById('statusChart');
+            if (statusCanvas && <?= $equipmentStats['total'] > 0 ? 'true' : 'false' ?>) {
+                const statusCtx = statusCanvas.getContext('2d');
+                new Chart(statusCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['В работе', 'На обслуживании', 'Неисправно', 'Отключено'],
+                        datasets: [{
+                            data: [<?= $equipmentStats['operational'] ?? 0 ?>, <?= $equipmentStats['maintenance'] ?? 0 ?>, <?= $equipmentStats['broken'] ?? 0 ?>, <?= $equipmentStats['offline'] ?? 0 ?>],
+                            backgroundColor: [
+                                '#30d158',
+                                '#ffd60a',
+                                '#ff453a',
+                                '#5ac8fa'
+                            ],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    color: 'rgba(255, 255, 255, 0.8)',
+                                    font: {
+                                        family: 'Outfit',
+                                        size: 12
+                                    }
                                 }
                             }
                         }
                     }
-                }
-            });
+                });
+            }
 
-            // Category Chart
-            const categoryCtx = document.getElementById('categoryChart').getContext('2d');
-            
-            // Count categories
-            const categoryCount = {};
-            <?php foreach ($equipment as $item): ?>
-                const catName = '<?= e($item['category_name'] ?? 'Другое') ?>';
-                categoryCount[catName] = (categoryCount[catName] || 0) + 1;
-            <?php endforeach; ?>
-            
-            new Chart(categoryCtx, {
-                type: 'bar',
-                data: {
-                    labels: Object.keys(categoryCount),
-                    datasets: [{
-                        label: 'Количество',
-                        data: Object.values(categoryCount),
-                        backgroundColor: 'rgba(255, 107, 107, 0.7)',
-                        borderColor: 'rgba(255, 107, 107, 1)',
-                        borderWidth: 1,
-                        borderRadius: 8
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                color: 'rgba(255, 255, 255, 0.6)',
-                                stepSize: 1
+            // Category Chart - only if data exists
+            const categoryCanvas = document.getElementById('categoryChart');
+            <?php if (!empty($displayCategoryCount)): ?>
+            if (categoryCanvas) {
+                const categoryCtx = categoryCanvas.getContext('2d');
+                
+                new Chart(categoryCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: <?= json_encode(array_keys($displayCategoryCount)) ?>,
+                        datasets: [{
+                            label: 'Количество',
+                            data: <?= json_encode(array_values($displayCategoryCount)) ?>,
+                            backgroundColor: 'rgba(255, 107, 107, 0.7)',
+                            borderColor: 'rgba(255, 107, 107, 1)',
+                            borderWidth: 1,
+                            borderRadius: 8
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    color: 'rgba(255, 255, 255, 0.6)',
+                                    stepSize: 1
+                                },
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.05)'
+                                }
                             },
-                            grid: {
-                                color: 'rgba(255, 255, 255, 0.05)'
+                            x: {
+                                ticks: {
+                                    color: 'rgba(255, 255, 255, 0.6)'
+                                },
+                                grid: {
+                                    display: false
+                                }
                             }
                         },
-                        x: {
-                            ticks: {
-                                color: 'rgba(255, 255, 255, 0.6)'
-                            },
-                            grid: {
+                        plugins: {
+                            legend: {
                                 display: false
                             }
                         }
-                    },
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
                     }
-                }
-            });
+                });
+            }
+            <?php endif; ?>
         });
     </script>
 </body>
