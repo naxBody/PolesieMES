@@ -1,1 +1,42 @@
-Nothing should be ignored based on the provided file changes. The only modified file is a PHP source file (`polesie_mes/modules/shipment/order_details.php`), which is a legitimate source code file that should not be ignored. There are no build artifacts, dependencies, temporary files, or other items that warrant being added to .gitignore.
+```gitignore
+# Compiled and build artifacts
+*.pyc
+__pycache__/
+
+# Dependencies
+vendor/
+node_modules/
+composer.lock
+
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+
+# Environment
+.env
+.env.local
+*.env.*
+
+# Editors
+.vscode/
+.idea/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Database
+*.sql.bak
+*.db.bak
+
+# Coverage reports
+coverage/
+htmlcov/
+.coverage
+
+# Build directories
+dist/
+build/
+target/
+```

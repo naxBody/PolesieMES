@@ -562,31 +562,31 @@ $pageTitle = 'Детали заказа #' . e($order['order_number']) . ' | ' .
                         <div class="section-icon"><i class="fas fa-truck-loading"></i></div>
                         <span>Информация об отгрузке</span>
                     </div>
-                    <?php if ($order['carrier']): ?>
+                    <?php if (!empty($order['carrier'])): ?>
                     <div class="mb-3">
                         <div class="info-label">Перевозчик</div>
                         <div class="info-value"><?= e($order['carrier']) ?></div>
                     </div>
                     <?php endif; ?>
-                    <?php if ($order['driver_name']): ?>
+                    <?php if (!empty($order['driver_name'])): ?>
                     <div class="mb-3">
                         <div class="info-label">Водитель</div>
                         <div class="info-value"><?= e($order['driver_name']) ?></div>
                     </div>
                     <?php endif; ?>
-                    <?php if ($order['vehicle_number']): ?>
+                    <?php if (!empty($order['vehicle_number'])): ?>
                     <div class="mb-3">
                         <div class="info-label">Автомобиль</div>
                         <div class="info-value"><?= e($order['vehicle_number']) ?></div>
                     </div>
                     <?php endif; ?>
-                    <?php if ($order['shipped_at']): ?>
+                    <?php if (!empty($order['shipped_at'])): ?>
                     <div class="mb-3">
                         <div class="info-label">Дата отгрузки</div>
                         <div class="info-value"><?= formatDate($order['shipped_at']) ?></div>
                     </div>
                     <?php endif; ?>
-                    <?php if ($order['completion_notes'] && $order['status'] == 'completed'): ?>
+                    <?php if (!empty($order['completion_notes']) && $order['status'] == 'completed'): ?>
                     <hr style="border-color: var(--glass-border);">
                     <div class="mb-3">
                         <div class="info-label">Комментарий о получении</div>
