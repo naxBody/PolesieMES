@@ -518,7 +518,7 @@ $currentPage = 'dashboard';
             left: 0;
             right: 0;
             z-index: 1000;
-            padding: 1rem 2rem;
+            padding: 0.75rem 2rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -530,7 +530,7 @@ $currentPage = 'dashboard';
         }
         
         .navbar.scrolled {
-            padding: 0.75rem 2rem;
+            padding: 0.6rem 2rem;
             background: rgba(10, 10, 15, 0.95);
             box-shadow: var(--shadow-md);
         }
@@ -544,10 +544,10 @@ $currentPage = 'dashboard';
         }
         
         .brand-logo {
-            width: 48px;
-            height: 48px;
+            width: 40px;
+            height: 40px;
             background: var(--gradient-primary);
-            border-radius: 14px;
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -561,13 +561,13 @@ $currentPage = 'dashboard';
         }
         
         .brand-logo svg {
-            width: 28px;
-            height: 28px;
+            width: 24px;
+            height: 24px;
             fill: white;
         }
         
         .brand-name {
-            font-size: 1.4rem;
+            font-size: 1.25rem;
             font-weight: 700;
             letter-spacing: -0.5px;
             background: var(--gradient-primary);
@@ -579,21 +579,23 @@ $currentPage = 'dashboard';
         .nav-menu {
             display: flex;
             align-items: center;
-            gap: 2rem;
+            gap: 1.25rem;
             list-style: none;
+            flex-wrap: nowrap;
         }
         
         .nav-link {
             color: var(--text-secondary);
             text-decoration: none;
             font-weight: 500;
-            font-size: 0.95rem;
+            font-size: 0.875rem;
             transition: all 0.3s ease;
             position: relative;
             padding: 0.5rem 0;
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.4rem;
+            white-space: nowrap;
         }
         
         .nav-link::after {
@@ -634,10 +636,10 @@ $currentPage = 'dashboard';
         }
         
         .user-avatar {
-            width: 40px;
-            height: 40px;
+            width: 36px;
+            height: 36px;
             background: var(--gradient-primary);
-            border-radius: 12px;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -645,8 +647,8 @@ $currentPage = 'dashboard';
         }
         
         .user-avatar svg {
-            width: 22px;
-            height: 22px;
+            width: 20px;
+            height: 20px;
             fill: white;
         }
         
@@ -657,25 +659,25 @@ $currentPage = 'dashboard';
         
         .user-name {
             font-weight: 600;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             color: var(--text-primary);
         }
         
         .user-role {
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             color: var(--text-secondary);
             background: var(--glass-bg);
-            padding: 0.2rem 0.6rem;
+            padding: 0.15rem 0.5rem;
             border-radius: 6px;
             border: 1px solid var(--border);
         }
         
         .btn-logout {
-            padding: 0.6rem 1.25rem;
+            padding: 0.5rem 1rem;
             background: var(--glass-bg);
             border: 1px solid var(--border);
-            border-radius: 12px;
-            font-size: 0.875rem;
+            border-radius: 10px;
+            font-size: 0.8rem;
             font-weight: 600;
             font-family: inherit;
             color: var(--text-primary);
@@ -685,7 +687,7 @@ $currentPage = 'dashboard';
             backdrop-filter: blur(10px);
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.4rem;
         }
         
         .btn-logout:hover {
@@ -714,55 +716,55 @@ $currentPage = 'dashboard';
         
         /* Main Content */
         .main-content {
-            padding: 6rem 2rem 2rem;
-            max-width: 1600px;
+            padding: 5rem 2rem 2rem;
+            max-width: 1400px;
             margin: 0 auto;
             position: relative;
             z-index: 10;
         }
         
         .page-header {
-            margin-bottom: 2.5rem;
+            margin-bottom: 2rem;
             display: flex;
             justify-content: space-between;
-            align-items: flex-end;
+            align-items: center;
             flex-wrap: wrap;
-            gap: 1.5rem;
+            gap: 1rem;
         }
         
         .welcome-section h1 {
-            font-size: clamp(1.75rem, 3vw, 2.5rem);
-            font-weight: 800;
+            font-size: clamp(1.5rem, 3vw, 2rem);
+            font-weight: 700;
             background: linear-gradient(135deg, #ffffff 0%, rgba(255, 255, 255, 0.7) 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.25rem;
         }
         
         .welcome-section p {
             color: var(--text-secondary);
-            font-size: 1rem;
+            font-size: 0.9rem;
         }
         
         .quick-actions {
             display: flex;
-            gap: 0.75rem;
+            gap: 0.5rem;
             flex-wrap: wrap;
         }
         
         .btn-quick {
-            padding: 0.75rem 1.25rem;
+            padding: 0.6rem 1rem;
             background: var(--glass-bg);
             border: 1px solid var(--border);
-            border-radius: 12px;
+            border-radius: 10px;
             color: var(--text-primary);
             font-weight: 600;
-            font-size: 0.875rem;
+            font-size: 0.8rem;
             transition: all 0.3s ease;
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.4rem;
             text-decoration: none;
             backdrop-filter: blur(10px);
         }
@@ -786,25 +788,25 @@ $currentPage = 'dashboard';
         /* Stats Grid */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2.5rem;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.25rem;
+            margin-bottom: 2rem;
         }
         
         .stat-card {
             background: var(--bg-card);
             backdrop-filter: var(--backdrop-blur);
             -webkit-backdrop-filter: var(--backdrop-blur);
-            border-radius: 20px;
+            border-radius: 16px;
             border: 1px solid var(--border);
-            padding: 1.5rem;
+            padding: 1.25rem;
             position: relative;
             overflow: hidden;
             transition: all 0.3s ease;
         }
         
         .stat-card:hover {
-            transform: translateY(-5px);
+            transform: translateY(-3px);
             border-color: var(--border-glow);
             box-shadow: var(--shadow-lg), 0 0 30px rgba(255, 107, 107, 0.1);
         }
@@ -814,24 +816,24 @@ $currentPage = 'dashboard';
             position: absolute;
             top: 0;
             right: 0;
-            width: 150px;
-            height: 150px;
-            background: radial-gradient(circle, rgba(255, 107, 107, 0.1) 0%, transparent 60%);
-            border-radius: 0 20px 0 100%;
+            width: 100px;
+            height: 100px;
+            background: radial-gradient(circle, rgba(255, 107, 107, 0.08) 0%, transparent 60%);
+            border-radius: 0 16px 0 100%;
         }
         
         .stat-header {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 1rem;
+            margin-bottom: 0.75rem;
         }
         
         .stat-icon {
-            width: 50px;
-            height: 50px;
+            width: 44px;
+            height: 44px;
             background: var(--gradient-primary);
-            border-radius: 14px;
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -839,22 +841,22 @@ $currentPage = 'dashboard';
         }
         
         .stat-icon svg, .stat-icon i {
-            width: 26px;
-            height: 26px;
+            width: 22px;
+            height: 22px;
             fill: white;
         }
         
         .stat-icon i {
-            font-size: 1.5rem;
+            font-size: 1.25rem;
         }
         
         .stat-trend {
             display: flex;
             align-items: center;
             gap: 0.25rem;
-            padding: 0.25rem 0.6rem;
-            border-radius: 8px;
-            font-size: 0.75rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 6px;
+            font-size: 0.7rem;
             font-weight: 600;
         }
         
@@ -869,8 +871,8 @@ $currentPage = 'dashboard';
         }
         
         .stat-value {
-            font-size: 2.5rem;
-            font-weight: 800;
+            font-size: 2rem;
+            font-weight: 700;
             background: var(--gradient-primary);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -880,34 +882,35 @@ $currentPage = 'dashboard';
         
         .stat-label {
             color: var(--text-secondary);
-            font-size: 0.875rem;
+            font-size: 0.8rem;
             font-weight: 500;
             margin-top: 0.25rem;
         }
         
         .stat-details {
             display: flex;
-            gap: 1rem;
-            margin-top: 1rem;
-            padding-top: 1rem;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
             border-top: 1px solid var(--border);
         }
         
         .stat-detail-item {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
-            font-size: 0.8rem;
+            gap: 0.4rem;
+            font-size: 0.75rem;
             color: var(--text-muted);
         }
         
         .stat-detail-item i {
-            font-size: 0.7rem;
+            font-size: 0.6rem;
         }
         
         .dot {
-            width: 8px;
-            height: 8px;
+            width: 6px;
+            height: 6px;
             border-radius: 50%;
         }
         
@@ -919,8 +922,8 @@ $currentPage = 'dashboard';
         /* Content Grid */
         .content-grid {
             display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 1.5rem;
+            grid-template-columns: 1fr;
+            gap: 1.25rem;
         }
         
         .card {
@@ -2087,14 +2090,13 @@ $currentPage = 'dashboard';
 
         <!-- Основной контент -->
         <div class="content-grid">
-            <div class="main-panel">
-                <!-- Последние заказы -->
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <div class="card-title">
-                            <i class="fas fa-shopping-cart"></i>
-                            Последние заказы
-                        </div>
+            <!-- Последние заказы -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fas fa-shopping-cart"></i>
+                        Последние заказы
+                    </div>
                         <div style="display: flex; gap: 0.75rem; align-items: center;">
                             <div class="view-toggle">
                                 <button class="view-btn active" onclick="switchView('table')">
