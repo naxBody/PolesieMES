@@ -15,6 +15,10 @@ requireAuth();
 $db = getDB();
 $user = getCurrentUser();
 
+// Установка переменных для навигации
+$currentPage = 'orders';
+$currentModule = 'orders';
+
 // Получение всех заказов с информацией о клиентах
 $stmt = $db->query("
     SELECT o.*, c.name as customer_name, c.inn, c.phone as customer_phone, 
