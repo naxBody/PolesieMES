@@ -143,15 +143,16 @@ $onlineUsers = $stmt->fetch()['online_users'] ?? 0;
 // ==========================================
 
 // Данные для графика эффективности по дням (7 дней) - с заполнением всех дней недели
+// Используем actual_end для выполненных заданий, чтобы показать реальную эффективность
 $stmt = $db->query("
     SELECT 
-        DATE(created_at) as date,
-        DAYNAME(created_at) as day_name,
+        DATE(COALESCE(actual_end, created_at)) as date,
+        DAYNAME(COALESCE(actual_end, created_at)) as day_name,
         COUNT(*) as total_tasks,
         SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_tasks
     FROM production_tasks
-    WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
-    GROUP BY DATE(created_at), DAYNAME(created_at)
+    WHERE COALESCE(actual_end, created_at) >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+    GROUP BY DATE(COALESCE(actual_end, created_at)), DAYNAME(COALESCE(actual_end, created_at))
     ORDER BY date ASC
 ");
 $efficiencyDataRaw = $stmt->fetchAll();
@@ -184,14 +185,13 @@ for ($i = 6; $i >= 0; $i--) {
     }
 }
 
-// Данные для графика заказов по статусам
+// Данные для графика заказов по статусам (все заказы)
 $stmt = $db->query("
     SELECT 
         status,
         COUNT(*) as count,
         COALESCE(SUM(total_amount), 0) as total_value
     FROM orders
-    WHERE status NOT IN ('completed', 'cancelled')
     GROUP BY status
 ");
 $orderStatusData = $stmt->fetchAll();
@@ -215,10 +215,11 @@ $monthlyOrdersData = $stmt->fetchAll();
 $stmt = $db->query("
     SELECT 
         DATE_FORMAT(created_at, '%M %Y') as month_name,
+        DATE_FORMAT(created_at, '%Y-%m') as month_key,
         COALESCE(SUM(CASE WHEN status = 'completed' THEN total_amount ELSE 0 END), 0) as revenue
     FROM orders
     WHERE created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
-    GROUP BY DATE_FORMAT(created_at, '%Y-%m')
+    GROUP BY DATE_FORMAT(created_at, '%Y-%m'), DATE_FORMAT(created_at, '%M %Y')
     ORDER BY created_at ASC
 ");
 $revenueData = $stmt->fetchAll();
@@ -236,6 +237,55 @@ $stmt = $db->query("
     LIMIT 5
 ");
 $productionByStage = $stmt->fetchAll();
+
+// Данные для комбинированного графика: заказы vs производство
+$stmt = $db->query("
+    SELECT 
+        DATE_FORMAT(o.created_at, '%Y-%m-%d') as date,
+        DATE_FORMAT(o.created_at, '%d.%m') as short_date,
+        COUNT(DISTINCT o.id) as orders_count,
+        COALESCE(SUM(o.total_amount), 0) as orders_value,
+        COUNT(DISTINCT pt.id) as tasks_count,
+        SUM(CASE WHEN pt.status = 'completed' THEN 1 ELSE 0 END) as completed_tasks
+    FROM orders o
+    LEFT JOIN production_tasks pt ON o.id = pt.order_id
+    WHERE o.created_at >= DATE_SUB(NOW(), INTERVAL 14 DAY)
+    GROUP BY DATE_FORMAT(o.created_at, '%Y-%m-%d'), DATE_FORMAT(o.created_at, '%d.%m')
+    ORDER BY o.created_at ASC
+");
+$ordersVsProductionData = $stmt->fetchAll();
+
+// Заполняем пропущенные дни нулями для графика заказы vs производство
+$fullOrdersVsProduction = [];
+for ($i = 13; $i >= 0; $i--) {
+    $date = date('Y-m-d', strtotime("-$i days"));
+    $shortDate = date('d.m', strtotime("-$i days"));
+    $found = false;
+    foreach ($ordersVsProductionData as $row) {
+        if ($row['date'] === $date) {
+            $fullOrdersVsProduction[] = [
+                'date' => $row['date'],
+                'short_date' => $row['short_date'],
+                'orders_count' => $row['orders_count'],
+                'orders_value' => $row['orders_value'],
+                'tasks_count' => $row['tasks_count'],
+                'completed_tasks' => $row['completed_tasks']
+            ];
+            $found = true;
+            break;
+        }
+    }
+    if (!$found) {
+        $fullOrdersVsProduction[] = [
+            'date' => $date,
+            'short_date' => $shortDate,
+            'orders_count' => 0,
+            'orders_value' => 0,
+            'tasks_count' => 0,
+            'completed_tasks' => 0
+        ];
+    }
+}
 
 // Просроченные заказы
 $stmt = $db->query("
@@ -1208,19 +1258,18 @@ $currentPage = 'dashboard';
         .table tbody td {
             padding: 1rem 1.25rem;
             font-size: 0.95rem;
-            color: #ffffff !important;
+            color: #f0f0f0 !important;
             font-weight: 500;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
         }
         
         .table tbody tr {
-            background: rgba(255, 255, 255, 0.08);
+            background: rgba(30, 30, 40, 0.6);
+            backdrop-filter: blur(10px);
         }
         
         .table th {
             color: #ffffff !important;
             font-weight: 700;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
         }
         
         .order-link {
@@ -1506,21 +1555,22 @@ $currentPage = 'dashboard';
         }
         
         .module-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
+            background: rgba(30, 30, 40, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.15);
             border-radius: 16px;
             padding: 1.5rem;
-            backdrop-filter: var(--backdrop-blur);
+            backdrop-filter: blur(15px);
             transition: all 0.3s ease;
             height: 100%;
             display: flex;
             flex-direction: column;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
         }
         
         .module-card:hover {
             border-color: var(--border-glow);
             transform: translateY(-4px);
-            box-shadow: var(--shadow-lg), 0 0 30px rgba(255, 107, 107, 0.15);
+            box-shadow: 0 12px 40px rgba(255, 107, 107, 0.2), 0 0 30px rgba(255, 107, 107, 0.15);
         }
         
         .module-header {
@@ -1529,7 +1579,7 @@ $currentPage = 'dashboard';
             gap: 1rem;
             margin-bottom: 1rem;
             padding-bottom: 1rem;
-            border-bottom: 1px solid var(--border);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
         
         .module-icon {
@@ -1563,28 +1613,28 @@ $currentPage = 'dashboard';
         }
         
         .module-stat-item {
-            background: rgba(255, 255, 255, 0.08);
+            background: rgba(30, 30, 40, 0.7);
             padding: 1.25rem;
             border-radius: 12px;
             text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(10px);
         }
         
         .module-stat-value {
-            font-size: 2rem;
+            font-size: 2.2rem;
             font-weight: 800;
             color: #ffffff !important;
             margin-bottom: 0.35rem;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
         }
         
         .module-stat-label {
-            font-size: 0.7rem;
-            color: rgba(255, 255, 255, 0.9) !important;
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.95) !important;
             text-transform: uppercase;
             letter-spacing: 0.8px;
-            font-weight: 700;
+            font-weight: 600;
         }
         
         .module-issues-list {
@@ -2345,6 +2395,21 @@ $currentPage = 'dashboard';
                         </div>
                     </div>
                 </div>
+
+                <!-- Комбинированный график: Заказы vs Производство -->
+                <div class="card" style="margin-bottom: 1.5rem;">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i class="fas fa-chart-mixed"></i>
+                            Заказы и Производство (14 дней)
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container" style="height: 350px;">
+                            <canvas id="ordersVsProductionChart"></canvas>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Боковая панель -->
@@ -2932,6 +2997,134 @@ $currentPage = 'dashboard';
                         grid: { color: 'rgba(255, 255, 255, 0.05)' },
                         ticks: { color: 'rgba(255, 255, 255, 0.7)', stepSize: 2 },
                         beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Chart.js - Комбинированный график: Заказы vs Производство
+        const ctxOrdersVsProduction = document.getElementById('ordersVsProductionChart').getContext('2d');
+        
+        const ordersVsProdLabels = <?= json_encode(array_column($fullOrdersVsProduction, 'short_date')) ?>;
+        const ordersCountData = <?= json_encode(array_column($fullOrdersVsProduction, 'orders_count')) ?>;
+        const tasksCountData = <?= json_encode(array_column($fullOrdersVsProduction, 'tasks_count')) ?>;
+        const completedTasksData = <?= json_encode(array_column($fullOrdersVsProduction, 'completed_tasks')) ?>;
+
+        new Chart(ctxOrdersVsProduction, {
+            type: 'line',
+            data: {
+                labels: ordersVsProdLabels,
+                datasets: [
+                    {
+                        label: 'Новые заказы',
+                        data: ordersCountData,
+                        borderColor: '#5ac8fa',
+                        backgroundColor: 'rgba(90, 200, 250, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#5ac8fa',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'Производственные задания',
+                        data: tasksCountData,
+                        borderColor: '#ff9f0a',
+                        backgroundColor: 'rgba(255, 159, 10, 0.1)',
+                        borderWidth: 3,
+                        fill: false,
+                        tension: 0.4,
+                        pointBackgroundColor: '#ff9f0a',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'Выполнено заданий',
+                        data: completedTasksData,
+                        borderColor: '#30d158',
+                        backgroundColor: 'rgba(48, 209, 88, 0.2)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#30d158',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 5,
+                        pointHoverRadius: 7,
+                        yAxisID: 'y1'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            color: 'rgba(255, 255, 255, 0.8)',
+                            usePointStyle: true,
+                            pointStyle: 'circle',
+                            padding: 15
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(15, 15, 26, 0.95)',
+                        titleColor: '#fff',
+                        bodyColor: 'rgba(255, 255, 255, 0.8)',
+                        borderColor: 'rgba(255, 255, 255, 0.1)',
+                        borderWidth: 1,
+                        padding: 12,
+                        displayColors: true,
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': ' + context.parsed.y;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                        ticks: { color: 'rgba(255, 255, 255, 0.7)' }
+                    },
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                        ticks: { color: 'rgba(255, 255, 255, 0.7)', stepSize: 1 },
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Количество',
+                            color: 'rgba(255, 255, 255, 0.6)'
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        grid: { drawOnChartArea: false },
+                        ticks: { color: 'rgba(48, 209, 88, 0.8)', stepSize: 1 },
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Выполнено',
+                            color: 'rgba(48, 209, 88, 0.8)'
+                        }
                     }
                 }
             }
