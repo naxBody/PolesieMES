@@ -114,6 +114,85 @@ $stmt = $db->query("
 ");
 $finishedGoods = $stmt->fetchAll();
 
+// 7. Уведомления для склада (срочные задачи)
+$notifications = [];
+
+// Критически низкие запасы
+if (($materialStats['out_of_stock'] ?? 0) > 0) {
+    $notifications[] = [
+        'type' => 'critical',
+        'icon' => 'fa-exclamation-circle',
+        'title' => 'Товары закончились!',
+        'message' => ($materialStats['out_of_stock']) . ' позиций нет на складе',
+        'color' => '#ff453a'
+    ];
+}
+
+// Низкие запасы
+if (($materialStats['low_stock'] ?? 0) > 0) {
+    $notifications[] = [
+        'type' => 'warning',
+        'icon' => 'fa-exclamation-triangle',
+        'title' => 'Заканчиваются материалы',
+        'message' => ($materialStats['low_stock']) . ' позиций требуют пополнения',
+        'color' => '#ffd60a'
+    ];
+}
+
+// Поставки сегодня
+$stmt = $db->query("
+    SELECT COUNT(*) as count
+    FROM purchase_orders po
+    WHERE po.status IN ('sent', 'confirmed', 'partial')
+    AND DATE(po.expected_delivery) = CURDATE()
+");
+$todayDeliveries = $stmt->fetch()['count'] ?? 0;
+if ($todayDeliveries > 0) {
+    $notifications[] = [
+        'type' => 'info',
+        'icon' => 'fa-truck',
+        'title' => 'Поставки сегодня',
+        'message' => "$todayDeliveries ожидаемых поставок на сегодня",
+        'color' => '#5ac8fa'
+    ];
+}
+
+// Поставки завтра
+$stmt = $db->query("
+    SELECT COUNT(*) as count
+    FROM purchase_orders po
+    WHERE po.status IN ('sent', 'confirmed', 'partial')
+    AND DATE(po.expected_delivery) = DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+");
+$tomorrowDeliveries = $stmt->fetch()['count'] ?? 0;
+if ($tomorrowDeliveries > 0) {
+    $notifications[] = [
+        'type' => 'info',
+        'icon' => 'fa-calendar-day',
+        'title' => 'Поставки завтра',
+        'message' => "$tomorrowDeliveries ожидаемых поставок на завтра",
+        'color' => '#32ade6'
+    ];
+}
+
+// Неподтверждённые отгрузки
+$stmt = $db->query("
+    SELECT COUNT(DISTINCT reference_id) as count
+    FROM movements mvt
+    WHERE mvt.movement_type = 'shipment'
+    AND DATE(mvt.movement_date) = CURDATE()
+");
+$todayShipments = $stmt->fetch()['count'] ?? 0;
+if ($todayShipments > 0) {
+    $notifications[] = [
+        'type' => 'success',
+        'icon' => 'fa-shipping-fast',
+        'title' => 'Отгрузки сегодня',
+        'message' => "$todayShipments отгрузок выполнено сегодня",
+        'color' => '#30d158'
+    ];
+}
+
 $pageTitle = 'Склад | PolesieMES';
 $currentPage = 'warehouse_dashboard';
 ?>
@@ -425,6 +504,112 @@ $currentPage = 'warehouse_dashboard';
         .section-title i {
             color: var(--primary-glow);
         }
+        
+        /* Панель уведомлений */
+        .notifications-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .notification-card {
+            background: var(--glass-bg);
+            backdrop-filter: var(--backdrop-blur);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 1.25rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .notification-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(180deg, var(--notification-color), transparent);
+        }
+        
+        .notification-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+            border-color: var(--notification-color);
+        }
+        
+        .notification-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+        
+        .notification-icon.critical {
+            background: linear-gradient(135deg, #ff453a, #ff3b30);
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 69, 58, 0.4);
+        }
+        
+        .notification-icon.warning {
+            background: linear-gradient(135deg, #ffd60a, #ff9f0a);
+            color: #000;
+            box-shadow: 0 4px 15px rgba(255, 214, 10, 0.4);
+        }
+        
+        .notification-icon.info {
+            background: linear-gradient(135deg, #5ac8fa, #0a84ff);
+            color: white;
+            box-shadow: 0 4px 15px rgba(90, 200, 250, 0.4);
+        }
+        
+        .notification-icon.success {
+            background: linear-gradient(135deg, #30d158, #24a945);
+            color: white;
+            box-shadow: 0 4px 15px rgba(48, 209, 88, 0.4);
+        }
+        
+        .notification-content {
+            flex: 1;
+        }
+        
+        .notification-title {
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+        
+        .notification-message {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+        
+        .notification-badge {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--notification-color);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+        }
     </style>
 </head>
 <body>
@@ -486,6 +671,24 @@ $currentPage = 'warehouse_dashboard';
                 <p>Учёт материалов и готовой продукции</p>
             </div>
         </div>
+
+        <!-- Панель уведомлений -->
+        <?php if (!empty($notifications)): ?>
+        <div class="notifications-panel">
+            <?php foreach ($notifications as $notification): ?>
+            <div class="notification-card" style="--notification-color: <?= e($notification['color']) ?>;">
+                <div class="notification-icon <?= e($notification['type']) ?>">
+                    <i class="fas <?= e($notification['icon']) ?>"></i>
+                </div>
+                <div class="notification-content">
+                    <div class="notification-title"><?= e($notification['title']) ?></div>
+                    <div class="notification-message"><?= e($notification['message']) ?></div>
+                </div>
+                <div class="notification-badge"></div>
+            </div>
+            <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
 
         <!-- Быстрые действия - выделенные карточки -->
         <div class="quick-actions-bar">
