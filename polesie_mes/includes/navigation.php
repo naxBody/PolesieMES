@@ -54,17 +54,10 @@ if (!isset($currentModule)) {
         <?php if (hasRole(['admin', 'director', 'manager', 'warehouse_keeper'])): ?>
         <!-- Склад -->
         <li>
-            <?php if (hasRole(['director', 'admin'])): ?>
-            <a href="<?= APP_URL ?>/modules/director/dashboard.php#warehouse-section" class="nav-link <?= ($currentModule ?? '') == 'warehouse' ? 'active' : '' ?>">
-                <i class="fas fa-warehouse"></i>
-                Склад
-            </a>
-            <?php else: ?>
             <a href="<?= APP_URL ?>/modules/warehouse/warehouse_dashboard.php" class="nav-link <?= ($currentModule ?? '') == 'warehouse' ? 'active' : '' ?>">
                 <i class="fas fa-warehouse"></i>
                 Склад
             </a>
-            <?php endif; ?>
         </li>
         <?php endif; ?>
 

@@ -2153,17 +2153,10 @@ $currentPage = 'dashboard';
             <?php if (hasRole(['admin', 'director', 'manager', 'warehouse_keeper'])): ?>
             <!-- Склад -->
             <li>
-                <?php if (hasRole(['director', 'admin'])): ?>
-                <a href="<?= APP_URL ?>/modules/director/dashboard.php#warehouse-section" class="nav-link">
-                    <i class="fas fa-warehouse"></i>
-                    Склад
-                </a>
-                <?php else: ?>
                 <a href="<?= APP_URL ?>/modules/warehouse/warehouse_dashboard.php" class="nav-link">
                     <i class="fas fa-warehouse"></i>
                     Склад
                 </a>
-                <?php endif; ?>
             </li>
             <?php endif; ?>
 
@@ -2851,15 +2844,9 @@ $currentPage = 'dashboard';
                                 </li>
                                 <?php endif; ?>
                             </ul>
-                            <?php if (hasRole(['director', 'admin'])): ?>
-                            <a href="<?= APP_URL ?>/modules/director/dashboard.php#warehouse-section" class="module-link-btn">
-                                Обзор <i class="fas fa-arrow-right"></i>
-                            </a>
-                            <?php else: ?>
                             <a href="<?= APP_URL ?>/modules/warehouse/warehouse_dashboard.php" class="module-link-btn">
                                 Перейти <i class="fas fa-arrow-right"></i>
                             </a>
-                            <?php endif; ?>
                         </div>
 
                         <!-- Оборудование -->
