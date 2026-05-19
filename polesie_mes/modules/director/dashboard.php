@@ -247,7 +247,7 @@ $equipmentData = [];
 
 // Неисправное оборудование
 $stmt = $db->query("
-    SELECT id, name, item_code, status, location, 
+    SELECT id, name, item_code, status, 
            last_maintenance_date, next_maintenance_date
     FROM items
     WHERE item_type = 'equipment' AND status IN ('broken', 'maintenance')
@@ -1213,7 +1213,7 @@ $currentPage = 'director_dashboard';
                                         <span class="badge warning">На ТО</span>
                                     <?php endif; ?>
                                 </td>
-                                <td><?= e($eq['location']) ?></td>
+                                <td>-</td>
                                 <td><?= $eq['last_maintenance_date'] ? formatDate($eq['last_maintenance_date']) : '-' ?></td>
                                 <td>
                                     <a href="<?= APP_URL ?>/modules/equipment/?view=<?= $eq['id'] ?>" class="btn-module btn-outline" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
