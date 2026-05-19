@@ -5,7 +5,7 @@ __pycache__/
 
 # Dependencies
 vendor/
-composer.lock
+node_modules/
 
 # Logs and temp files
 *.log
@@ -24,4 +24,18 @@ composer.lock
 # OS generated files
 .DS_Store
 Thumbs.db
+
+# Coverage reports
+coverage/
+htmlcov/
+*.coverage
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# PHP specific
+*.php~
+*.bak
 ```
