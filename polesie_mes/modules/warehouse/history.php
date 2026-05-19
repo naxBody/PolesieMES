@@ -368,12 +368,6 @@ $pageTitle = 'История движений | PolesieMES';
                     <a href="<?= APP_URL ?>/modules/export.php?source=warehouse_history&type=<?= $filter_type ?>&search=<?= e($search) ?>&date_from=<?= e($date_from) ?>&date_to=<?= e($date_to) ?>&employee_id=<?= $employee_id ?>&category_id=<?= $category_id ?>&format=csv" class="btn-primary-custom" style="padding: 0.6rem 1.2rem;" title="Экспорт в CSV">
                         <i class="fas fa-file-csv"></i> CSV
                     </a>
-                    <a href="<?= APP_URL ?>/modules/export.php?source=warehouse_history&type=<?= $filter_type ?>&search=<?= e($search) ?>&date_from=<?= e($date_from) ?>&date_to=<?= e($date_to) ?>&employee_id=<?= $employee_id ?>&category_id=<?= $category_id ?>&format=excel" class="btn-primary-custom" style="padding: 0.6rem 1.2rem; background: linear-gradient(135deg, #1d976c, #93f9b9);" title="Экспорт в Excel">
-                        <i class="fas fa-file-excel"></i> Excel
-                    </a>
-                    <a href="<?= APP_URL ?>/modules/export.php?source=warehouse_history&type=<?= $filter_type ?>&search=<?= e($search) ?>&date_from=<?= e($date_from) ?>&date_to=<?= e($date_to) ?>&employee_id=<?= $employee_id ?>&category_id=<?= $category_id ?>&format=pdf" class="btn-primary-custom" style="padding: 0.6rem 1.2rem; background: linear-gradient(135deg, #cb2d3e, #ef473a);" title="Экспорт в PDF">
-                        <i class="fas fa-file-pdf"></i> PDF
-                    </a>
                 </div>
             </div>
             
