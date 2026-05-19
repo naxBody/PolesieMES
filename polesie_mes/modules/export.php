@@ -258,7 +258,7 @@ if ($source === 'order_view') {
     fputcsv($output, []);
     
     // Заголовки колонок товаров
-    fputcsv($output, ['Наименование', 'Артикул', 'Кол-во', 'Ед.', 'Цена', 'Сумма']);
+    fputcsv($output, ['Наименование', 'Артикул', 'Кол-во', 'Ед.', 'Цена', 'Сумма'], ';');
     
     // Товары
     foreach ($items as $item) {
@@ -269,7 +269,7 @@ if ($source === 'order_view') {
             $item['unit_name'] ?? '-',
             number_format($item['price'], 2, ',', ' '),
             number_format($item['total'], 2, ',', ' ')
-        ]);
+        ], ';');
     }
     
     rewind($output);
@@ -300,7 +300,7 @@ function exportCSV($data, $columns, $filename) {
     
     // Заголовки
     $headers = array_keys($columns);
-    fputcsv($output, $headers);
+    fputcsv($output, $headers, ';');
     
     // Данные
     foreach ($data as $row) {
@@ -312,7 +312,7 @@ function exportCSV($data, $columns, $filename) {
                 $csvRow[] = $row[$field] ?? '';
             }
         }
-        fputcsv($output, $csvRow);
+        fputcsv($output, $csvRow, ';');
     }
     
     fclose($output);
