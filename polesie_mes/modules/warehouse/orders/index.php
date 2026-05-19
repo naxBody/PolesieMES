@@ -1,4 +1,4 @@
-<?php
+<?=
 /**
  * Отгрузка готовой продукции клиентам
  * PolesieMES - Система управления производством ОАО "Полесьеэлектромаш"
@@ -481,15 +481,7 @@ $pageTitle = 'Отгрузка | PolesieMES';
                         </div>
                         <div>
                             <span class="priority-badge priority-<?= $order['priority'] ?>">
-                                <?php
-                                $priorityNames = [
-                                    'low' => 'Низкий',
-                                    'normal' => 'Обычный',
-                                    'high' => 'Высокий',
-                                    'urgent' => 'Срочный'
-                                ];
-                                echo $priorityNames[$order['priority']] ?? $order['priority'];
-                                ?>
+                                <?= getPriorityName($order['priority']) ?>
                             </span>
                         </div>
                     </div>
@@ -511,7 +503,7 @@ $pageTitle = 'Отгрузка | PolesieMES';
                         </div>
                     </div>
                     
-                    <?php
+                    <?=
                     $items = json_decode($order['items_json'], true);
                     if (is_array($items)):
                     ?>

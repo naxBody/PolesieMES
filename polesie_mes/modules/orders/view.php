@@ -575,7 +575,7 @@ $pageTitle = 'Заказ #' . e($order['order_number']) . ' | ' . APP_NAME;
                                     <div class="timeline-title"><?= e($task['stage_name']) ?></div>
                                     <div style="color: var(--text-secondary); margin-bottom: 0.5rem;"><?= e($task['product_name']) ?></div>
                                     <div style="display: flex; justify-content: space-between; align-items: center;">
-                                        <span class="task-status badge-status badge-<?= e($task['status']) ?>"><?= e($task['status']) ?></span>
+                                        <span class="task-status badge-status badge-<?= e(getOrderStatusName($task['status'])) ?>"><?= e(getOrderStatusName($task['status'])) ?></span>
                                         <span class="timeline-date"><i class="fas fa-calendar"></i> План: <?= formatDate($task['planned_end'], 'd.m.Y') ?></span>
                                     </div>
                                 </div>
