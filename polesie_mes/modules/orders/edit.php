@@ -35,7 +35,7 @@ if (!$order) {
 
 // Декодирование состава заказа с валидацией
 $itemsRaw = json_decode($order['items_json'] ?? '[]', true);
-$items = (is_array($itemsRaw)) ? $itemsRaw : [];
+$existingItems = (is_array($itemsRaw)) ? $itemsRaw : [];
 
 // Получение клиентов
 $stmt = $db->query("SELECT id, name, inn FROM partners WHERE partner_type IN ('customer', 'both') ORDER BY name");
@@ -45,8 +45,9 @@ $customers = $stmt->fetchAll();
 $stmt = $db->query("SELECT id, name, item_code, price FROM items WHERE item_type = 'product' AND is_active = 1 ORDER BY name");
 $products = $stmt->fetchAll();
 
+// Обработка POST запроса
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $customer_id = $_POST['customer_id'] ?? null;
+    $customer_id = trim($_POST['customer_id'] ?? '');
     $order_date = $_POST['order_date'] ?? date('Y-m-d');
     $delivery_date = $_POST['delivery_date'] ?? null;
     $priority = $_POST['priority'] ?? 'normal';
@@ -54,51 +55,90 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $notes = trim($_POST['notes'] ?? '');
     $items_raw = $_POST['items_json'] ?? '[]';
     
-    if (!$customer_id) $errors[] = 'Выберите клиента';
-    if (!$delivery_date) $errors[] = 'Укажите срок поставки';
+    // Валидация
+    if (empty($customer_id)) {
+        $errors[] = 'Выберите клиента';
+    }
+    if (empty($delivery_date)) {
+        $errors[] = 'Укажите срок поставки';
+    }
+    if (empty($order_date)) {
+        $errors[] = 'Укажите дату заказа';
+    }
+    
+    // Парсинг и валидация элементов заказа
+    $itemsDecoded = json_decode($items_raw, true);
+    if (json_last_error() !== JSON_ERROR_NONE || !is_array($itemsDecoded)) {
+        $itemsDecoded = [];
+    }
+    
+    // Фильтрация пустых элементов
+    $normalizedItems = [];
+    foreach ($itemsDecoded as $item) {
+        if (!is_array($item)) continue;
+        if (empty($item['product_id'])) continue;
+        
+        $productId = (int)$item['product_id'];
+        $quantity = isset($item['quantity']) ? max(0, (float)$item['quantity']) : 0;
+        $unitPrice = isset($item['unit_price']) ? max(0, (float)$item['unit_price']) : 0;
+        $totalPrice = $quantity * $unitPrice;
+        
+        if ($quantity > 0) {
+            $normalizedItems[] = [
+                'product_id' => $productId,
+                'name' => $item['name'] ?? '',
+                'quantity' => $quantity,
+                'unit_price' => $unitPrice,
+                'total_price' => $totalPrice
+            ];
+        }
+    }
+    
+    if (empty($normalizedItems)) {
+        $errors[] = 'Добавьте хотя бы одну позицию в заказ';
+    }
     
     if (empty($errors)) {
         try {
             $db->beginTransaction();
             
-            // Расчет суммы с безопасным парсингом JSON
-            $itemsDecoded = json_decode($items_raw, true);
-            if (json_last_error() !== JSON_ERROR_NONE || !is_array($itemsDecoded)) {
-                $itemsDecoded = [];
-            }
-            $items = $itemsDecoded;
-            
-            // Валидация и нормализация данных items
-            $normalizedItems = [];
-            foreach ($items as $item) {
-                if (!is_array($item) || !isset($item['product_id']) || !is_numeric($item['product_id'])) {
-                    continue;
-                }
-                $normalizedItems[] = [
-                    'product_id' => (int)$item['product_id'],
-                    'name' => $item['name'] ?? '',
-                    'quantity' => isset($item['quantity']) ? (float)$item['quantity'] : 0,
-                    'unit_price' => isset($item['unit_price']) ? (float)$item['unit_price'] : 0,
-                    'total_price' => isset($item['total_price']) ? (float)$item['total_price'] : 0
-                ];
-            }
-            
+            // Расчет общей суммы
             $total = array_sum(array_column($normalizedItems, 'total_price'));
             $items_json_encoded = json_encode($normalizedItems, JSON_UNESCAPED_UNICODE);
             
-            $stmt = $db->prepare("UPDATE orders SET customer_id = :cust, order_date = :odate, delivery_date = :ddate, priority = :prio, status = :status, items_json = :items, total_amount = :total, notes = :notes WHERE id = :id");
+            $stmt = $db->prepare("
+                UPDATE orders SET 
+                    customer_id = :cust, 
+                    order_date = :odate, 
+                    delivery_date = :ddate, 
+                    priority = :prio, 
+                    status = :status, 
+                    items_json = :items, 
+                    total_amount = :total, 
+                    notes = :notes 
+                WHERE id = :id
+            ");
             $stmt->execute([
-                'cust' => $customer_id, 'odate' => $order_date,
-                'ddate' => $delivery_date, 'prio' => $priority, 'status' => $status,
-                'items' => $items_json_encoded, 'total' => $total, 'notes' => $notes, 'id' => $orderId
+                'cust' => $customer_id,
+                'odate' => $order_date,
+                'ddate' => $delivery_date,
+                'prio' => $priority,
+                'status' => $status,
+                'items' => $items_json_encoded,
+                'total' => $total,
+                'notes' => $notes,
+                'id' => $orderId
             ]);
             
             $db->commit();
             redirectWithMessage(APP_URL . '/modules/orders/view.php?id=' . $orderId, 'Заказ ' . e($order['order_number']) . ' успешно обновлён', 'success');
         } catch (Exception $e) {
             $db->rollBack();
-            $errors[] = 'Ошибка: ' . $e->getMessage();
+            $errors[] = 'Ошибка при сохранении: ' . $e->getMessage();
         }
+    } else {
+        // Сохраняем введенные данные при ошибке
+        $existingItems = $normalizedItems;
     }
 }
 
@@ -244,70 +284,105 @@ $pageTitle = 'Редактирование заказа #' . e($order['order_num
     <script>
     // Безопасная передача данных из PHP в JavaScript
     const products = <?= json_encode($products, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
-    const existingItemsRaw = <?= json_encode($items, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
-    // Валидация и фильтрация существующих элементов
-    const existingItems = Array.isArray(existingItemsRaw) ? existingItemsRaw.filter(item => item && item.product_id) : [];
-    let items = [...existingItems];
+    const existingItems = <?= json_encode($existingItems, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
     
-    function addItem(existingItem = null) {
-        let opts = '<option value="">Выберите продукцию</option>';
-        products.forEach(p => {
-            const selected = existingItem && existingItem.product_id == p.id ? 'selected' : '';
-            opts += `<option value="${p.id}" data-price="${p.price}" ${selected}>${escapeHtml(p.name)}</option>`;
-        });
-        
-        const qty = existingItem && existingItem.quantity ? existingItem.quantity : 1;
-        const price = existingItem && existingItem.unit_price ? parseFloat(existingItem.unit_price) : 0;
-        const total = existingItem && existingItem.total_price ? parseFloat(existingItem.total_price) : 0;
-        
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td><select class="form-select form-select-sm item-select">${opts}</select></td>
-            <td><input type="number" class="form-control form-control-sm qty-input" value="${qty}" min="1"></td>
-            <td class="price-cell">${parseFloat(price).toFixed(2)}</td>
-            <td class="total-cell">${parseFloat(total).toFixed(2)}</td>
-            <td><button type="button" class="btn btn-sm btn-danger" onclick="this.closest('tr').remove(); updateItems();">×</button></td>
-        `;
-        document.querySelector('#itemsTable tbody').appendChild(row);
-        
-        row.querySelector('.item-select').addEventListener('change', updateItems);
-        row.querySelector('.qty-input').addEventListener('input', updateItems);
-    }
+    let items = [];
     
-    function updateItems() {
-        items = [];
-        let total = 0;
-        document.querySelectorAll('#itemsTable tbody tr').forEach(row => {
-            const sel = row.querySelector('.item-select');
-            const qty = parseFloat(row.querySelector('.qty-input').value) || 0;
-            const price = parseFloat(sel.options[sel.selectedIndex]?.dataset?.price) || 0;
-            const sum = qty * price;
-            row.querySelector('.price-cell').textContent = price.toFixed(2);
-            row.querySelector('.total-cell').textContent = sum.toFixed(2);
-            if (sel.value) {
-                const productName = sel.options[sel.selectedIndex]?.text || '';
-                items.push({ product_id: parseInt(sel.value), name: productName, quantity: qty, unit_price: price, total_price: sum });
-            }
-            total += sum;
-        });
-        document.getElementById('items_json').value = JSON.stringify(items);
-    }
-    
-    // Функция для экранирования HTML в названиях
+    // Функция для экранирования HTML
     function escapeHtml(text) {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
     }
     
-    // Инициализация с существующими элементами
-    document.addEventListener('DOMContentLoaded', function() {
-        if (items.length > 0) {
-            items.forEach(item => addItem(item));
+    // Создание строки таблицы с продукцией
+    function createProductOptions(selectedProductId = '') {
+        let opts = '<option value="">Выберите продукцию</option>';
+        products.forEach(p => {
+            const selected = p.id == selectedProductId ? 'selected' : '';
+            opts += `<option value="${p.id}" data-price="${p.price}" ${selected}>${escapeHtml(p.name)}</option>`;
+        });
+        return opts;
+    }
+    
+    // Добавление позиции в таблицу
+    function addItem(existingItem = null) {
+        const productId = existingItem ? existingItem.product_id : '';
+        const qty = existingItem && existingItem.quantity ? existingItem.quantity : 1;
+        const price = existingItem && existingItem.unit_price ? parseFloat(existingItem.unit_price) : 0;
+        const total = existingItem && existingItem.total_price ? parseFloat(existingItem.total_price) : 0;
+        
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td><select class="form-select form-select-sm item-select">${createProductOptions(productId)}</select></td>
+            <td><input type="number" class="form-control form-control-sm qty-input" value="${qty}" min="1" step="0.01"></td>
+            <td class="price-cell">${price.toFixed(2)}</td>
+            <td class="total-cell">${total.toFixed(2)}</td>
+            <td><button type="button" class="btn btn-sm btn-danger" onclick="removeRow(this)">×</button></td>
+        `;
+        document.querySelector('#itemsTable tbody').appendChild(row);
+        
+        row.querySelector('.item-select').addEventListener('change', function() {
+            updateRowPrices(row);
             updateItems();
+        });
+        row.querySelector('.qty-input').addEventListener('input', function() {
+            updateRowPrices(row);
+            updateItems();
+        });
+        
+        if (existingItem) {
+            updateRowPrices(row);
+        }
+    }
+    
+    // Обновление цен в строке
+    function updateRowPrices(row) {
+        const sel = row.querySelector('.item-select');
+        const qty = parseFloat(row.querySelector('.qty-input').value) || 0;
+        const price = parseFloat(sel.options[sel.selectedIndex]?.dataset?.price) || 0;
+        const sum = qty * price;
+        row.querySelector('.price-cell').textContent = price.toFixed(2);
+        row.querySelector('.total-cell').textContent = sum.toFixed(2);
+    }
+    
+    // Удаление строки
+    function removeRow(btn) {
+        btn.closest('tr').remove();
+        updateItems();
+    }
+    
+    // Обновление общего списка элементов и скрытого поля
+    function updateItems() {
+        items = [];
+        document.querySelectorAll('#itemsTable tbody tr').forEach(row => {
+            const sel = row.querySelector('.item-select');
+            const qty = parseFloat(row.querySelector('.qty-input').value) || 0;
+            const price = parseFloat(sel.options[sel.selectedIndex]?.dataset?.price) || 0;
+            const sum = qty * price;
+            
+            if (sel.value && qty > 0) {
+                const productName = sel.options[sel.selectedIndex]?.text || '';
+                items.push({
+                    product_id: parseInt(sel.value),
+                    name: productName,
+                    quantity: qty,
+                    unit_price: price,
+                    total_price: sum
+                });
+            }
+        });
+        document.getElementById('items_json').value = JSON.stringify(items);
+    }
+    
+    // Инициализация при загрузке страницы
+    document.addEventListener('DOMContentLoaded', function() {
+        if (Array.isArray(existingItems) && existingItems.length > 0) {
+            existingItems.forEach(item => addItem(item));
         } else {
             addItem();
         }
+        updateItems();
     });
     </script>
 </body>
