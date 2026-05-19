@@ -115,7 +115,7 @@ $pageTitle = 'Просмотр оборудования | ' . APP_NAME;
                         <p><strong>Название:</strong> <?= e($equipment['name']) ?></p>
                         <p><strong>Категория:</strong> <?= e($equipment['category_name'] ?? '-') ?></p>
                         <p><strong>Расположение:</strong> <?= e($equipment['location_name'] ?? '-') ?></p>
-                        <p><strong>Инвентарный №:</strong> <?= e($equipment['inventory_number'] ?? '-') ?></p>
+                        <p><strong>Код:</strong> <?= e($equipment['item_code'] ?? '-') ?></p>
                     </div>
                     <div class="col-md-6">
                         <p><strong>Статус:</strong> 

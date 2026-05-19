@@ -247,7 +247,7 @@ $equipmentData = [];
 
 // Неисправное оборудование
 $stmt = $db->query("
-    SELECT id, name, inventory_number, status, location, 
+    SELECT id, name, item_code, status, location, 
            last_maintenance_date, next_maintenance_date
     FROM items
     WHERE item_type = 'equipment' AND status IN ('broken', 'maintenance')
@@ -260,7 +260,7 @@ $equipmentData['problemEquipment'] = $stmt->fetchAll();
 
 // Оборудование требующее ТО
 $stmt = $db->query("
-    SELECT id, name, inventory_number, next_maintenance_date,
+    SELECT id, name, item_code, next_maintenance_date,
            DATEDIFF(next_maintenance_date, NOW()) as days_until_maintenance
     FROM items
     WHERE item_type = 'equipment' 
@@ -1194,7 +1194,7 @@ $currentPage = 'director_dashboard';
                         <thead>
                             <tr>
                                 <th>Наименование</th>
-                                <th>Инв. номер</th>
+                                <th>Код</th>
                                 <th>Статус</th>
                                 <th>Расположение</th>
                                 <th>Последнее ТО</th>
@@ -1205,7 +1205,7 @@ $currentPage = 'director_dashboard';
                             <?php foreach ($equipmentData['problemEquipment'] as $eq): ?>
                             <tr>
                                 <td><?= e($eq['name']) ?></td>
-                                <td><?= e($eq['inventory_number']) ?></td>
+                                <td><?= e($eq['item_code']) ?></td>
                                 <td>
                                     <?php if ($eq['status'] === 'broken'): ?>
                                         <span class="badge danger">Неисправно</span>
@@ -1238,7 +1238,7 @@ $currentPage = 'director_dashboard';
                         <thead>
                             <tr>
                                 <th>Наименование</th>
-                                <th>Инв. номер</th>
+                                <th>Код</th>
                                 <th>Дата ТО</th>
                                 <th>Дней осталось</th>
                             </tr>
@@ -1247,7 +1247,7 @@ $currentPage = 'director_dashboard';
                             <?php foreach ($equipmentData['upcomingMaintenance'] as $eq): ?>
                             <tr>
                                 <td><?= e($eq['name']) ?></td>
-                                <td><?= e($eq['inventory_number']) ?></td>
+                                <td><?= e($eq['item_code']) ?></td>
                                 <td><?= formatDate($eq['next_maintenance_date']) ?></td>
                                 <td><?= $eq['days_until_maintenance'] ?> дн.</td>
                             </tr>
