@@ -51,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $priority = $_POST['priority'] ?? 'normal';
     $status = $_POST['status'] ?? $order['status'];
     $notes = trim($_POST['notes'] ?? '');
-    $items_json = $_POST['items_json'] ?? '[]';
+    $items_raw = $_POST['items_json'] ?? '[]';
     
     if (!$customer_id) $errors[] = 'Выберите клиента';
     if (!$delivery_date) $errors[] = 'Укажите срок поставки';
@@ -61,14 +61,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $db->beginTransaction();
             
             // Расчет суммы
-            $items = json_decode($items_json, true) ?: [];
-            $total = array_sum(array_column($items, 'total_price'));
+            $items = json_decode($items_raw, true, 512, JSON_THROW_ON_ERROR);
+            if (!is_array($items)) {
+                $items = [];
+            }
+            
+            // Валидация и нормализация данных items
+            $normalizedItems = [];
+            foreach ($items as $item) {
+                if (!isset($item['product_id']) || !is_numeric($item['product_id'])) {
+                    continue;
+                }
+                $normalizedItems[] = [
+                    'product_id' => (int)$item['product_id'],
+                    'name' => $item['name'] ?? '',
+                    'quantity' => isset($item['quantity']) ? (float)$item['quantity'] : 0,
+                    'unit_price' => isset($item['unit_price']) ? (float)$item['unit_price'] : 0,
+                    'total_price' => isset($item['total_price']) ? (float)$item['total_price'] : 0
+                ];
+            }
+            
+            $total = array_sum(array_column($normalizedItems, 'total_price'));
+            $items_json_encoded = json_encode($normalizedItems, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
             
             $stmt = $db->prepare("UPDATE orders SET customer_id = :cust, order_date = :odate, delivery_date = :ddate, priority = :prio, status = :status, items_json = :items, total_amount = :total, notes = :notes WHERE id = :id");
             $stmt->execute([
                 'cust' => $customer_id, 'odate' => $order_date,
                 'ddate' => $delivery_date, 'prio' => $priority, 'status' => $status,
-                'items' => $items_json, 'total' => $total, 'notes' => $notes, 'id' => $orderId
+                'items' => $items_json_encoded, 'total' => $total, 'notes' => $notes, 'id' => $orderId
             ]);
             
             $db->commit();
