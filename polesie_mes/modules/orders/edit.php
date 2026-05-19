@@ -243,8 +243,8 @@ $pageTitle = 'Редактирование заказа #' . e($order['order_num
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
     // Безопасная передача данных из PHP в JavaScript
-    const products = JSON.parse('<?= json_encode($products, JSON_UNESCAPED_UNICODE) ?>');
-    const existingItemsRaw = JSON.parse('<?= json_encode($items, JSON_UNESCAPED_UNICODE) ?>');
+    const products = <?= json_encode($products, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
+    const existingItemsRaw = <?= json_encode($items, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
     // Валидация и фильтрация существующих элементов
     const existingItems = Array.isArray(existingItemsRaw) ? existingItemsRaw.filter(item => item && item.product_id) : [];
     let items = [...existingItems];
