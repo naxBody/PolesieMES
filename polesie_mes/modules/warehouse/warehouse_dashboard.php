@@ -19,7 +19,7 @@ require_once __DIR__ . '/../../includes/helpers.php';
 requireAuth();
 
 // Проверка роли - только для складских работников
-if (!hasRole(['admin', 'manager', 'warehouse_keeper'])) {
+if (!hasRole(['admin', 'director', 'manager', 'warehouse_keeper'])) {
     redirectWithMessage(APP_URL . '/modules/dashboard/index.php', 'Доступ запрещён. Это раздел для складских работников.', 'error');
 }
 
