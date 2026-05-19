@@ -1,1 +1,6 @@
-Nothing should be ignored based on the provided file changes. The only modified file is a PHP source file (`polesie_mes/modules/director/dashboard.php`), which is a legitimate source code file that should not be ignored. There are no build artifacts, dependency directories, temporary files, or other items that need to be added to .gitignore.
+# Examples where no ignores are needed:
+# If only source/config files like .sql, .py, .js, .java, .go, .cpp, .h, .md, .txt, .json, .yml, .yaml, .toml, .cfg, .ini are present
+
+# In this case, only database.sql was modified, which is a source file
+# No build artifacts, dependencies, or temp files detected in changes
+# Therefore, no .gitignore rules are needed for this project state

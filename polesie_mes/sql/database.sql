@@ -79,6 +79,8 @@ CREATE TABLE items (
     currency VARCHAR(3) DEFAULT 'BYN',
     supplier_id INT,
     status ENUM('operational', 'maintenance', 'broken', 'offline', 'active', 'inactive') DEFAULT 'active',
+    last_maintenance_date DATE,
+    next_maintenance_date DATE,
     extra_specs JSON,
     description TEXT,
     is_active BOOLEAN DEFAULT TRUE,
@@ -399,19 +401,19 @@ INSERT INTO items (item_type, item_code, name, category_id, unit_id, current_sto
 ('material', 'MAT-PNT-004', 'Растворитель Р-4', 3, 2, 120.00, 30, 6.50, 13, 8);
 
 -- Оборудование
-INSERT INTO items (item_type, item_code, name, category_id, location_id, status, extra_specs) VALUES
-('equipment', 'EQ-CNC-001', 'Токарный станок с ЧПУ 16К20Ф3', 13, 11, 'operational', '{"power": "15kW", "year": 2018}'),
-('equipment', 'EQ-CNC-002', 'Фрезерный станок с ЧПУ ВМ127', 13, 11, 'operational', '{"power": "20kW", "year": 2019}'),
-('equipment', 'EQ-WLD-001', 'Сварочный полуавтомат MIG-350', 15, 11, 'operational', '{"current": "350A", "type": "MIG"}'),
-('equipment', 'EQ-WLD-002', 'Сварочный инвертор TIG-200', 15, 11, 'maintenance', '{"current": "200A", "type": "TIG"}'),
-('equipment', 'EQ-PNT-001', 'Камера окрасочная КП-1', 13, 12, 'operational', '{"volume": "50m3", "temp": "80C"}'),
-('equipment', 'EQ-WND-001', 'Станок намоточный НСТ-500', 13, 12, 'operational', '{"speed": "500rpm", "type": "automatic"}'),
-('equipment', 'EQ-WND-002', 'Станок намоточный НСТ-1000', 13, 12, 'operational', '{"speed": "1000rpm", "type": "automatic"}'),
-('equipment', 'EQ-TST-001', 'Стенд испытательный СИЭ-100', 16, 12, 'operational', '{"power": "100kW", "type": "universal"}'),
-('equipment', 'EQ-TST-002', 'Прибор измерения сопротивления МИКО-1', 16, 12, 'operational', '{"accuracy": "0.1%", "range": "0-1000Ohm"}'),
-('equipment', 'EQ-LFT-001', 'Кран мостовой 5т', 14, 11, 'operational', '{"capacity": "5t", "span": "15m"}'),
-('equipment', 'EQ-LFT-002', 'Кран мостовой 10т', 14, 12, 'operational', '{"capacity": "10t", "span": "20m"}'),
-('equipment', 'EQ-CMP-001', 'Компрессор воздушный КВ-50', 13, 12, 'broken', '{"pressure": "10bar", "flow": "50m3/h"}');
+INSERT INTO items (item_type, item_code, name, category_id, location_id, status, extra_specs, last_maintenance_date, next_maintenance_date) VALUES
+('equipment', 'EQ-CNC-001', 'Токарный станок с ЧПУ 16К20Ф3', 13, 11, 'operational', '{"power": "15kW", "year": 2018}', DATE_SUB(NOW(), INTERVAL 3 MONTH), DATE_ADD(NOW(), INTERVAL 3 MONTH)),
+('equipment', 'EQ-CNC-002', 'Фрезерный станок с ЧПУ ВМ127', 13, 11, 'operational', '{"power": "20kW", "year": 2019}', DATE_SUB(NOW(), INTERVAL 2 MONTH), DATE_ADD(NOW(), INTERVAL 4 MONTH)),
+('equipment', 'EQ-WLD-001', 'Сварочный полуавтомат MIG-350', 15, 11, 'operational', '{"current": "350A", "type": "MIG"}', DATE_SUB(NOW(), INTERVAL 4 MONTH), DATE_ADD(NOW(), INTERVAL 2 MONTH)),
+('equipment', 'EQ-WLD-002', 'Сварочный инвертор TIG-200', 15, 11, 'maintenance', '{"current": "200A", "type": "TIG"}', DATE_SUB(NOW(), INTERVAL 1 MONTH), NOW()),
+('equipment', 'EQ-PNT-001', 'Камера окрасочная КП-1', 13, 12, 'operational', '{"volume": "50m3", "temp": "80C"}', DATE_SUB(NOW(), INTERVAL 5 MONTH), DATE_ADD(NOW(), INTERVAL 1 MONTH)),
+('equipment', 'EQ-WND-001', 'Станок намоточный НСТ-500', 13, 12, 'operational', '{"speed": "500rpm", "type": "automatic"}', DATE_SUB(NOW(), INTERVAL 3 MONTH), DATE_ADD(NOW(), INTERVAL 3 MONTH)),
+('equipment', 'EQ-WND-002', 'Станок намоточный НСТ-1000', 13, 12, 'operational', '{"speed": "1000rpm", "type": "automatic"}', DATE_SUB(NOW(), INTERVAL 2 MONTH), DATE_ADD(NOW(), INTERVAL 4 MONTH)),
+('equipment', 'EQ-TST-001', 'Стенд испытательный СИЭ-100', 16, 12, 'operational', '{"power": "100kW", "type": "universal"}', DATE_SUB(NOW(), INTERVAL 1 MONTH), DATE_ADD(NOW(), INTERVAL 5 MONTH)),
+('equipment', 'EQ-TST-002', 'Прибор измерения сопротивления МИКО-1', 16, 12, 'operational', '{"accuracy": "0.1%", "range": "0-1000Ohm"}', DATE_SUB(NOW(), INTERVAL 6 MONTH), DATE_ADD(NOW(), INTERVAL 6 MONTH)),
+('equipment', 'EQ-LFT-001', 'Кран мостовой 5т', 14, 11, 'operational', '{"capacity": "5t", "span": "15m"}', DATE_SUB(NOW(), INTERVAL 4 MONTH), DATE_ADD(NOW(), INTERVAL 2 MONTH)),
+('equipment', 'EQ-LFT-002', 'Кран мостовой 10т', 14, 12, 'operational', '{"capacity": "10t", "span": "20m"}', DATE_SUB(NOW(), INTERVAL 3 MONTH), DATE_ADD(NOW(), INTERVAL 3 MONTH)),
+('equipment', 'EQ-CMP-001', 'Компрессор воздушный КВ-50', 13, 12, 'broken', '{"pressure": "10bar", "flow": "50m3/h"}', DATE_SUB(NOW(), INTERVAL 2 MONTH), NULL);
 
 -- Заказы (с items_json вместо отдельной таблицы order_items)
 INSERT INTO orders (order_number, customer_id, order_date, delivery_date, priority, status, items_json, total_amount, manager_id, notes) VALUES
