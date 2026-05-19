@@ -418,12 +418,6 @@ $pageTitle = 'Заказ #' . e($order['order_number']) . ' | ' . APP_NAME;
                     <i class="fas fa-edit"></i> Редактировать
                 </a>
                 <?php endif; ?>
-                <a href="<?= APP_URL ?>/modules/export.php?source=order_view&order_id=<?= $order['id'] ?>&format=pdf" class="btn-export" style="background: linear-gradient(135deg, #cb2d3e, #ef473a);" title="Экспорт в PDF">
-                    <i class="fas fa-file-pdf"></i> PDF
-                </a>
-                <a href="<?= APP_URL ?>/modules/export.php?source=order_view&order_id=<?= $order['id'] ?>&format=excel" class="btn-export" style="background: linear-gradient(135deg, #1d976c, #93f9b9);" title="Экспорт в Excel">
-                    <i class="fas fa-file-excel"></i> Excel
-                </a>
                 <a href="<?= APP_URL ?>/modules/export.php?source=order_view&order_id=<?= $order['id'] ?>&format=csv" class="btn-export" title="Экспорт в CSV">
                     <i class="fas fa-file-csv"></i> CSV
                 </a>
