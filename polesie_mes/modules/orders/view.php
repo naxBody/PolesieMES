@@ -418,15 +418,15 @@ $pageTitle = 'Заказ #' . e($order['order_number']) . ' | ' . APP_NAME;
                     <i class="fas fa-edit"></i> Редактировать
                 </a>
                 <?php endif; ?>
-                <button onclick="exportOrder('pdf')" class="btn-export">
+                <a href="<?= APP_URL ?>/modules/export.php?source=order_view&order_id=<?= $order['id'] ?>&format=pdf" class="btn-export" style="background: linear-gradient(135deg, #cb2d3e, #ef473a);" title="Экспорт в PDF">
                     <i class="fas fa-file-pdf"></i> PDF
-                </button>
-                <button onclick="exportOrder('excel')" class="btn-export">
+                </a>
+                <a href="<?= APP_URL ?>/modules/export.php?source=order_view&order_id=<?= $order['id'] ?>&format=excel" class="btn-export" style="background: linear-gradient(135deg, #1d976c, #93f9b9);" title="Экспорт в Excel">
                     <i class="fas fa-file-excel"></i> Excel
-                </button>
-                <button onclick="exportOrder('csv')" class="btn-export">
+                </a>
+                <a href="<?= APP_URL ?>/modules/export.php?source=order_view&order_id=<?= $order['id'] ?>&format=csv" class="btn-export" title="Экспорт в CSV">
                     <i class="fas fa-file-csv"></i> CSV
-                </button>
+                </a>
             </div>
         </div>
 
@@ -663,18 +663,5 @@ $pageTitle = 'Заказ #' . e($order['order_number']) . ' | ' . APP_NAME;
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="<?= APP_URL ?>/assets/js/main.js"></script>
-    <script>
-        function exportOrder(format) {
-            const orderId = <?= $orderId ?>;
-            const orderNumber = '<?= e($order['order_number']) ?>';
-            
-            // Здесь будет логика экспорта
-            alert('Экспорт заказа ' + orderNumber + ' в формате ' + format.toUpperCase() + '. Функция в разработке.');
-            
-            // Пример URL для экспорта:
-            // window.location.href = APP_URL + '/modules/orders/export.php?id=' + orderId + '&format=' + format;
-        }
-    </script>
 </body>
 </html>
