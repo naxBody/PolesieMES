@@ -42,16 +42,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Генерация номера заказа
             $order_number = generateUniqueNumber('ORD', 'orders', 'order_number');
             
-            // Расчет суммы с валидацией и нормализацией данных
-            $items = json_decode($items_raw, true, 512, JSON_THROW_ON_ERROR);
-            if (!is_array($items)) {
-                $items = [];
+            // Расчет суммы с безопасным парсингом JSON
+            $itemsDecoded = json_decode($items_raw, true);
+            if (json_last_error() !== JSON_ERROR_NONE || !is_array($itemsDecoded)) {
+                $itemsDecoded = [];
             }
+            $items = $itemsDecoded;
             
             // Валидация и нормализация данных items
             $normalizedItems = [];
             foreach ($items as $item) {
-                if (!isset($item['product_id']) || !is_numeric($item['product_id'])) {
+                if (!is_array($item) || !isset($item['product_id']) || !is_numeric($item['product_id'])) {
                     continue;
                 }
                 $normalizedItems[] = [
@@ -64,7 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             
             $total = array_sum(array_column($normalizedItems, 'total_price'));
-            $items_json_encoded = json_encode($normalizedItems, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+            $items_json_encoded = json_encode($normalizedItems, JSON_UNESCAPED_UNICODE);
             
             $stmt = $db->prepare("INSERT INTO orders (order_number, customer_id, order_date, delivery_date, priority, status, items_json, total_amount, notes, manager_id) VALUES (:num, :cust, :odate, :ddate, :prio, 'new', :items, :total, :notes, :mgr)");
             $stmt->execute([
@@ -207,7 +208,8 @@ $pageTitle = 'Новый заказ | Заказы | ' . APP_NAME;
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-    const products = <?= json_encode($products) ?>;
+    // Безопасная передача данных из PHP в JavaScript
+    const products = JSON.parse('<?= json_encode($products, JSON_UNESCAPED_UNICODE) ?>');
     let items = [];
     
     function addItem() {
