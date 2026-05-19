@@ -46,10 +46,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $items = json_decode($items_json, true) ?: [];
             $total = array_sum(array_column($items, 'total_price'));
             
+            // Гарантируем валидный JSON
+            $items_json_encoded = json_encode($items, JSON_UNESCAPED_UNICODE);
+            if ($items_json_encoded === false) {
+                throw new Exception('Ошибка кодирования JSON');
+            }
+            
             $stmt = $db->prepare("INSERT INTO orders (order_number, customer_id, order_date, delivery_date, priority, status, items_json, total_amount, notes, manager_id) VALUES (:num, :cust, :odate, :ddate, :prio, 'new', :items, :total, :notes, :mgr)");
             $stmt->execute([
                 'num' => $order_number, 'cust' => $customer_id, 'odate' => $order_date,
-                'ddate' => $delivery_date, 'prio' => $priority, 'items' => $items_json,
+                'ddate' => $delivery_date, 'prio' => $priority, 'items' => $items_json_encoded,
                 'total' => $total, 'notes' => $notes, 'mgr' => $_SESSION['user_id']
             ]);
             
