@@ -602,3 +602,278 @@ function generatePDFHTML($data, $columns, $title) {
 
 // Если ничего не подошло
 die('Неверные параметры экспорта');
+
+// ==========================================
+// ФУНКЦИИ ЭКСПОРТА
+// ==========================================
+
+/**
+ * Экспорт в CSV
+ */
+function exportCSV($data, $columns, $filename) {
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('Pragma: no-cache');
+    header('Expires: 0');
+    
+    $output = fopen('php://output', 'w');
+    fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF)); // BOM для UTF-8
+    
+    // Заголовки
+    $headers = array_keys($columns);
+    fputcsv($output, $headers);
+    
+    // Данные
+    foreach ($data as $row) {
+        $csvRow = [];
+        foreach ($columns as $key => $field) {
+            if (is_callable($field)) {
+                $csvRow[] = $field($row);
+            } else {
+                $csvRow[] = $row[$field] ?? '';
+            }
+        }
+        fputcsv($output, $csvRow);
+    }
+    
+    fclose($output);
+    exit;
+}
+
+/**
+ * Экспорт заказа в CSV
+ */
+function exportOrderCSV($order, $items, $filename) {
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('Pragma: no-cache');
+    header('Expires: 0');
+    
+    $output = fopen('php://output', 'w');
+    fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF));
+    
+    // Информация о заказе
+    fputcsv($output, ['Заказ №', $order['order_number']]);
+    fputcsv($output, ['Дата', date('d.m.Y', strtotime($order['created_at']))]);
+    fputcsv($output, ['Клиент', $order['customer_name'] ?? '-']);
+    fputcsv($output, ['Статус', $order['status_name'] ?? '-']);
+    fputcsv($output, []);
+    fputcsv($output, ['Наименование', 'Артикул', 'Кол-во', 'Ед.', 'Цена', 'Сумма']);
+    
+    // Товары
+    foreach ($items as $item) {
+        fputcsv($output, [
+            $item['item_name'] ?? '-',
+            $item['item_code'] ?? '-',
+            number_format($item['quantity'], 2, ',', ' '),
+            $item['unit_name'] ?? '-',
+            number_format($item['price'], 2, ',', ' '),
+            number_format($item['total'], 2, ',', ' ')
+        ]);
+    }
+    
+    fclose($output);
+    exit;
+}
+
+/**
+ * Экспорт в Excel (XLSX) через HTML таблицу
+ */
+function exportExcel($data, $columns, $filename, $sheetName = 'Данные') {
+    header('Content-Type: application/vnd.ms-excel; charset=utf-8');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('Pragma: no-cache');
+    header('Expires: 0');
+    
+    echo '<?xml version="1.0" encoding="UTF-8"?>';
+    echo '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
+    echo '<head><meta charset="UTF-8"></head><body>';
+    echo '<table border="1">';
+    
+    // Заголовки
+    echo '<tr style="background-color: #4CAF50; color: white; font-weight: bold;">';
+    foreach (array_keys($columns) as $header) {
+        echo '<th>' . htmlspecialchars($header) . '</th>';
+    }
+    echo '</tr>';
+    
+    // Данные
+    foreach ($data as $row) {
+        echo '<tr>';
+        foreach ($columns as $key => $field) {
+            $value = is_callable($field) ? $field($row) : ($row[$field] ?? '');
+            echo '<td>' . htmlspecialchars((string)$value) . '</td>';
+        }
+        echo '</tr>';
+    }
+    
+    echo '</table></body></html>';
+    exit;
+}
+
+/**
+ * Экспорт в PDF
+ */
+function exportPDF($data, $columns, $filename, $title = 'Экспорт данных') {
+    header('Content-Type: application/pdf');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('Pragma: no-cache');
+    header('Expires: 0');
+    
+    echo generatePDFHTML($data, $columns, $title);
+    exit;
+}
+
+/**
+ * Экспорт заказа в PDF
+ */
+function exportOrderPDF($order, $items, $filename) {
+    header('Content-Type: application/pdf');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('Pragma: no-cache');
+    header('Expires: 0');
+    
+    $html = '<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: DejaVu Sans, Arial, sans-serif; font-size: 12px; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .title { font-size: 18px; font-weight: bold; color: #333; }
+        .info-table { width: 100%; margin-bottom: 20px; border-collapse: collapse; }
+        .info-table td { padding: 5px; border-bottom: 1px solid #ddd; }
+        .info-label { font-weight: bold; width: 150px; }
+        .items-table { width: 100%; border-collapse: collapse; }
+        .items-table th { background-color: #4CAF50; color: white; padding: 8px; text-align: left; }
+        .items-table td { padding: 6px; border-bottom: 1px solid #ddd; }
+        .total { text-align: right; font-weight: bold; margin-top: 15px; font-size: 14px; }
+        .footer { margin-top: 30px; text-align: center; font-size: 10px; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="title">ЗАКАЗ № ' . htmlspecialchars($order['order_number']) . '</div>
+        <div>от ' . date('d.m.Y', strtotime($order['created_at'])) . '</div>
+    </div>
+    
+    <table class="info-table">
+        <tr>
+            <td class="info-label">Клиент:</td>
+            <td>' . htmlspecialchars($order['customer_name'] ?? '-') . '</td>
+            <td class="info-label">Контактное лицо:</td>
+            <td>' . htmlspecialchars($order['contact_person'] ?? '-') . '</td>
+        </tr>
+        <tr>
+            <td class="info-label">Телефон:</td>
+            <td>' . htmlspecialchars($order['customer_phone'] ?? '-') . '</td>
+            <td class="info-label">Email:</td>
+            <td>' . htmlspecialchars($order['customer_email'] ?? '-') . '</td>
+        </tr>
+        <tr>
+            <td class="info-label">Статус:</td>
+            <td>' . htmlspecialchars($order['status_name'] ?? '-') . '</td>
+            <td class="info-label">Дата доставки:</td>
+            <td>' . ($order['delivery_date'] ? date('d.m.Y', strtotime($order['delivery_date'])) : '-') . '</td>
+        </tr>
+    </table>
+    
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th>№</th>
+                <th>Наименование</th>
+                <th>Артикул</th>
+                <th>Кол-во</th>
+                <th>Ед.</th>
+                <th>Цена</th>
+                <th>Сумма</th>
+            </tr>
+        </thead>
+        <tbody>';
+    
+    $total = 0;
+    $num = 1;
+    foreach ($items as $item) {
+        $html .= '<tr>
+            <td>' . $num++ . '</td>
+            <td>' . htmlspecialchars($item['item_name'] ?? '-') . '</td>
+            <td>' . htmlspecialchars($item['item_code'] ?? '-') . '</td>
+            <td>' . number_format($item['quantity'], 2, ',', ' ') . '</td>
+            <td>' . htmlspecialchars($item['unit_name'] ?? '-') . '</td>
+            <td>' . number_format($item['price'], 2, ',', ' ') . '</td>
+            <td>' . number_format($item['total'], 2, ',', ' ') . '</td>
+        </tr>';
+        $total += $item['total'];
+    }
+    
+    $html .= '</tbody>
+    </table>
+    
+    <div class="total">Итого: ' . number_format($total, 2, ',', ' ') . ' руб.</div>
+    
+    <div class="footer">
+        Документ сгенерирован автоматически системой PolesieMES<br>
+        ' . date('d.m.Y H:i:s') . '
+    </div>
+</body>
+</html>';
+    
+    echo $html;
+    exit;
+}
+
+/**
+ * Генерация HTML для PDF
+ */
+function generatePDFHTML($data, $columns, $title) {
+    $html = '<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: DejaVu Sans, Arial, sans-serif; font-size: 11px; }
+        .title { font-size: 16px; font-weight: bold; margin-bottom: 15px; color: #333; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background-color: #4CAF50; color: white; padding: 8px; text-align: left; }
+        td { padding: 6px; border-bottom: 1px solid #ddd; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        .footer { margin-top: 20px; text-align: center; font-size: 9px; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="title">' . htmlspecialchars($title) . '</div>
+    <table>
+        <thead>
+            <tr>';
+    
+    foreach (array_keys($columns) as $header) {
+        $html .= '<th>' . htmlspecialchars($header) . '</th>';
+    }
+    
+    $html .= '</tr>
+        </thead>
+        <tbody>';
+    
+    foreach ($data as $row) {
+        $html .= '<tr>';
+        foreach ($columns as $key => $field) {
+            $value = is_callable($field) ? $field($row) : ($row[$field] ?? '');
+            $html .= '<td>' . htmlspecialchars((string)$value) . '</td>';
+        }
+        $html .= '</tr>';
+    }
+    
+    $html .= '</tbody>
+    </table>
+    <div class="footer">
+        Сгенерировано системой PolesieMES • ' . date('d.m.Y H:i:s') . '
+    </div>
+</body>
+</html>';
+    
+    return $html;
+}
+
+// Если ничего не подошло
+die('Неверные параметры экспорта');

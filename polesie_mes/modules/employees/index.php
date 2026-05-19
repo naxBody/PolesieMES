@@ -237,11 +237,22 @@ $pageTitle = 'Управление сотрудниками | ' . APP_NAME;
                 <h1><i class="fas fa-users"></i> Управление сотрудниками</h1>
                 <p>Контроль персонала, должностей и квалификации</p>
             </div>
-            <?php if (hasRole(['admin', 'manager'])): ?>
-            <a href="create.php" class="btn-primary-custom">
-                <i class="fas fa-plus"></i> Добавить сотрудника
-            </a>
-            <?php endif; ?>
+            <div class="page-actions">
+                <?php if (hasRole(['admin', 'manager'])): ?>
+                <a href="create.php" class="btn-primary-custom">
+                    <i class="fas fa-plus"></i> Добавить сотрудника
+                </a>
+                <?php endif; ?>
+                <a href="<?= APP_URL ?>/modules/export.php?source=employees_list&status=<?= $status ?? 'all' ?>&search=<?= e($search ?? '') ?>&position_id=<?= $position_id ?? '' ?>&department=<?= e($department ?? '') ?>&format=csv" class="btn-primary-custom" style="padding: 0.6rem 1.2rem;" title="Экспорт в CSV">
+                    <i class="fas fa-file-csv"></i> CSV
+                </a>
+                <a href="<?= APP_URL ?>/modules/export.php?source=employees_list&status=<?= $status ?? 'all' ?>&search=<?= e($search ?? '') ?>&position_id=<?= $position_id ?? '' ?>&department=<?= e($department ?? '') ?>&format=excel" class="btn-primary-custom" style="padding: 0.6rem 1.2rem; background: linear-gradient(135deg, #1d976c, #93f9b9);" title="Экспорт в Excel">
+                    <i class="fas fa-file-excel"></i> Excel
+                </a>
+                <a href="<?= APP_URL ?>/modules/export.php?source=employees_list&status=<?= $status ?? 'all' ?>&search=<?= e($search ?? '') ?>&position_id=<?= $position_id ?? '' ?>&department=<?= e($department ?? '') ?>&format=pdf" class="btn-primary-custom" style="padding: 0.6rem 1.2rem; background: linear-gradient(135deg, #cb2d3e, #ef473a);" title="Экспорт в PDF">
+                    <i class="fas fa-file-pdf"></i> PDF
+                </a>
+            </div>
         </div>
 
         <!-- Statistics -->
