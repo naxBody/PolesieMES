@@ -740,7 +740,7 @@ $currentPage = 'director_dashboard';
             <li><a href="<?= APP_URL ?>/modules/dashboard/index.php" class="nav-link"><i class="fas fa-home"></i> Главная</a></li>
             <li><a href="<?= APP_URL ?>/modules/orders/index.php" class="nav-link"><i class="fas fa-shopping-cart"></i> Заказы</a></li>
             <li><a href="<?= APP_URL ?>/modules/production/index.php" class="nav-link"><i class="fas fa-cogs"></i> Производство</a></li>
-            <li><a href="#warehouse-section" class="nav-link"><i class="fas fa-warehouse"></i> Склад</a></li>
+            <li><a href="<?= APP_URL ?>/modules/warehouse/warehouse_dashboard.php" class="nav-link"><i class="fas fa-warehouse"></i> Склад</a></li>
             <li><a href="#equipment-section" class="nav-link"><i class="fas fa-tools"></i> Оборудование</a></li>
             <li><a href="#shipment-section" class="nav-link"><i class="fas fa-truck"></i> Отгрузка</a></li>
             <li><a href="<?= APP_URL ?>/modules/employees/index.php" class="nav-link"><i class="fas fa-users"></i> Сотрудники</a></li>
@@ -814,8 +814,8 @@ $currentPage = 'director_dashboard';
                     Склад
                 </div>
                 <div class="module-actions">
-                    <a href="<?= APP_URL ?>/modules/warehouse/index.php" class="btn-module btn-outline">
-                        <i class="fas fa-eye"></i> Просмотр склада
+                    <a href="<?= APP_URL ?>/modules/warehouse/warehouse_dashboard.php" class="btn-module btn-primary">
+                        <i class="fas fa-warehouse"></i> Панель склада
                     </a>
                     <a href="<?= APP_URL ?>/modules/warehouse/purchase_orders/" class="btn-module btn-outline">
                         <i class="fas fa-file-invoice"></i> Заказы поставщикам
