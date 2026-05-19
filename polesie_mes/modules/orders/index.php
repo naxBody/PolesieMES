@@ -235,12 +235,12 @@ $pageTitle = 'Управление заказами | ' . APP_NAME;
                                 </td>
                                 <td>
                                     <span class="badge-priority badge-<?= e($order['priority']) ?>">
-                                        <?= e($order['priority']) ?>
+                                        <?= e(getPriorityName($order['priority'])) ?>
                                     </span>
                                 </td>
                                 <td>
                                     <span class="badge-status badge-<?= e($order['status']) ?>">
-                                        <?= e($order['status']) ?>
+                                        <?= e(getOrderStatusName($order['status'])) ?>
                                     </span>
                                 </td>
                                 <td><?= number_format($order['total_amount'], 2, ',', ' ') ?></td>

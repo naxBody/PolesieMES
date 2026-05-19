@@ -92,7 +92,6 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv' && hasRole(['admin', 'ma
     ");
     $exportOrders = $stmt_export->fetchAll();
     
-    $statusNames = ['ready' => 'Готов', 'shipped' => 'В пути', 'completed' => 'Завершён', 'cancelled' => 'Отменён'];
     
     foreach ($exportOrders as $order) {
         fputcsv($output, [
@@ -101,7 +100,7 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv' && hasRole(['admin', 'ma
             $order['address'] ?? '-',
             ($order['customer_phone'] ?? '') . ' | ' . ($order['email'] ?? ''),
             date('d.m.Y', strtotime($order['delivery_date'])),
-            $statusNames[$order['status']] ?? $order['status'],
+            getOrderStatusName($order['status']),
             number_format((float)($order['total_amount'] ?? 0), 2, ',', ' ')
         ]);
     }
@@ -487,8 +486,7 @@ $pageTitle = 'Отгрузка продукции | ' . APP_NAME;
                                 <td>
                                     <span class="status-badge status-<?= e($order['status']) ?>">
                                         <?php
-                                        $statusNames = ['ready' => 'Готов', 'shipped' => 'В пути', 'completed' => 'Завершён', 'cancelled' => 'Отменён'];
-                                        echo $statusNames[$order['status']] ?? $order['status'];
+                                        echo getOrderStatusName($order['status']);
                                         ?>
                                     </span>
                                 </td>
@@ -598,8 +596,7 @@ $pageTitle = 'Отгрузка продукции | ' . APP_NAME;
                                 <td>
                                     <span class="status-badge status-<?= e($order['status']) ?>">
                                         <?php
-                                        $statusNames = ['ready' => 'Готов', 'shipped' => 'В пути', 'completed' => 'Завершён', 'cancelled' => 'Отменён'];
-                                        echo $statusNames[$order['status']] ?? $order['status'];
+                                        echo getOrderStatusName($order['status']);
                                         ?>
                                     </span>
                                 </td>

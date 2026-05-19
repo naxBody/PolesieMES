@@ -727,7 +727,7 @@ $pageTitle = 'Заказы поставщикам | PolesieMES';
                                             'received' => 'Получен',
                                             'cancelled' => 'Отменён'
                                         ];
-                                        echo $statusNames[$order['status']] ?? $order['status'];
+                                        echo getOrderStatusName($order['status']);
                                         ?>
                                     </span>
                                 </td>
@@ -740,7 +740,7 @@ $pageTitle = 'Заказы поставщикам | PolesieMES';
                                             'high' => 'Высокий',
                                             'urgent' => 'Срочный'
                                         ];
-                                        echo $priorityNames[$order['priority']] ?? $order['priority'];
+                                        echo getPriorityName($order['priority']);
                                         ?>
                                     </span>
                                 </td>
