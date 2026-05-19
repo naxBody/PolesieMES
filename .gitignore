@@ -1,6 +1,1 @@
-# Examples where no ignores are needed:
-# If only source/config files like .sql, .py, .js, .java, .go, .cpp, .h, .md, .txt, .json, .yml, .yaml, .toml, .cfg, .ini are present
-
-# In this case, only database.sql was modified, which is a source file
-# No build artifacts, dependencies, or temp files detected in changes
-# Therefore, no .gitignore rules are needed for this project state
+Nothing should be ignored based on the provided file changes, as they only contain PHP source files (.php) which are not build artifacts, dependencies, or temporary files.
