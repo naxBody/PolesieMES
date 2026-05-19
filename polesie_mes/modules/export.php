@@ -1,6 +1,6 @@
 <?php
 /**
- * Универсальный экспорт данных в CSV, Excel (XLSX) и PDF
+ * Экспорт данных в CSV
  * PolesieMES - Система управления производством ОАО "Полесьеэлектромаш"
  */
 
@@ -92,40 +92,18 @@ if ($source === 'warehouse_history') {
     $stmt->execute();
     $data = $stmt->fetchAll();
     
-    $filename = 'istoriya_dvizheniy_' . date('Y-m-d_H-i') . '.' . ($format === 'excel' ? 'xlsx' : ($format === 'pdf' ? 'pdf' : 'csv'));
+    $filename = 'istoriya_dvizheniy_' . date('Y-m-d_H-i') . '.csv';
     
-    if ($format === 'csv') {
-        exportCSV($data, [
-            'Дата и время' => function($row) { return date('d.m.Y H:i', strtotime($row['movement_date'])); },
-            'Операция' => 'operation_name',
-            'Материал' => 'item_name',
-            'Артикул' => 'item_code',
-            'Категория' => 'category_name',
-            'Количество' => function($row) { return number_format($row['quantity'], 2, ',', ' '); },
-            'Ед. изм.' => 'unit_name',
-            'Сотрудник' => function($row) { return trim(($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? '')); }
-        ], $filename);
-    } elseif ($format === 'excel') {
-        exportExcel($data, [
-            'Дата и время' => function($row) { return date('d.m.Y H:i', strtotime($row['movement_date'])); },
-            'Операция' => 'operation_name',
-            'Материал' => 'item_name',
-            'Артикул' => 'item_code',
-            'Категория' => 'category_name',
-            'Количество' => function($row) { return (float)$row['quantity']; },
-            'Ед. изм.' => 'unit_name',
-            'Сотрудник' => function($row) { return trim(($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? '')); }
-        ], $filename, 'История движений');
-    } elseif ($format === 'pdf') {
-        exportPDF($data, [
-            'Дата' => function($row) { return date('d.m.Y H:i', strtotime($row['movement_date'])); },
-            'Операция' => 'operation_name',
-            'Материал' => 'item_name',
-            'Артикул' => 'item_code',
-            'Кол-во' => function($row) { return number_format($row['quantity'], 2, ',', ' '); },
-            'Ед.' => 'unit_name'
-        ], $filename, 'История движений склада');
-    }
+    exportCSV($data, [
+        'Дата и время' => function($row) { return date('d.m.Y H:i', strtotime($row['movement_date'])); },
+        'Операция' => 'operation_name',
+        'Материал' => 'item_name',
+        'Артикул' => 'item_code',
+        'Категория' => 'category_name',
+        'Количество' => function($row) { return number_format($row['quantity'], 2, ',', ' '); },
+        'Ед. изм.' => 'unit_name',
+        'Сотрудник' => function($row) { return trim(($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? '')); }
+    ], $filename);
 }
 
 // ==========================================
@@ -193,40 +171,18 @@ if ($source === 'warehouse_inventory') {
         'overstock' => 'Избыток'
     ];
     
-    $filename = 'ostatatki_' . date('Y-m-d_H-i') . '.' . ($format === 'excel' ? 'xlsx' : ($format === 'pdf' ? 'pdf' : 'csv'));
+    $filename = 'ostatatki_' . date('Y-m-d_H-i') . '.csv';
     
-    if ($format === 'csv') {
-        exportCSV($data, [
-            'Название' => 'name',
-            'Артикул' => 'item_code',
-            'Категория' => 'category_name',
-            'Текущий остаток' => function($row) { return number_format($row['current_stock'], 2, ',', ' '); },
-            'Мин. запас' => function($row) { return number_format($row['min_stock'], 2, ',', ' '); },
-            'Макс. запас' => function($row) { return number_format($row['max_stock'] ?? 0, 2, ',', ' '); },
-            'Ед. изм.' => 'unit_name',
-            'Статус' => function($row) use ($statusNames) { return $statusNames[$row['stock_status']] ?? $row['stock_status']; }
-        ], $filename);
-    } elseif ($format === 'excel') {
-        exportExcel($data, [
-            'Название' => 'name',
-            'Артикул' => 'item_code',
-            'Категория' => 'category_name',
-            'Текущий остаток' => function($row) { return (float)$row['current_stock']; },
-            'Мин. запас' => function($row) { return (float)$row['min_stock']; },
-            'Макс. запас' => function($row) { return (float)($row['max_stock'] ?? 0); },
-            'Ед. изм.' => 'unit_name',
-            'Статус' => function($row) use ($statusNames) { return $statusNames[$row['stock_status']] ?? $row['stock_status']; }
-        ], $filename, 'Остатки материалов');
-    } elseif ($format === 'pdf') {
-        exportPDF($data, [
-            'Название' => 'name',
-            'Артикул' => 'item_code',
-            'Остаток' => function($row) { return number_format($row['current_stock'], 2, ',', ' '); },
-            'Мин.' => function($row) { return number_format($row['min_stock'], 2, ',', ' '); },
-            'Ед.' => 'unit_name',
-            'Статус' => function($row) use ($statusNames) { return $statusNames[$row['stock_status']] ?? $row['stock_status']; }
-        ], $filename, 'Остатки материалов на складе');
-    }
+    exportCSV($data, [
+        'Название' => 'name',
+        'Артикул' => 'item_code',
+        'Категория' => 'category_name',
+        'Текущий остаток' => function($row) { return number_format($row['current_stock'], 2, ',', ' '); },
+        'Мин. запас' => function($row) { return number_format($row['min_stock'], 2, ',', ' '); },
+        'Макс. запас' => function($row) { return number_format($row['max_stock'] ?? 0, 2, ',', ' '); },
+        'Ед. изм.' => 'unit_name',
+        'Статус' => function($row) use ($statusNames) { return $statusNames[$row['stock_status']] ?? $row['stock_status']; }
+    ], $filename);
 }
 
 // ==========================================
@@ -234,7 +190,7 @@ if ($source === 'warehouse_inventory') {
 // ==========================================
 if ($source === 'order_view') {
     $order_id = $_GET['order_id'] ?? 0;
-    $format = $_GET['format'] ?? 'pdf';
+    $format = $_GET['format'] ?? 'csv';
     
     if (!$order_id) {
         die('Не указан номер заказа');
@@ -288,59 +244,42 @@ if ($source === 'order_view') {
         ];
     }
     
-    $filename = 'zakaz_' . $order['order_number'] . '_' . date('Y-m-d_H-i') . '.' . ($format === 'excel' ? 'xlsx' : ($format === 'pdf' ? 'pdf' : 'csv'));
+    $filename = 'zakaz_' . $order['order_number'] . '_' . date('Y-m-d_H-i') . '.csv';
     
-    if ($format === 'csv') {
-        $rows = [];
-        foreach ($items as $item) {
-            $rows[] = [
-                $item['item_name'] ?? '-',
-                $item['item_code'] ?? '-',
-                number_format($item['quantity'], 2, ',', ' '),
-                $item['unit_name'] ?? '-',
-                number_format($item['price'], 2, ',', ' '),
-                number_format($item['total'], 2, ',', ' ')
-            ];
-        }
-        exportSimpleCSV([
-            ['Заказ №', $order['order_number']],
-            ['Дата', date('d.m.Y', strtotime($order['created_at']))],
-            ['Клиент', $order['customer_name'] ?? '-'],
-            ['Статус', $order['status_name'] ?? '-'],
-            [],
-            ['Наименование', 'Артикул', 'Кол-во', 'Ед.', 'Цена', 'Сумма']
-        ], $filename);
-        
-        // Добавляем товары
-        $output = fopen('php://temp', 'r+');
-        fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF));
-        foreach ($rows as $row) {
-            fputcsv($output, $row);
-        }
-        rewind($output);
-        $itemsCSV = stream_get_contents($output);
-        fclose($output);
-        
-        header('Content-Type: text/csv; charset=utf-8');
-        header('Content-Disposition: attachment; filename="' . $filename . '"');
-        echo "Заказ №\t" . $order['order_number'] . "\n";
-        echo "Дата\t" . date('d.m.Y', strtotime($order['created_at'])) . "\n";
-        echo "Клиент\t" . ($order['customer_name'] ?? '-') . "\n";
-        echo "Статус\t" . ($order['status_name'] ?? '-') . "\n\n";
-        echo $itemsCSV;
-        exit;
-    } elseif ($format === 'excel') {
-        exportExcel($items, [
-            'Наименование' => 'item_name',
-            'Артикул' => 'item_code',
-            'Кол-во' => function($row) { return (float)$row['quantity']; },
-            'Ед.' => 'unit_name',
-            'Цена' => function($row) { return (float)$row['price']; },
-            'Сумма' => function($row) { return (float)$row['total']; }
-        ], $filename, 'Заказ №' . $order['order_number']);
-    } elseif ($format === 'pdf') {
-        exportOrderPDF($order, $items, $filename);
+    // Формируем данные для экспорта в CSV с правильной структурой по колонкам
+    $output = fopen('php://temp', 'r+');
+    fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF)); // BOM для UTF-8
+    
+    // Заголовок заказа
+    fputcsv($output, ['Заказ №', $order['order_number']]);
+    fputcsv($output, ['Дата', date('d.m.Y', strtotime($order['created_at']))]);
+    fputcsv($output, ['Клиент', $order['customer_name'] ?? '-']);
+    fputcsv($output, ['Статус', $order['status_name'] ?? '-']);
+    fputcsv($output, []);
+    
+    // Заголовки колонок товаров
+    fputcsv($output, ['Наименование', 'Артикул', 'Кол-во', 'Ед.', 'Цена', 'Сумма']);
+    
+    // Товары
+    foreach ($items as $item) {
+        fputcsv($output, [
+            $item['item_name'] ?? '-',
+            $item['item_code'] ?? '-',
+            number_format($item['quantity'], 2, ',', ' '),
+            $item['unit_name'] ?? '-',
+            number_format($item['price'], 2, ',', ' '),
+            number_format($item['total'], 2, ',', ' ')
+        ]);
     }
+    
+    rewind($output);
+    $csvContent = stream_get_contents($output);
+    fclose($output);
+    
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    echo $csvContent;
+    exit;
 }
 
 // ==========================================
@@ -378,226 +317,6 @@ function exportCSV($data, $columns, $filename) {
     
     fclose($output);
     exit;
-}
-
-/**
- * Экспорт простого CSV
- */
-function exportSimpleCSV($rows, $filename) {
-    header('Content-Type: text/csv; charset=utf-8');
-    header('Content-Disposition: attachment; filename="' . $filename . '"');
-    
-    $output = fopen('php://output', 'w');
-    fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF));
-    
-    foreach ($rows as $row) {
-        fputcsv($output, $row);
-    }
-    
-    fclose($output);
-    exit;
-}
-
-/**
- * Экспорт в Excel (XLSX) с использованием SimpleXLSXGen
- */
-function exportExcel($data, $columns, $filename, $sheetName = 'Данные') {
-    // Создаем простой XLSX файл вручную (без внешних библиотек)
-    header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    header('Content-Disposition: attachment; filename="' . $filename . '"');
-    header('Pragma: no-cache');
-    header('Expires: 0');
-    
-    // Для простоты используем HTML таблицу с MIME типом Excel
-    echo '<?xml version="1.0" encoding="UTF-8"?>';
-    echo '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
-    echo '<head><meta charset="UTF-8"></head><body>';
-    echo '<table border="1">';
-    
-    // Заголовки
-    echo '<tr style="background-color: #4CAF50; color: white; font-weight: bold;">';
-    foreach (array_keys($columns) as $header) {
-        echo '<th>' . htmlspecialchars($header) . '</th>';
-    }
-    echo '</tr>';
-    
-    // Данные
-    foreach ($data as $row) {
-        echo '<tr>';
-        foreach ($columns as $key => $field) {
-            $value = is_callable($field) ? $field($row) : ($row[$field] ?? '');
-            echo '<td>' . htmlspecialchars((string)$value) . '</td>';
-        }
-        echo '</tr>';
-    }
-    
-    echo '</table></body></html>';
-    exit;
-}
-
-/**
- * Экспорт в PDF
- */
-function exportPDF($data, $columns, $filename, $title = 'Экспорт данных') {
-    header('Content-Type: application/pdf');
-    header('Content-Disposition: attachment; filename="' . $filename . '"');
-    header('Pragma: no-cache');
-    header('Expires: 0');
-    
-    // Генерируем HTML для PDF
-    echo generatePDFHTML($data, $columns, $title);
-    exit;
-}
-
-/**
- * Экспорт заказа в PDF
- */
-function exportOrderPDF($order, $items, $filename) {
-    header('Content-Type: application/pdf');
-    header('Content-Disposition: attachment; filename="' . $filename . '"');
-    header('Pragma: no-cache');
-    header('Expires: 0');
-    
-    $html = '<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <style>
-        body { font-family: DejaVu Sans, Arial, sans-serif; font-size: 12px; }
-        .header { text-align: center; margin-bottom: 20px; }
-        .title { font-size: 18px; font-weight: bold; color: #333; }
-        .info-table { width: 100%; margin-bottom: 20px; border-collapse: collapse; }
-        .info-table td { padding: 5px; border-bottom: 1px solid #ddd; }
-        .info-label { font-weight: bold; width: 150px; }
-        .items-table { width: 100%; border-collapse: collapse; }
-        .items-table th { background-color: #4CAF50; color: white; padding: 8px; text-align: left; }
-        .items-table td { padding: 6px; border-bottom: 1px solid #ddd; }
-        .total { text-align: right; font-weight: bold; margin-top: 15px; font-size: 14px; }
-        .footer { margin-top: 30px; text-align: center; font-size: 10px; color: #666; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <div class="title">ЗАКАЗ № ' . htmlspecialchars($order['order_number']) . '</div>
-        <div>от ' . date('d.m.Y', strtotime($order['created_at'])) . '</div>
-    </div>
-    
-    <table class="info-table">
-        <tr>
-            <td class="info-label">Клиент:</td>
-            <td>' . htmlspecialchars($order['customer_name'] ?? '-') . '</td>
-            <td class="info-label">Контактное лицо:</td>
-            <td>' . htmlspecialchars($order['contact_person'] ?? '-') . '</td>
-        </tr>
-        <tr>
-            <td class="info-label">Телефон:</td>
-            <td>' . htmlspecialchars($order['customer_phone'] ?? '-') . '</td>
-            <td class="info-label">Email:</td>
-            <td>' . htmlspecialchars($order['customer_email'] ?? '-') . '</td>
-        </tr>
-        <tr>
-            <td class="info-label">Статус:</td>
-            <td>' . htmlspecialchars($order['status_name'] ?? '-') . '</td>
-            <td class="info-label">Дата доставки:</td>
-            <td>' . ($order['delivery_date'] ? date('d.m.Y', strtotime($order['delivery_date'])) : '-') . '</td>
-        </tr>
-    </table>
-    
-    <table class="items-table">
-        <thead>
-            <tr>
-                <th>№</th>
-                <th>Наименование</th>
-                <th>Артикул</th>
-                <th>Кол-во</th>
-                <th>Ед.</th>
-                <th>Цена</th>
-                <th>Сумма</th>
-            </tr>
-        </thead>
-        <tbody>';
-    
-    $total = 0;
-    $num = 1;
-    foreach ($items as $item) {
-        $html .= '<tr>
-            <td>' . $num++ . '</td>
-            <td>' . htmlspecialchars($item['item_name'] ?? '-') . '</td>
-            <td>' . htmlspecialchars($item['item_code'] ?? '-') . '</td>
-            <td>' . number_format($item['quantity'], 2, ',', ' ') . '</td>
-            <td>' . htmlspecialchars($item['unit_name'] ?? '-') . '</td>
-            <td>' . number_format($item['price'], 2, ',', ' ') . '</td>
-            <td>' . number_format($item['total'], 2, ',', ' ') . '</td>
-        </tr>';
-        $total += $item['total'];
-    }
-    
-    $html .= '</tbody>
-    </table>
-    
-    <div class="total">Итого: ' . number_format($total, 2, ',', ' ') . ' руб.</div>
-    
-    <div class="footer">
-        Документ сгенерирован автоматически системой PolesieMES<br>
-        ' . date('d.m.Y H:i:s') . '
-    </div>
-</body>
-</html>';
-    
-    echo $html;
-    exit;
-}
-
-/**
- * Генерация HTML для PDF
- */
-function generatePDFHTML($data, $columns, $title) {
-    $html = '<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <style>
-        body { font-family: DejaVu Sans, Arial, sans-serif; font-size: 11px; }
-        .title { font-size: 16px; font-weight: bold; margin-bottom: 15px; color: #333; }
-        table { width: 100%; border-collapse: collapse; }
-        th { background-color: #4CAF50; color: white; padding: 8px; text-align: left; }
-        td { padding: 6px; border-bottom: 1px solid #ddd; }
-        tr:nth-child(even) { background-color: #f9f9f9; }
-        .footer { margin-top: 20px; text-align: center; font-size: 9px; color: #666; }
-    </style>
-</head>
-<body>
-    <div class="title">' . htmlspecialchars($title) . '</div>
-    <table>
-        <thead>
-            <tr>';
-    
-    foreach (array_keys($columns) as $header) {
-        $html .= '<th>' . htmlspecialchars($header) . '</th>';
-    }
-    
-    $html .= '</tr>
-        </thead>
-        <tbody>';
-    
-    foreach ($data as $row) {
-        $html .= '<tr>';
-        foreach ($columns as $key => $field) {
-            $value = is_callable($field) ? $field($row) : ($row[$field] ?? '');
-            $html .= '<td>' . htmlspecialchars((string)$value) . '</td>';
-        }
-        $html .= '</tr>';
-    }
-    
-    $html .= '</tbody>
-    </table>
-    <div class="footer">
-        Сгенерировано системой PolesieMES • ' . date('d.m.Y H:i:s') . '
-    </div>
-</body>
-</html>';
-    
-    return $html;
 }
 
 // Если ничего не подошло
