@@ -242,14 +242,13 @@ if ($source === 'order_view') {
     
     $stmt = $db->prepare("
         SELECT o.*, 
-               c.name as customer_name,
-               c.contact_person,
-               c.phone as customer_phone,
-               c.email as customer_email,
-               os.name as status_name
+               p.name as customer_name,
+               p.contact_person,
+               p.phone as customer_phone,
+               p.email as customer_email,
+               o.status as status_name
         FROM orders o
-        LEFT JOIN customers c ON o.customer_id = c.id
-        LEFT JOIN order_statuses os ON o.status_id = os.id
+        LEFT JOIN partners p ON o.customer_id = p.id
         WHERE o.id = :id
     ");
     $stmt->bindValue(':id', $order_id, PDO::PARAM_INT);
@@ -260,21 +259,34 @@ if ($source === 'order_view') {
         die('Заказ не найден');
     }
     
-    $stmt = $db->prepare("
-        SELECT oi.*, 
-               i.name as item_name, 
-               i.item_code,
-               i.unit_id,
-               u.name as unit_name
-        FROM order_items oi
-        LEFT JOIN items i ON oi.item_id = i.id
-        LEFT JOIN dictionaries u ON i.unit_id = u.id AND u.dict_type = 'unit'
-        WHERE oi.order_id = :order_id
-        ORDER BY oi.id
-    ");
-    $stmt->bindValue(':order_id', $order_id, PDO::PARAM_INT);
-    $stmt->execute();
-    $items = $stmt->fetchAll();
+    // Получаем товары из JSON
+    $itemsData = json_decode($order['items_json'], true) ?: [];
+    
+    // Формируем массив items в совместимом формате
+    $items = [];
+    foreach ($itemsData as $itemData) {
+        $itemId = $itemData['product_id'] ?? $itemData['item_id'] ?? 0;
+        
+        // Получаем информацию о товаре
+        $stmt = $db->prepare("
+            SELECT i.id, i.name, i.item_code, i.unit_id, u.name as unit_name
+            FROM items i
+            LEFT JOIN dictionaries u ON i.unit_id = u.id AND u.dict_type = 'unit'
+            WHERE i.id = :id
+        ");
+        $stmt->bindValue(':id', $itemId, PDO::PARAM_INT);
+        $stmt->execute();
+        $itemInfo = $stmt->fetch();
+        
+        $items[] = [
+            'item_name' => $itemInfo['name'] ?? ($itemData['name'] ?? '-'),
+            'item_code' => $itemInfo['item_code'] ?? ($itemData['item_code'] ?? '-'),
+            'quantity' => $itemData['quantity'] ?? 0,
+            'unit_name' => $itemInfo['unit_name'] ?? '-',
+            'price' => $itemData['unit_price'] ?? $itemData['price'] ?? 0,
+            'total' => $itemData['total'] ?? $itemData['total_price'] ?? 0
+        ];
+    }
     
     $filename = 'zakaz_' . $order['order_number'] . '_' . date('Y-m-d_H-i') . '.' . ($format === 'excel' ? 'xlsx' : ($format === 'pdf' ? 'pdf' : 'csv'));
     
