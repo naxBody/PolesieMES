@@ -821,7 +821,7 @@ $pageTitle = 'Управление оборудованием | ' . APP_NAME;
                                     </td>
                                     <td><?= e($item['category_name'] ?? '-') ?></td>
                                     <td><?= e($item['location_name'] ?? '-') ?></td>
-                                    <td><?= e($item['inventory_number'] ?? '-') ?></td>
+                                    <td><?= e($item['item_code'] ?? '-') ?></td>
                                     <td>
                                         <span style="color: var(--text-muted);">Не назначено</span>
                                     </td>
@@ -870,8 +870,8 @@ $pageTitle = 'Управление оборудованием | ' . APP_NAME;
                                     <span class="detail-value"><?= e($item['location_name'] ?? '-') ?></span>
                                 </div>
                                 <div class="detail-item">
-                                    <span class="detail-label">Инвентарный №</span>
-                                    <span class="detail-value"><?= e($item['inventory_number'] ?? '-') ?></span>
+                                    <span class="detail-label">Код</span>
+                                    <span class="detail-value"><?= e($item['item_code'] ?? '-') ?></span>
                                 </div>
                                 <div class="detail-item">
                                     <span class="detail-label">Следующее ТО</span>
