@@ -30,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $delivery_date = $_POST['delivery_date'] ?? null;
     $priority = $_POST['priority'] ?? 'normal';
     $notes = trim($_POST['notes'] ?? '');
-    $items_json = $_POST['items_json'] ?? '[]';
+    $items_raw = $_POST['items_json'] ?? '[]';
     
     if (!$customer_id) $errors[] = 'Выберите клиента';
     if (!$delivery_date) $errors[] = 'Укажите срок поставки';
@@ -42,15 +42,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Генерация номера заказа
             $order_number = generateUniqueNumber('ORD', 'orders', 'order_number');
             
-            // Расчет суммы
-            $items = json_decode($items_json, true) ?: [];
-            $total = array_sum(array_column($items, 'total_price'));
-            
-            // Гарантируем валидный JSON
-            $items_json_encoded = json_encode($items, JSON_UNESCAPED_UNICODE);
-            if ($items_json_encoded === false) {
-                throw new Exception('Ошибка кодирования JSON');
+            // Расчет суммы с валидацией и нормализацией данных
+            $items = json_decode($items_raw, true, 512, JSON_THROW_ON_ERROR);
+            if (!is_array($items)) {
+                $items = [];
             }
+            
+            // Валидация и нормализация данных items
+            $normalizedItems = [];
+            foreach ($items as $item) {
+                if (!isset($item['product_id']) || !is_numeric($item['product_id'])) {
+                    continue;
+                }
+                $normalizedItems[] = [
+                    'product_id' => (int)$item['product_id'],
+                    'name' => $item['name'] ?? '',
+                    'quantity' => isset($item['quantity']) ? (float)$item['quantity'] : 0,
+                    'unit_price' => isset($item['unit_price']) ? (float)$item['unit_price'] : 0,
+                    'total_price' => isset($item['total_price']) ? (float)$item['total_price'] : 0
+                ];
+            }
+            
+            $total = array_sum(array_column($normalizedItems, 'total_price'));
+            $items_json_encoded = json_encode($normalizedItems, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
             
             $stmt = $db->prepare("INSERT INTO orders (order_number, customer_id, order_date, delivery_date, priority, status, items_json, total_amount, notes, manager_id) VALUES (:num, :cust, :odate, :ddate, :prio, 'new', :items, :total, :notes, :mgr)");
             $stmt->execute([

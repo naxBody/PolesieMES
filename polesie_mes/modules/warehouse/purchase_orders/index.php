@@ -81,7 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 $orderNumber = 'PO-' . date('Y') . '-' . str_pad($maxNum + 1, 3, '0', STR_PAD_LEFT);
                 
                 // Формирование JSON с товарами
-                $itemsJson = json_encode($items, JSON_UNESCAPED_UNICODE);
+                $itemsJson = json_encode($items, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
                 
                 // Подсчёт общей суммы
                 $totalAmount = 0;
@@ -135,9 +135,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 $stmt->execute([$actual_delivery, $received_by, $order_id]);
                 
                 // Оприходуем товары на склад
-                $items = json_decode($order['items_json'], true);
+                try {
+                    $items = json_decode($order['items_json'] ?? '[]', true, 512, JSON_THROW_ON_ERROR);
+                } catch (Exception $e) {
+                    $items = [];
+                }
                 if (is_array($items)) {
-                    foreach ($items as $item) {
+                if (is_array($items)) {
                         $item_id = $item['item_id'] ?? null;
                         $quantity = $item['quantity'] ?? 0;
                         $price = $item['price'] ?? 0;
@@ -209,19 +213,25 @@ $materials = $stmt->fetchAll();
 
 // Получаем данные о товарах в заказах для отображения
 foreach ($orders as &$order) {
-    $items = json_decode($order['items_json'], true);
-    if (is_array($items)) {
-        foreach ($items as &$item) {
-            if (isset($item['item_id'])) {
-                $stmt = $db->prepare("SELECT u.name as unit_name FROM items i LEFT JOIN dictionaries u ON i.unit_id = u.id WHERE i.id = ?");
-                $stmt->execute([$item['item_id']]);
-                $unitData = $stmt->fetch();
-                if ($unitData) {
-                    $item['unit_name'] = $unitData['unit_name'];
+    try {
+        $items = json_decode($order['items_json'] ?? '[]', true, 512, JSON_THROW_ON_ERROR);
+        if (is_array($items)) {
+            foreach ($items as &$item) {
+                if (isset($item['item_id'])) {
+                    $stmt = $db->prepare("SELECT u.name as unit_name FROM items i LEFT JOIN dictionaries u ON i.unit_id = u.id WHERE i.id = ?");
+                    $stmt->execute([$item['item_id']]);
+                    $unitData = $stmt->fetch();
+                    if ($unitData) {
+                        $item['unit_name'] = $unitData['unit_name'];
+                    }
                 }
             }
+            $order['items_json_display'] = json_encode($items, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+        } else {
+            $order['items_json_display'] = '[]';
         }
-        $order['items_json'] = json_encode($items, JSON_UNESCAPED_UNICODE);
+    } catch (Exception $e) {
+        $order['items_json_display'] = '[]';
     }
 }
 unset($order);
@@ -778,7 +788,7 @@ $pageTitle = 'Заказы поставщикам | PolesieMES';
                                         <button class="btn btn-info btn-sm" onclick="viewOrderDetails(<?= $order['id'] ?>)">
                                             <i class="fas fa-info-circle"></i> Детали
                                         </button>
-                                        <button class="btn btn-secondary btn-sm" onclick="viewItems(<?= htmlspecialchars(json_encode($order['items_json'])) ?>, <?= $order['id'] ?>)">
+                                        <button class="btn btn-secondary btn-sm" onclick="viewItems(<?= htmlspecialchars($order['items_json_display'] ?? '[]') ?>, <?= $order['id'] ?>)">
                                             <i class="fas fa-boxes"></i> Состав
                                         </button>
                                     </div>
